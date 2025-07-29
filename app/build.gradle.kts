@@ -2,6 +2,8 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    id("dagger.hilt.android.plugin")
+    kotlin("kapt")
 }
 
 android {
@@ -58,4 +60,17 @@ dependencies {
     androidTestImplementation(libs.androidx.ui.test.junit4)
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
+
+    //Hilt dependencies
+    implementation(libs.hilt.android)
+    kapt(libs.dagger.hilt.compiler)
+
+    //javax.inject
+    implementation(libs.javax.inject)
+
+    //Google Identity
+    implementation(libs.play.services.identity)
+    implementation(libs.play.services.auth)
+
+
 }
