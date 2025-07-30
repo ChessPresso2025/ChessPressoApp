@@ -14,7 +14,7 @@ composeBom = "2024.09.00"
 lifecycleViewmodelComposeVersion = "2.7.0"
 navigationCompose = "2.7.7"
 playServicesAuth = "21.0.0"
-playServicesIdentity = "20.0.1"
+playServicesIdentity = "18.1.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -43,4 +43,3 @@ play-services-identity = { module = "com.google.android.gms:play-services-identi
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-

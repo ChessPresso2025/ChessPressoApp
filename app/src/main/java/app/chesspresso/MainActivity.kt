@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -29,11 +28,14 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.viewmodel.compose.viewModel
 import app.chesspresso.ui.theme.ChessPressoAppTheme
 import app.chesspresso.ui.theme.Creme1
 import app.chesspresso.ui.theme.Creme2
 import app.chesspresso.ui.theme.DarkBrown1
 import app.chesspresso.ui.theme.MidBrown2
+import app.chesspresso.auth.presemtation.LoginScreen
+import app.chesspresso.auth.presemtation.AuthViewModel
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -44,10 +46,6 @@ class MainActivity : ComponentActivity() {
                 MainScreen()
             }
         }
-    }
-
-    fun onLoginClick(){
-        //login
     }
 
     fun onRegisterClick(){
@@ -63,7 +61,15 @@ class MainActivity : ComponentActivity() {
             startDestination = "main_screen"
         ){
             composable("main_screen") {
-                HomeScreen({onLoginClick()}, {onRegisterClick()})
+                HomeScreen(
+                    onLoginClick = { navController.navigate("login_screen") },
+                    onRegisterClick = { onRegisterClick() }
+                )
+            }
+
+            composable("login_screen") {
+                val authViewModel: AuthViewModel = viewModel()
+                LoginScreen(authViewModel)
             }
 
             //andere Seiten werden hier geaddet
