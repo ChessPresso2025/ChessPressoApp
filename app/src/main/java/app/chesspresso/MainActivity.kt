@@ -15,9 +15,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -29,12 +33,19 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.hilt.navigation.compose.hiltViewModel
+import dagger.hilt.android.AndroidEntryPoint
 import app.chesspresso.ui.theme.ChessPressoAppTheme
 import app.chesspresso.ui.theme.Creme1
 import app.chesspresso.ui.theme.Creme2
 import app.chesspresso.ui.theme.DarkBrown1
 import app.chesspresso.ui.theme.MidBrown2
+import app.chesspresso.auth.presemtation.LoginScreen
+import app.chesspresso.auth.presemtation.AuthViewModel
+import app.chesspresso.websocket.WebSocketManager
+import app.chesspresso.utils.PlayerIdManager
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -44,10 +55,6 @@ class MainActivity : ComponentActivity() {
                 MainScreen()
             }
         }
-    }
-
-    fun onLoginClick(){
-        //login
     }
 
     fun onRegisterClick(){
@@ -63,7 +70,15 @@ class MainActivity : ComponentActivity() {
             startDestination = "main_screen"
         ){
             composable("main_screen") {
-                HomeScreen({onLoginClick()}, {onRegisterClick()})
+                HomeScreen(
+                    onLoginClick = { navController.navigate("login_screen") }, 
+                    onRegisterClick = { onRegisterClick() }
+                )
+            }
+
+            composable("login_screen") {
+                val authViewModel: AuthViewModel = hiltViewModel()
+                LoginScreen(authViewModel)
             }
 
             //andere Seiten werden hier geaddet
@@ -113,24 +128,31 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.padding(32.dp)
                 )
 
+                // Login Button
                 Button(
                     onClick = onLoginClick,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp)
+                        .padding(vertical = 8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
                 ) {
                     Text(
-                        text = "Einloggen",
+                        text = "Anmelden",
                         color = Color.White
                     )
                 }
 
+                // Register Button
                 Button(
                     onClick = onRegisterClick,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp),
-                    colors = ButtonDefaults.buttonColors()
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondary
+                    )
                 ) {
                     Text(
                         text = "Registrieren",
