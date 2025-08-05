@@ -15,8 +15,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -36,6 +41,8 @@ import app.chesspresso.ui.theme.DarkBrown1
 import app.chesspresso.ui.theme.MidBrown2
 import app.chesspresso.auth.presemtation.LoginScreen
 import app.chesspresso.auth.presemtation.AuthViewModel
+import app.chesspresso.websocket.WebSocketManager
+import app.chesspresso.utils.PlayerIdManager
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -62,7 +69,7 @@ class MainActivity : ComponentActivity() {
         ){
             composable("main_screen") {
                 HomeScreen(
-                    onLoginClick = { navController.navigate("login_screen") },
+                    onLoginClick = { navController.navigate("login_screen") }, 
                     onRegisterClick = { onRegisterClick() }
                 )
             }
@@ -81,6 +88,10 @@ class MainActivity : ComponentActivity() {
         onLoginClick: () -> Unit,
         onRegisterClick: () -> Unit
     ) {
+        var isConnected by remember { mutableStateOf(false) }
+        var connectionStatus by remember { mutableStateOf("Nicht verbunden") }
+        var isConnecting by remember { mutableStateOf(false) }
+
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -118,6 +129,71 @@ class MainActivity : ComponentActivity() {
                     color = Creme2,
                     modifier = Modifier.padding(32.dp)
                 )
+
+                // Server Verbindungs Status
+                Text(
+                    text = "Server Status: $connectionStatus",
+                    fontSize = 14.sp,
+                    color = when {
+                        isConnecting -> Color.Yellow
+                        isConnected -> Color.Green
+                        else -> Color.Red
+                    },
+                    modifier = Modifier.padding(bottom = 16.dp)
+                )
+
+                // Server Verbindungs Button
+                Button(
+                    onClick = {
+                        if (!isConnected && !isConnecting) {
+                            isConnecting = true
+                            connectionStatus = "Verbinde..."
+
+                            val playerId = PlayerIdManager.getOrCreatePlayerId(this@MainActivity)
+                            WebSocketManager.init(
+                                playerId = playerId,
+                                onSuccess = {
+                                    isConnected = true
+                                    isConnecting = false
+                                    connectionStatus = "Verbunden"
+                                },
+                                onFailure = { error ->
+                                    isConnected = false
+                                    isConnecting = false
+                                    connectionStatus = "Fehler: $error"
+                                },
+                                onDisconnect = {
+                                    isConnected = false
+                                    isConnecting = false
+                                    connectionStatus = "Verbindung getrennt"
+                                }
+                            )
+                        } else if (isConnected) {
+                            WebSocketManager.disconnect()
+                            // Status wird durch onDisconnect Callback aktualisiert
+                        }
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    enabled = !isConnecting,
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = when {
+                            isConnecting -> MaterialTheme.colorScheme.secondary
+                            isConnected -> MaterialTheme.colorScheme.error
+                            else -> MaterialTheme.colorScheme.primary
+                        }
+                    )
+                ) {
+                    Text(
+                        text = when {
+                            isConnecting -> "Verbinde..."
+                            isConnected -> "Verbindung trennen"
+                            else -> "Mit Server verbinden"
+                        },
+                        color = Color.White
+                    )
+                }
 
                 Button(
                     onClick = onLoginClick,
