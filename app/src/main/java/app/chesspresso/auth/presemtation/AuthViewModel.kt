@@ -30,53 +30,49 @@ class AuthViewModel @Inject constructor(
 
     fun loginWithGoogle(idToken: String) {
         Log.d("AuthViewModel", "Starting Google login with token length: ${idToken.length}")
-        viewModelScope.launch {
-            _authState.value = AuthState.Loading
-            try {
-                Log.d("AuthViewModel", "Calling repository to send token to server")
-                val response = repository.sendTokenToServer(idToken)
-                Log.d("AuthViewModel", "Login successful for user: ${response.name}")
-                _authState.value = AuthState.Success(response)
-                // Automatische WebSocket-Verbindung nach erfolgreicher Anmeldung
-                connectToWebSocket()
-            } catch (e: Exception) {
-                Log.e("AuthViewModel", "Login failed: ${e.message}", e)
-                val errorMessage = when {
-                    e.message?.contains("ConnectException") == true -> "Server nicht erreichbar. Ist der Backend-Server gestartet?"
-                    e.message?.contains("SocketTimeoutException") == true -> "Verbindung zum Server zeitüberschritten"
-                    e.message?.contains("UnknownHostException") == true -> "Server-Adresse nicht gefunden"
-                    e.message?.contains("HTTP") == true -> "Server-Fehler: ${e.message}"
-                    else -> e.message ?: "Unbekannter Fehler bei der Anmeldung"
-                }
-                _authState.value = AuthState.Error(errorMessage)
-            }
-        }
+        performLogin(
+            loginAction = { repository.sendTokenToServer(idToken) },
+            loginType = "Google login"
+        )
     }
 
     fun loginWithGoogleAlternative(accountId: String, email: String) {
         Log.d("AuthViewModel", "Starting alternative Google login")
         Log.d("AuthViewModel", "Account ID: $accountId")
         Log.d("AuthViewModel", "Email: $email")
+        performLogin(
+            loginAction = { repository.sendAlternativeTokenToServer(accountId, email) },
+            loginType = "Alternative Google login"
+        )
+    }
+
+    private fun performLogin(
+        loginAction: suspend () -> AuthResponse,
+        loginType: String
+    ) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
-                Log.d("AuthViewModel", "Calling repository to send alternative auth to server")
-                val response = repository.sendAlternativeTokenToServer(accountId, email)
-                Log.d("AuthViewModel", "Alternative login successful for user: ${response.name}")
+                Log.d("AuthViewModel", "Calling repository for $loginType")
+                val response = loginAction()
+                Log.d("AuthViewModel", "$loginType successful for user: ${response.name}")
                 _authState.value = AuthState.Success(response)
                 // Automatische WebSocket-Verbindung nach erfolgreicher Anmeldung
                 connectToWebSocket()
             } catch (e: Exception) {
-                Log.e("AuthViewModel", "Alternative login failed: ${e.message}", e)
-                val errorMessage = when {
-                    e.message?.contains("ConnectException") == true -> "Server nicht erreichbar. Ist der Backend-Server gestartet?"
-                    e.message?.contains("SocketTimeoutException") == true -> "Verbindung zum Server zeitüberschritten"
-                    e.message?.contains("UnknownHostException") == true -> "Server-Adresse nicht gefunden"
-                    e.message?.contains("HTTP") == true -> "Server-Fehler: ${e.message}"
-                    else -> e.message ?: "Unbekannter Fehler bei der Anmeldung"
-                }
-                _authState.value = AuthState.Error(errorMessage)
+                Log.e("AuthViewModel", "$loginType failed: ${e.message}", e)
+                _authState.value = AuthState.Error(mapErrorMessage(e))
             }
+        }
+    }
+
+    private fun mapErrorMessage(e: Exception): String {
+        return when {
+            e.message?.contains("ConnectException") == true -> "Server nicht erreichbar. Ist der Backend-Server gestartet?"
+            e.message?.contains("SocketTimeoutException") == true -> "Verbindung zum Server zeitüberschritten"
+            e.message?.contains("UnknownHostException") == true -> "Server-Adresse nicht gefunden"
+            e.message?.contains("HTTP") == true -> "Server-Fehler: ${e.message}"
+            else -> e.message ?: "Unbekannter Fehler bei der Anmeldung"
         }
     }
 
