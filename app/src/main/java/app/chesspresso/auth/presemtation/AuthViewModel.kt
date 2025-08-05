@@ -11,11 +11,13 @@ import kotlinx.coroutines.launch
 import app.chesspresso.auth.data.AuthRepository
 import app.chesspresso.auth.data.AuthResponse
 import app.chesspresso.auth.data.PlayerInfo
+import app.chesspresso.websocket.WebSocketManager
 import android.util.Log
 
 @HiltViewModel
 class AuthViewModel @Inject constructor(
-    private val repository: AuthRepository
+    private val repository: AuthRepository,
+    private val webSocketManager: WebSocketManager
 ) : ViewModel() {
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
@@ -35,6 +37,8 @@ class AuthViewModel @Inject constructor(
                 val response = repository.sendTokenToServer(idToken)
                 Log.d("AuthViewModel", "Login successful for user: ${response.name}")
                 _authState.value = AuthState.Success(response)
+                // Automatische WebSocket-Verbindung nach erfolgreicher Anmeldung
+                connectToWebSocket()
             } catch (e: Exception) {
                 Log.e("AuthViewModel", "Login failed: ${e.message}", e)
                 val errorMessage = when {
@@ -60,6 +64,8 @@ class AuthViewModel @Inject constructor(
                 val response = repository.sendAlternativeTokenToServer(accountId, email)
                 Log.d("AuthViewModel", "Alternative login successful for user: ${response.name}")
                 _authState.value = AuthState.Success(response)
+                // Automatische WebSocket-Verbindung nach erfolgreicher Anmeldung
+                connectToWebSocket()
             } catch (e: Exception) {
                 Log.e("AuthViewModel", "Alternative login failed: ${e.message}", e)
                 val errorMessage = when {
@@ -74,8 +80,32 @@ class AuthViewModel @Inject constructor(
         }
     }
 
+    private fun connectToWebSocket() {
+        try {
+            Log.d("AuthViewModel", "Starting automatic WebSocket connection after login...")
+            val playerInfo = repository.getStoredPlayerInfo()
+            val playerId = playerInfo?.playerId ?: "anonymous_user"
+
+            webSocketManager.init(
+                playerId = playerId,
+                onSuccess = {
+                    Log.d("AuthViewModel", "WebSocket connection successful")
+                },
+                onFailure = { error ->
+                    Log.e("AuthViewModel", "WebSocket connection failed: $error")
+                },
+                onDisconnect = {
+                    Log.d("AuthViewModel", "WebSocket disconnected")
+                }
+            )
+        } catch (e: Exception) {
+            Log.e("AuthViewModel", "Failed to connect to WebSocket: ${e.message}", e)
+        }
+    }
+
     fun logout() {
         repository.clearStoredPlayerInfo()
+        webSocketManager.disconnect()
         _authState.value = AuthState.Idle
     }
 

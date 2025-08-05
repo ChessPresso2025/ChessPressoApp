@@ -3,6 +3,7 @@ package app.chesspresso.di
 import android.content.Context
 import app.chesspresso.auth.data.AuthApi
 import app.chesspresso.auth.data.AuthRepository
+import app.chesspresso.websocket.WebSocketManager
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -57,5 +58,11 @@ object AppModule {
         @ApplicationContext context: Context
     ): AuthRepository {
         return AuthRepository(authApi, context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideWebSocketManager(): WebSocketManager {
+        return WebSocketManager
     }
 }

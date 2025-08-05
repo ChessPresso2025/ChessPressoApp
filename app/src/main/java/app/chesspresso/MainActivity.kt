@@ -90,12 +90,6 @@ class MainActivity : ComponentActivity() {
         onLoginClick: () -> Unit,
         onRegisterClick: () -> Unit
     ) {
-        var isConnected by remember { mutableStateOf(false) }
-        var connectionStatus by remember { mutableStateOf("Nicht verbunden") }
-        var isConnecting by remember { mutableStateOf(false) }
-        
-        val authViewModel: AuthViewModel = hiltViewModel()
-
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -134,88 +128,31 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.padding(32.dp)
                 )
 
-                // Server Verbindungs Status
-                Text(
-                    text = "Server Status: $connectionStatus",
-                    fontSize = 14.sp,
-                    color = when {
-                        isConnecting -> Color.Yellow
-                        isConnected -> Color.Green
-                        else -> Color.Red
-                    },
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-
-                // Server Verbindungs Button
-                Button(
-                    onClick = {
-                        if (!isConnected && !isConnecting) {
-                            isConnecting = true
-                            connectionStatus = "Verbinde..."
-
-                            val playerId = authViewModel.getStoredPlayerInfo()?.playerId ?: "anonymous_user"
-                            WebSocketManager.init(
-                                playerId = playerId,
-                                onSuccess = {
-                                    isConnected = true
-                                    isConnecting = false
-                                    connectionStatus = "Verbunden"
-                                },
-                                onFailure = { error ->
-                                    isConnected = false
-                                    isConnecting = false
-                                    connectionStatus = "Fehler: $error"
-                                },
-                                onDisconnect = {
-                                    isConnected = false
-                                    isConnecting = false
-                                    connectionStatus = "Verbindung getrennt"
-                                }
-                            )
-                        } else if (isConnected) {
-                            WebSocketManager.disconnect()
-                        }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    enabled = !isConnecting,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = when {
-                            isConnecting -> MaterialTheme.colorScheme.secondary
-                            isConnected -> MaterialTheme.colorScheme.error
-                            else -> MaterialTheme.colorScheme.primary
-                        }
-                    )
-                ) {
-                    Text(
-                        text = when {
-                            isConnecting -> "Verbinde..."
-                            isConnected -> "Verbindung trennen"
-                            else -> "Mit Server verbinden"
-                        },
-                        color = Color.White
-                    )
-                }
-
+                // Login Button
                 Button(
                     onClick = onLoginClick,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp)
+                        .padding(vertical = 8.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.primary
+                    )
                 ) {
                     Text(
-                        text = "Einloggen",
+                        text = "Anmelden",
                         color = Color.White
                     )
                 }
 
+                // Register Button
                 Button(
                     onClick = onRegisterClick,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 8.dp),
-                    colors = ButtonDefaults.buttonColors()
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = MaterialTheme.colorScheme.secondary
+                    )
                 ) {
                     Text(
                         text = "Registrieren",
