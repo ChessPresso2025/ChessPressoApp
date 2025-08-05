@@ -33,7 +33,8 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
+import dagger.hilt.android.AndroidEntryPoint
 import app.chesspresso.ui.theme.ChessPressoAppTheme
 import app.chesspresso.ui.theme.Creme1
 import app.chesspresso.ui.theme.Creme2
@@ -44,6 +45,7 @@ import app.chesspresso.auth.presemtation.AuthViewModel
 import app.chesspresso.websocket.WebSocketManager
 import app.chesspresso.utils.PlayerIdManager
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -75,7 +77,7 @@ class MainActivity : ComponentActivity() {
             }
 
             composable("login_screen") {
-                val authViewModel: AuthViewModel = viewModel()
+                val authViewModel: AuthViewModel = hiltViewModel()
                 LoginScreen(authViewModel)
             }
 
@@ -91,6 +93,8 @@ class MainActivity : ComponentActivity() {
         var isConnected by remember { mutableStateOf(false) }
         var connectionStatus by remember { mutableStateOf("Nicht verbunden") }
         var isConnecting by remember { mutableStateOf(false) }
+        
+        val authViewModel: AuthViewModel = hiltViewModel()
 
         Box(
             modifier = Modifier
@@ -149,7 +153,7 @@ class MainActivity : ComponentActivity() {
                             isConnecting = true
                             connectionStatus = "Verbinde..."
 
-                            val playerId = PlayerIdManager.getOrCreatePlayerId(this@MainActivity)
+                            val playerId = authViewModel.getStoredPlayerInfo()?.playerId ?: "anonymous_user"
                             WebSocketManager.init(
                                 playerId = playerId,
                                 onSuccess = {
@@ -170,7 +174,6 @@ class MainActivity : ComponentActivity() {
                             )
                         } else if (isConnected) {
                             WebSocketManager.disconnect()
-                            // Status wird durch onDisconnect Callback aktualisiert
                         }
                     },
                     modifier = Modifier

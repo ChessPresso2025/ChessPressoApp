@@ -9,8 +9,15 @@ interface AuthApi {
 }
 
 data class AuthRequest(
-    val idToken: String)
+    val idToken: String
+)
 
 data class AuthResponse(
-    val PlayerID: String,
-    val name: String)
+    val playerId: String,
+    val name: String,
+    val playedGames: Int,
+    val win: Int,
+    val draw: Int,
+    val lose: Int,
+    val email: String
+)
