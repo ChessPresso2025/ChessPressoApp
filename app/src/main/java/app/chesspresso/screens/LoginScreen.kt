@@ -19,11 +19,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.navigation.NavController
+import app.chesspresso.auth.presentation.AuthState
+import app.chesspresso.auth.presentation.AuthViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 
 @Composable
-fun LoginScreen(viewModel: AuthViewModel) {
+fun LoginScreen(
+    navController: NavController,
+    viewModel: AuthViewModel) {
     val context = LocalContext.current
     val authState by viewModel.authState.collectAsState()
 
@@ -86,6 +91,7 @@ fun LoginScreen(viewModel: AuthViewModel) {
                             Log.d("LoginScreen", "Previous sign-out completed, launching sign-in")
                             googleSignInLauncher.launch(googleSignInClient.signInIntent)
                         }
+                        navController.navigate("home_screen")
                     } catch (e: Exception) {
                         Log.e("LoginScreen", "Error starting Google Sign-In: ${e.message}", e)
                         viewModel.setErrorMessage("Fehler beim Starten der Google-Anmeldung: ${e.message}")
