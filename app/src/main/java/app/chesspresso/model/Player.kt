@@ -1,4 +1,4 @@
-package app.chesspresso
+package app.chesspresso.model
 
 class Player(
     playerID: String, username: String
