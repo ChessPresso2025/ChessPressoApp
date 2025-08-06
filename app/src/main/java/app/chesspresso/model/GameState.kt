@@ -6,5 +6,5 @@ class GameState {
     private lateinit var team : TeamColor
     private lateinit var move: Move
     private val board : Board = Board()
-    //private val boardString : String
+    //evtl String mit Board-Daten für Backend-Kommunikation zur Verfügung stellen
 }
