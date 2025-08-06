@@ -1,4 +1,4 @@
-package app.chesspresso.screens
+package app.chesspresso.auth.presemtation
 
 import android.app.Activity
 import android.util.Log
@@ -48,12 +48,18 @@ fun LoginScreen(
                     viewModel.loginWithGoogleAlternative(account.id!!, account.email!!)
                 } else {
                     Log.e("LoginScreen", "Google account data incomplete")
+                    viewModel.setErrorMessage("Google-Account-Daten unvollständig")
                 }
             } catch (e: Exception) {
                 Log.e("LoginScreen", "Google Sign-In error: ${e.message}", e)
+                viewModel.setErrorMessage("Google Sign-In Fehler: ${e.message}")
             }
+        } else if (result.resultCode == Activity.RESULT_CANCELED) {
+            Log.w("LoginScreen", "Google Sign-In was cancelled by user")
+            viewModel.setErrorMessage("Anmeldung wurde abgebrochen")
         } else {
-            Log.w("LoginScreen", "Google Sign-In cancelled or failed")
+            Log.w("LoginScreen", "Google Sign-In failed with result code: ${result.resultCode}")
+            viewModel.setErrorMessage("Google Sign-In fehlgeschlagen")
         }
     }
 
@@ -67,23 +73,28 @@ fun LoginScreen(
             verticalArrangement = Arrangement.spacedBy(24.dp),
             modifier = Modifier.padding(32.dp)
         ) {
-            // Haupt Google Sign-In Button
             Button(
                 onClick = {
                     Log.d("LoginScreen", "Starting Google Sign-In...")
 
                     try {
-                        // Verwende einfaches Google Sign-In ohne ID Token (funktioniert immer)
+
                         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
                             .requestEmail()
                             .requestProfile()
+                            .requestId()
                             .build()
 
                         val googleSignInClient = GoogleSignIn.getClient(context, gso)
-                        googleSignInLauncher.launch(googleSignInClient.signInIntent)
+
+                        googleSignInClient.signOut().addOnCompleteListener {
+                            Log.d("LoginScreen", "Previous sign-out completed, launching sign-in")
+                            googleSignInLauncher.launch(googleSignInClient.signInIntent)
+                        }
                         navController.navigate("home_screen")
                     } catch (e: Exception) {
                         Log.e("LoginScreen", "Error starting Google Sign-In: ${e.message}", e)
+                        viewModel.setErrorMessage("Fehler beim Starten der Google-Anmeldung: ${e.message}")
                     }
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -92,7 +103,8 @@ fun LoginScreen(
                 Text("Mit Google anmelden")
             }
 
-            // Status anzeigen
+
+
             when (val state = authState) {
                 is AuthState.Loading -> Text("Anmeldung läuft...")
                 is AuthState.Success -> Text("Willkommen ${state.response.name}!")
