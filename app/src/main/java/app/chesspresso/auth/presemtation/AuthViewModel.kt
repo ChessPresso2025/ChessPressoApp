@@ -28,6 +28,10 @@ class AuthViewModel @Inject constructor(
         checkStoredAuth()
     }
 
+    fun setErrorMessage(message: String) {
+        _authState.value = AuthState.Error(message)
+    }
+
     fun loginWithGoogle(idToken: String) {
         Log.d("AuthViewModel", "Starting Google login with token length: ${idToken.length}")
         performLogin(
@@ -57,7 +61,6 @@ class AuthViewModel @Inject constructor(
                 val response = loginAction()
                 Log.d("AuthViewModel", "$loginType successful for user: ${response.name}")
                 _authState.value = AuthState.Success(response)
-                // Automatische WebSocket-Verbindung nach erfolgreicher Anmeldung
                 connectToWebSocket()
             } catch (e: Exception) {
                 Log.e("AuthViewModel", "$loginType failed: ${e.message}", e)
@@ -119,6 +122,9 @@ class AuthViewModel @Inject constructor(
                 lose = playerInfo.lose
             )
             _authState.value = AuthState.Success(authResponse)
+
+            // Wichtig: WebSocket-Verbindung auch beim automatischen Login herstellen
+            connectToWebSocket()
         }
     }
 

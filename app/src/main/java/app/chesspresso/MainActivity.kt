@@ -18,10 +18,9 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
@@ -42,8 +41,7 @@ import app.chesspresso.ui.theme.DarkBrown1
 import app.chesspresso.ui.theme.MidBrown2
 import app.chesspresso.auth.presemtation.LoginScreen
 import app.chesspresso.auth.presemtation.AuthViewModel
-import app.chesspresso.websocket.WebSocketManager
-import app.chesspresso.utils.PlayerIdManager
+import app.chesspresso.auth.presemtation.AuthState
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -57,13 +55,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    fun onRegisterClick(){
-        //register
-    }
-
     @Composable
     fun MainScreen(){
         val navController = rememberNavController()
+        val authViewModel: AuthViewModel = hiltViewModel()
+        val authState by authViewModel.authState.collectAsState()
 
         NavHost(
             navController = navController,
@@ -71,24 +67,133 @@ class MainActivity : ComponentActivity() {
         ){
             composable("main_screen") {
                 HomeScreen(
-                    onLoginClick = { navController.navigate("login_screen") }, 
-                    onRegisterClick = { onRegisterClick() }
+                    onLoginClick = { navController.navigate("login_screen") }
                 )
             }
 
             composable("login_screen") {
-                val authViewModel: AuthViewModel = hiltViewModel()
                 LoginScreen(authViewModel)
             }
 
-            //andere Seiten werden hier geaddet
+            composable("main_app") {
+                MainAppScreen(
+                    authViewModel = authViewModel,
+                    onLogout = {
+                        authViewModel.logout()
+                        navController.navigate("main_screen") {
+                            popUpTo("main_app") { inclusive = true }
+                        }
+                    }
+                )
+            }
+        }
+
+        // Automatische Navigation bei erfolgreicher Anmeldung
+        LaunchedEffect(authState) {
+            when (authState) {
+                is AuthState.Success -> {
+                    if (navController.currentDestination?.route != "main_app") {
+                        navController.navigate("main_app") {
+                            popUpTo("main_screen") { inclusive = true }
+                            popUpTo("login_screen") { inclusive = true }
+                        }
+                    }
+                }
+                else -> {
+                    // Keine Aktion, wenn nicht angemeldet
+                }
+            }
+        }
+    }
+
+    @Composable
+    fun MainAppScreen(
+        authViewModel: AuthViewModel,
+        onLogout: () -> Unit
+    ) {
+        val authState by authViewModel.authState.collectAsState()
+
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            DarkBrown1, MidBrown2
+                        )
+                    )
+                )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                when (val state = authState) {
+                    is AuthState.Success -> {
+                        Text(
+                            text = "Willkommen zurück!",
+                            fontSize = 28.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Creme1,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+
+                        Text(
+                            text = state.response.name,
+                            fontSize = 24.sp,
+                            color = Creme2,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+
+                        Text(
+                            text = state.response.email,
+                            fontSize = 16.sp,
+                            color = Creme2,
+                            modifier = Modifier.padding(bottom = 32.dp)
+                        )
+
+                        Text(
+                            text = "Verbunden mit Server ✓",
+                            fontSize = 16.sp,
+                            color = Color.Green,
+                            modifier = Modifier.padding(bottom = 32.dp)
+                        )
+
+
+
+                        Button(
+                            onClick = onLogout,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = MaterialTheme.colorScheme.error
+                            )
+                        ) {
+                            Text(
+                                text = "Abmelden",
+                                color = Color.White
+                            )
+                        }
+                    }
+                    else -> {
+                        Text(
+                            text = "Laden...",
+                            fontSize = 18.sp,
+                            color = Creme1
+                        )
+                    }
+                }
+            }
         }
     }
 
     @Composable
     fun HomeScreen(
-        onLoginClick: () -> Unit,
-        onRegisterClick: () -> Unit
+        onLoginClick: () -> Unit
     ) {
         Box(
             modifier = Modifier
@@ -128,7 +233,6 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.padding(32.dp)
                 )
 
-                // Login Button
                 Button(
                     onClick = onLoginClick,
                     modifier = Modifier
@@ -140,22 +244,6 @@ class MainActivity : ComponentActivity() {
                 ) {
                     Text(
                         text = "Anmelden",
-                        color = Color.White
-                    )
-                }
-
-                // Register Button
-                Button(
-                    onClick = onRegisterClick,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.secondary
-                    )
-                ) {
-                    Text(
-                        text = "Registrieren",
                         color = Color.White
                     )
                 }
