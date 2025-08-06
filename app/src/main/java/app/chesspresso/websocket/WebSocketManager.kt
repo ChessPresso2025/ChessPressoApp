@@ -14,7 +14,7 @@ import okhttp3.WebSocket
 import okhttp3.WebSocketListener
 
 object WebSocketManager : WebSocketListener(){
-    private const val SOCKET_URL = "ws://10.0.2.2:8080" // Emulator IP statt localhost
+    private const val SOCKET_URL = "ws://10.0.2.2:8080" // Emulator IP
     private var webSocket: WebSocket? = null
     private var heartbeatJob: Job? = null
 
