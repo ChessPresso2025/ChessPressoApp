@@ -1,5 +1,7 @@
 package app.chesspresso.model
 
-data class Move(val start : Position, val destination : Position, val piece: PieceType, val specialMove: SpecialMove) {
+import app.chesspresso.model.board.Board
+
+data class Move(val start : Board, val destination : Board, val piece: PieceType, val specialMove: SpecialMove) {
 
 }
