@@ -1,4 +1,4 @@
-package app.chesspresso.auth.presemtation
+package app.chesspresso.screens
 
 import android.app.Activity
 import android.util.Log
@@ -19,6 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.compose.rememberLauncherForActivityResult
+import app.chesspresso.auth.presentation.AuthState
+import app.chesspresso.auth.presentation.AuthViewModel
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 

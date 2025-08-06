@@ -1,4 +1,4 @@
-package app.chesspresso.auth.presemtation
+package app.chesspresso.auth.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
