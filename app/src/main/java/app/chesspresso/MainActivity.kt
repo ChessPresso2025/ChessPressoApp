@@ -42,10 +42,11 @@ class MainActivity : ComponentActivity() {
             }
             composable("login_screen") {
                 val authViewModel: AuthViewModel = hiltViewModel()
-                LoginScreen(authViewModel)
+                LoginScreen(navController, authViewModel)
             }
             composable("home_screen") {
                 HomeScreen(
+                    navController,
                     onPrivateGameClick = {},
                     onPublicGameClick = {},
                     onNavigate = {}

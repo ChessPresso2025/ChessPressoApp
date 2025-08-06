@@ -31,10 +31,13 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen(onPrivateGameClick: () -> Unit,
+fun HomeScreen(navController: NavController,
+               onPrivateGameClick: () -> Unit,
                onPublicGameClick: () -> Unit,
                onNavigate: (NavigationItem) -> Unit)
 {
@@ -101,6 +104,7 @@ enum class NavigationItem(val label: String, val icon: ImageVector) {
 @Composable
 fun HomeScreenPreview() {
     HomeScreen(
+        navController = rememberNavController(),
         onPrivateGameClick = {},
         onPublicGameClick = {},
         onNavigate = {}
