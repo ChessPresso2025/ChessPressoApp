@@ -1,6 +1,6 @@
 package app.chesspresso.model
 
-import app.chesspresso.model.board.*
+import app.chesspresso.model.board.Board
 
 class GameState {
     private lateinit var team : TeamColor

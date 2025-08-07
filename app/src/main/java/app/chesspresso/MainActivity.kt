@@ -27,13 +27,14 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import app.chesspresso.auth.presemtation.LoginScreen
 import app.chesspresso.auth.presentation.AuthState
 import app.chesspresso.auth.presentation.AuthViewModel
-import app.chesspresso.screens.HomeScreen
+import app.chesspresso.screens.MainScaffoldScreen
 import app.chesspresso.screens.WelcomeScreen
 import app.chesspresso.ui.theme.ChessPressoAppTheme
 import app.chesspresso.ui.theme.Creme1
@@ -49,48 +50,44 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             ChessPressoAppTheme {
-                MainScreen()
+                val navController = rememberNavController()
+                AppNavigation(navController)
             }
         }
     }
 
     @Composable
-    fun MainScreen(){
-        val navController = rememberNavController()
+    fun AppNavigation(navController: NavHostController){
         val authViewModel: AuthViewModel = hiltViewModel()
         val authState by authViewModel.authState.collectAsState()
 
         NavHost(
             navController = navController,
-            startDestination = "main_screen"
+            startDestination = "welcome"
         ){
-            composable("main_screen") {
+            //Login-Teil der App
+            composable("welcome") {
                 WelcomeScreen(
-                    onLoginClick = { navController.navigate("login_screen") }
+                    onLoginClick = { navController.navigate("login") }
                 )
             }
-
-            composable("login_screen") {
+            composable("login") {
                 LoginScreen(navController, authViewModel)
                 val authViewModel: AuthViewModel = hiltViewModel()
                 LoginScreen(navController, authViewModel)
             }
-            composable("home_screen") {
-                HomeScreen(
-                    navController,
-                    onPrivateGameClick = {},
-                    onPublicGameClick = {},
-                    onNavigate = {}
-                )
+
+            //Hauptteil mit Scaffold-View
+            composable("main") {
+                MainScaffoldScreen() //verwaltet eigene interne BottomNav
             }
-            //andere Seiten werden hier geaddet
 
             composable("main_app") {
                 MainAppScreen(
                     authViewModel = authViewModel,
                     onLogout = {
                         authViewModel.logout()
-                        navController.navigate("main_screen") {
+                        navController.navigate("main") {
                             popUpTo("main_app") { inclusive = true }
                         }
                     }
@@ -104,8 +101,8 @@ class MainActivity : ComponentActivity() {
                 is AuthState.Success -> {
                     if (navController.currentDestination?.route != "main_app") {
                         navController.navigate("main_app") {
-                            popUpTo("main_screen") { inclusive = true }
-                            popUpTo("login_screen") { inclusive = true }
+                            popUpTo("main") { inclusive = true }
+                            popUpTo("login") { inclusive = true }
                         }
                     }
                 }
