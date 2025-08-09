@@ -1,4 +1,4 @@
-package app.chesspresso.screens
+package app.chesspresso.screens.main
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Row
@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
@@ -28,10 +29,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.compose.runtime.getValue
+import app.chesspresso.R
+import app.chesspresso.auth.presentation.AuthViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScaffoldScreen(){
+fun MainScaffoldScreen(authViewModel: AuthViewModel){
     val innerNavController = rememberNavController()
     val currentRoute by innerNavController.currentBackStackEntryAsState()
     val selectedRoute = currentRoute?.destination?.route ?: "home"
@@ -42,7 +45,7 @@ fun MainScaffoldScreen(){
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Image(
-                            painter = painterResource(id = app.chesspresso.R.drawable.watermark_chess), // <- dein Logo aus drawable
+                            painter = painterResource(id = R.drawable.watermark_chess), // <- dein Logo aus drawable
                             contentDescription = "App-Logo",
                             modifier = Modifier
                                 .size(32.dp) // Passe die Größe nach Wunsch an
@@ -94,6 +97,17 @@ fun MainScaffoldScreen(){
             composable("settings"){
                 SettingsScreen()
             }
+            composable("info") {
+                InfoScreen(
+                    authViewModel = authViewModel,
+                    onLogout = {
+                        authViewModel.logout()
+                        innerNavController.navigate("welcome") {
+                            popUpTo("info") { inclusive = true }
+                        }
+                    }
+                )
+            }
         }
     }
 }
@@ -102,7 +116,8 @@ enum class NavigationItem(val label: String, val icon: ImageVector, val route: S
     Profile("Profil", Icons.Default.Person, NavRoutes.PROFILE),
     Stats("Statistik", Icons.Default.Search, NavRoutes.STATS), //durch Statistik Icon ersetzen
     Gameplay("Spielen", Icons.Default.Home, NavRoutes.HOME), //durch Schach-Icon ersetzen
-    Settings("Einstellungen", Icons.Default.Settings, NavRoutes.SETTINGS)
+    Settings("Einstellungen", Icons.Default.Settings, NavRoutes.SETTINGS),
+    Info("Server-Status", Icons.Default.Info, NavRoutes.INFO)
 }
 
 
@@ -111,4 +126,5 @@ object NavRoutes {
     const val STATS = "stats"
     const val HOME = "home"
     const val SETTINGS = "settings"
+    const val INFO = "info"
 }

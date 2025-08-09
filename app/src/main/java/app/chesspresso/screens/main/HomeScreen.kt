@@ -1,4 +1,4 @@
-package app.chesspresso.screens
+package app.chesspresso.screens.main
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column

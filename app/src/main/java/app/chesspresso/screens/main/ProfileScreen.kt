@@ -1,4 +1,4 @@
-package app.chesspresso.screens
+package app.chesspresso.screens.main
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -8,11 +8,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 
 @Composable
-fun StatsScreen(){
+fun ProfileScreen(){
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
-    ){
-        Text("Statistik kommt bald!")
+    ) {
+        Text("Profilseite")
     }
 }
