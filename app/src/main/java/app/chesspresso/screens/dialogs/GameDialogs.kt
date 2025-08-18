@@ -1,35 +1,10 @@
 package app.chesspresso.screens.dialogs
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.DropdownMenuItem
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextField
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.ExperimentalComposeApi
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -45,8 +20,7 @@ private fun DialogContainer(
         modifier = Modifier.fillMaxSize()
     ) {
         Box(
-            modifier = Modifier
-                .fillMaxSize()
+            modifier = Modifier.fillMaxSize()
         )
         Card(
             modifier = Modifier
@@ -66,6 +40,64 @@ private fun DialogContainer(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun GameDurationDropdown(
+    selectedDuration: GameDuration,
+    onDurationSelected: (GameDuration) -> Unit,
+    availableDurations: List<GameDuration> = GameDuration.entries
+) {
+    var expanded by remember { mutableStateOf(false) }
+
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = !expanded }
+    ) {
+        TextField(
+            readOnly = true,
+            value = selectedDuration.description ?: selectedDuration.toString(),
+            onValueChange = { },
+            label = { Text("Spieldauer") },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
+            modifier = Modifier
+                .menuAnchor()
+                .fillMaxWidth()
+        )
+        ExposedDropdownMenu(
+            expanded = expanded,
+            onDismissRequest = { expanded = false }
+        ) {
+            availableDurations.forEach { duration ->
+                DropdownMenuItem(
+                    text = { Text(duration.description ?: duration.toString()) },
+                    onClick = {
+                        onDurationSelected(duration)
+                        expanded = false
+                    }
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun DialogContent(
+    title: String,
+    content: @Composable () -> Unit
+) {
+    Column(
+        modifier = Modifier.padding(24.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineMedium
+        )
+        content()
+    }
+}
+
 @Composable
 fun PrivateGameChoiceScreen(
     onCreateClick: () -> Unit,
@@ -73,20 +105,10 @@ fun PrivateGameChoiceScreen(
     onDismiss: () -> Unit
 ) {
     DialogContainer(onDismiss = onDismiss) {
-        Column(
-            modifier = Modifier.padding(24.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ){
-            Text(
-                text = "Privates Spiel",
-                style = MaterialTheme.typography.headlineMedium,
-                modifier = Modifier.padding(bottom = 16.dp)
-            )
+        DialogContent(title = "Privates Spiel") {
             Button(onClick = onCreateClick, modifier = Modifier.fillMaxWidth()) {
                 Text("Privates Spiel erstellen")
             }
-            Spacer(modifier = Modifier.height(16.dp))
             Button(onClick = onJoinClick, modifier = Modifier.fillMaxWidth()) {
                 Text("Privatem Spiel beitreten")
             }
@@ -100,29 +122,20 @@ fun JoinPrivateGameScreen(
     onJoin: () -> Unit
 ) {
     DialogContainer(onDismiss = onDismiss) {
-        Column(
-            modifier = Modifier.padding(24.dp),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Column(
-                modifier = Modifier.padding(24.dp)
+        DialogContent(title = "Privatem Spiel beitreten") {
+            var lobbyId by remember { mutableStateOf("") }
+            TextField(
+                value = lobbyId,
+                onValueChange = { if (it.length <= 6) lobbyId = it },
+                label = { Text("Lobby ID (6 Stellen)") },
+                modifier = Modifier.fillMaxWidth()
+            )
+            Button(
+                onClick = onJoin,
+                modifier = Modifier.fillMaxWidth(),
+                enabled = lobbyId.length == 6
             ) {
-                Text("Privatem Spiel beitreten", modifier = Modifier.padding(bottom = 16.dp))
-                var lobbyId = remember { mutableStateOf("") }
-                TextField(
-                    value = lobbyId.value,
-                    onValueChange = { if (it.length <= 6) lobbyId.value = it },
-                    label = { Text("Lobby ID (6 Stellen)") },
-                    modifier = Modifier.padding(bottom = 16.dp)
-                )
-                Button(
-                    onClick = onJoin,
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = lobbyId.value.length == 6
-                ) {
-                    Text("Beitreten")
-                }
+                Text("Beitreten")
             }
         }
     }
@@ -135,52 +148,15 @@ fun CreatePublicGameScreen(
     onCreateGame: (duration: GameDuration) -> Unit
 ) {
     var selectedDuration by remember { mutableStateOf(GameDuration.MEDIUM) }
-    var expanded by remember { mutableStateOf(false) }
+    val availableDurations = listOf(GameDuration.SHORT, GameDuration.MEDIUM, GameDuration.LONG)
 
     DialogContainer(onDismiss = onDismiss) {
-        Column(
-            modifier = Modifier.padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Öffentliches Spiel erstellen",
-                style = MaterialTheme.typography.headlineMedium
+        DialogContent(title = "Öffentliches Spiel erstellen") {
+            GameDurationDropdown(
+                selectedDuration = selectedDuration,
+                onDurationSelected = { selectedDuration = it },
+                availableDurations = availableDurations
             )
-
-            // Dropdown für Spieldauer (nur kurz/mittel/lang)
-            ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = !expanded }
-            ) {
-                TextField(
-                    readOnly = true,
-                    value = selectedDuration.description ?: selectedDuration.toString(),
-                    onValueChange = { },
-                    label = { Text("Spieldauer") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                    modifier = Modifier
-                        .menuAnchor()
-                        .fillMaxWidth()
-                )
-                ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
-                    listOf(GameDuration.SHORT, GameDuration.MEDIUM, GameDuration.LONG).forEach { duration ->
-                        DropdownMenuItem(
-                            text = { Text(duration.description ?: duration.toString()) },
-                            onClick = {
-                                selectedDuration = duration
-                                expanded = false
-                            }
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(8.dp))
-
             Button(
                 onClick = { onCreateGame(selectedDuration) },
                 modifier = Modifier.fillMaxWidth()
@@ -199,51 +175,14 @@ fun CreatePrivateGameScreen(
 ) {
     var selectedDuration by remember { mutableStateOf(GameDuration.MEDIUM) }
     var selectedColor by remember { mutableStateOf(TeamColor.RANDOM) }
-    var expanded by remember { mutableStateOf(false) }
 
     DialogContainer(onDismiss = onDismiss) {
-        Column(
-            modifier = Modifier.padding(24.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = "Privates Spiel erstellen",
-                style = MaterialTheme.typography.headlineMedium
+        DialogContent(title = "Privates Spiel erstellen") {
+            GameDurationDropdown(
+                selectedDuration = selectedDuration,
+                onDurationSelected = { selectedDuration = it }
             )
 
-            // Dropdown für Spieldauer
-            ExposedDropdownMenuBox(
-                expanded = expanded,
-                onExpandedChange = { expanded = !expanded }
-            ) {
-                TextField(
-                    readOnly = true,
-                    value = selectedDuration.description ?: selectedDuration.toString(),
-                    onValueChange = { },
-                    label = { Text("Spieldauer") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
-                    modifier = Modifier
-                        .menuAnchor()
-                        .fillMaxWidth()
-                )
-                ExposedDropdownMenu(
-                    expanded = expanded,
-                    onDismissRequest = { expanded = false }
-                ) {
-                    GameDuration.entries.forEach { duration ->
-                        DropdownMenuItem(
-                            text = { Text(duration.description ?: duration.toString()) },
-                            onClick = {
-                                selectedDuration = duration
-                                expanded = false
-                            }
-                        )
-                    }
-                }
-            }
-
-            // Radio Buttons für Farbauswahl
             Column {
                 Text(
                     "Spielerfarbe",
@@ -254,10 +193,6 @@ fun CreatePrivateGameScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .selectable(
-                                selected = (color == selectedColor),
-                                onClick = { selectedColor = color }
-                            )
                             .padding(vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
@@ -272,8 +207,6 @@ fun CreatePrivateGameScreen(
                     }
                 }
             }
-
-            Spacer(modifier = Modifier.height(8.dp))
 
             Button(
                 onClick = { onCreateGame(selectedDuration, selectedColor) },
