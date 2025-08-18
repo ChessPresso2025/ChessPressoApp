@@ -13,11 +13,11 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import app.chesspresso.screens.LoginScreen
 import app.chesspresso.auth.presentation.AuthState
 import app.chesspresso.auth.presentation.AuthViewModel
-import app.chesspresso.screens.main.MainScaffoldScreen
+import app.chesspresso.screens.LoginScreen
 import app.chesspresso.screens.WelcomeScreen
+import app.chesspresso.screens.main.MainScaffoldScreen
 import app.chesspresso.ui.theme.ChessPressoAppTheme
 import dagger.hilt.android.AndroidEntryPoint
 
