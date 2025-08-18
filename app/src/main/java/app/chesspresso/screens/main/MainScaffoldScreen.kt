@@ -90,9 +90,18 @@ fun MainScaffoldScreen(authViewModel: AuthViewModel){
             }
             composable(NavRoutes.PRIVATE_GAME_CHOICE) {
                 app.chesspresso.screens.dialogs.PrivateGameChoiceScreen(
-                    onCreateClick = { /* TODO: Implementiere Erstellen-Logik */ },
+                    onCreateClick = { innerNavController.navigate(NavRoutes.CREATE_PRIVATE_GAME) },
                     onJoinClick = { innerNavController.navigate(NavRoutes.JOIN_PRIVATE_GAME) },
                     onDismiss = { innerNavController.navigate(NavRoutes.HOME) }
+                )
+            }
+            composable(NavRoutes.CREATE_PRIVATE_GAME) {
+                app.chesspresso.screens.dialogs.CreatePrivateGameScreen(
+                    onDismiss = { innerNavController.navigate(NavRoutes.HOME) },
+                    onCreateGame = { duration, color ->
+                        // TODO: Implementiere die Logik zum Erstellen des Spiels
+                        innerNavController.navigate(NavRoutes.HOME)
+                    }
                 )
             }
             composable(NavRoutes.JOIN_PRIVATE_GAME) {
@@ -122,8 +131,12 @@ fun MainScaffoldScreen(authViewModel: AuthViewModel){
                 )
             }
             composable(NavRoutes.PUBLIC_GAME) {
-                app.chesspresso.screens.dialogs.PublicGameScreen(
-                    onDismiss = { innerNavController.navigate(NavRoutes.HOME) }
+                app.chesspresso.screens.dialogs.CreatePublicGameScreen(
+                    onDismiss = { innerNavController.navigate(NavRoutes.HOME) },
+                    onCreateGame = { duration ->
+                        // TODO: Implementiere die Logik zum Erstellen des öffentlichen Spiels
+                        innerNavController.navigate(NavRoutes.HOME)
+                    }
                 )
             }
         }
@@ -146,6 +159,7 @@ object NavRoutes {
     const val SETTINGS = "settings"
     const val INFO = "info"
     const val PRIVATE_GAME_CHOICE = "privateGameChoice"
+    const val CREATE_PRIVATE_GAME = "createPrivateGame"
     const val JOIN_PRIVATE_GAME = "joinPrivateGame"
     const val PUBLIC_GAME = "publicGame"
 }
