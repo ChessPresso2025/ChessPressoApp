@@ -72,8 +72,6 @@ class MainActivity : ComponentActivity() {
 
             composable("login_screen") {
                 LoginScreen(navController, authViewModel)
-                val authViewModel: AuthViewModel = hiltViewModel()
-                LoginScreen(navController, authViewModel)
             }
             composable("home_screen") {
                 HomeScreen(
@@ -103,7 +101,7 @@ class MainActivity : ComponentActivity() {
             when (authState) {
                 is AuthState.Success -> {
                     if (navController.currentDestination?.route != "main_app") {
-                        navController.navigate("main_app") {
+                        navController.navigate("home_screen") {
                             popUpTo("main_screen") { inclusive = true }
                             popUpTo("login_screen") { inclusive = true }
                         }
