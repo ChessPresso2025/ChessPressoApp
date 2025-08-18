@@ -5,34 +5,38 @@ import android.util.Log
 
 class AuthRepository(private val api: AuthApi, private val context: Context) {
 
-    suspend fun sendTokenToServer(idToken: String): AuthResponse {
-        Log.d("AuthRepository", "Sending token to server, token length: ${idToken.length}")
-        Log.d("AuthRepository", "Token preview: ${idToken.take(50)}...")
-        return processAuthRequest(idToken, "token")
+    suspend fun login(username: String, password: String): AuthResponse {
+        Log.d("AuthRepository", "Attempting login for user: $username")
+        return processAuthRequest(
+            authAction = { api.login(LoginRequest(username, password)) },
+            actionType = "login"
+        )
     }
 
-    suspend fun sendAlternativeTokenToServer(accountId: String, email: String): AuthResponse {
-        Log.d("AuthRepository", "Sending alternative auth to server")
-        Log.d("AuthRepository", "Account ID: $accountId")
-        Log.d("AuthRepository", "Email: $email")
-
-        val alternativeToken = "google_account_${accountId}_${email}"
-        Log.d("AuthRepository", "Alternative token created: ${alternativeToken.take(50)}...")
-        return processAuthRequest(alternativeToken, "alternative token")
+    suspend fun register(username: String, password: String, email: String): AuthResponse {
+        Log.d("AuthRepository", "Attempting registration for user: $username")
+        return processAuthRequest(
+            authAction = { api.register(RegisterRequest(username, password, email)) },
+            actionType = "registration"
+        )
     }
 
-    private suspend fun processAuthRequest(token: String, tokenType: String): AuthResponse {
+    private suspend fun processAuthRequest(
+        authAction: suspend () -> AuthResponse,
+        actionType: String
+    ): AuthResponse {
         try {
-            val response = api.login(AuthRequest(token))
-            Log.d("AuthRepository", "Server response received successfully")
+            val response = authAction()
+            Log.d("AuthRepository", "Server response received successfully for $actionType")
             Log.d("AuthRepository", "Player ID: ${response.playerId}")
             Log.d("AuthRepository", "Player Name: ${response.name}")
 
             storePlayerData(response)
+            storeCredentials(response.name) // Store username for auto-login
             Log.d("AuthRepository", "Player data stored locally")
             return response
         } catch (e: Exception) {
-            Log.e("AuthRepository", "Error sending $tokenType to server: ${e.message}", e)
+            Log.e("AuthRepository", "Error during $actionType: ${e.message}", e)
             Log.e("AuthRepository", "Exception type: ${e.javaClass.simpleName}")
             throw Exception("Server-Kommunikation fehlgeschlagen: ${e.message}", e)
         }
@@ -51,12 +55,21 @@ class AuthRepository(private val api: AuthApi, private val context: Context) {
             .apply()
     }
 
+    private fun storeCredentials(username: String) {
+        val prefs = context.getSharedPreferences("chessapp", Context.MODE_PRIVATE)
+        prefs.edit()
+            .putString("storedUsername", username)
+            .putBoolean("isLoggedIn", true)
+            .apply()
+    }
+
     fun getStoredPlayerInfo(): PlayerInfo? {
         val prefs = context.getSharedPreferences("chessapp", Context.MODE_PRIVATE)
         val playerId = prefs.getString("playerId", null)
         val playerName = prefs.getString("playerName", null)
+        val isLoggedIn = prefs.getBoolean("isLoggedIn", false)
 
-        return if (playerId != null && playerName != null) {
+        return if (playerId != null && playerName != null && isLoggedIn) {
             PlayerInfo(
                 playerId = playerId,
                 name = playerName,
@@ -69,6 +82,11 @@ class AuthRepository(private val api: AuthApi, private val context: Context) {
         } else {
             null
         }
+    }
+
+    fun getStoredUsername(): String? {
+        val prefs = context.getSharedPreferences("chessapp", Context.MODE_PRIVATE)
+        return prefs.getString("storedUsername", null)
     }
 
     fun clearStoredPlayerInfo() {
