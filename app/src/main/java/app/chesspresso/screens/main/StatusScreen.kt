@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -38,13 +39,6 @@ fun InfoScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        DarkBrown1, MidBrown2
-                    )
-                )
-            )
     ) {
         Column(
             modifier = Modifier
@@ -55,42 +49,68 @@ fun InfoScreen(
         ) {
             when (val state = authState) {
                 is AuthState.Success -> {
-                    Text(
-                        text = "Willkommen zurück!",
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Creme1,
-                        modifier = Modifier.padding(bottom = 16.dp)
-                    )
+                    Card(
+                        modifier = Modifier
+                            .padding(32.dp)
+                            .fillMaxWidth()
+                    ) {
+                        Text(
+                            text = "Aktueller Benutzer:",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .align(Alignment.CenterHorizontally)
+                        )
 
-                    Text(
-                        text = state.response.name,
-                        fontSize = 24.sp,
-                        color = Creme2,
-                        modifier = Modifier.padding(bottom = 8.dp)
-                    )
+                        Text(
+                            text = state.response.name,
+                            fontSize = 24.sp,
+                            modifier = Modifier
+                                .padding(8.dp)
+                                .align(Alignment.CenterHorizontally)
+                        )
 
-                    Text(
-                        text = state.response.email,
-                        fontSize = 16.sp,
-                        color = Creme2,
-                        modifier = Modifier.padding(bottom = 32.dp)
-                    )
+                        Text(
+                            text = state.response.email,
+                            fontSize = 16.sp,
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .align(Alignment.CenterHorizontally)
+                        )
+                    }
 
-                    Text(
-                        text = "Verbunden mit Server ✓",
-                        fontSize = 16.sp,
-                        color = Color.Green,
-                        modifier = Modifier.padding(bottom = 32.dp)
-                    )
+                    Card(
+                        modifier = Modifier
+                        .padding(32.dp)
+                        .fillMaxWidth()
+                    ){
+                        Text(
+                            text = "Serverstatus:",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .align(Alignment.CenterHorizontally)
+                        )
 
+                        Text(
+                            text = "Verbunden mit Server ✓",
+                            fontSize = 16.sp,
+                            color = Color.Green,
+                            modifier = Modifier
+                                .padding(16.dp)
+                                .align(Alignment.CenterHorizontally)
+                        )
+                    }
 
 
                     Button(
                         onClick = onLogout,
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(vertical = 8.dp),
+                            .padding(vertical = 8.dp)
+                            .padding(horizontal = 32.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.error
                         )

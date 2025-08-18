@@ -116,8 +116,8 @@ enum class NavigationItem(val label: String, val icon: ImageVector, val route: S
     Profile("Profil", Icons.Default.Person, NavRoutes.PROFILE),
     Stats("Statistik", Icons.Default.Search, NavRoutes.STATS), //durch Statistik Icon ersetzen
     Gameplay("Spielen", Icons.Default.Home, NavRoutes.HOME), //durch Schach-Icon ersetzen
-    Settings("Einstellungen", Icons.Default.Settings, NavRoutes.SETTINGS),
-    Info("Server-Status", Icons.Default.Info, NavRoutes.INFO)
+    Settings("Optionen", Icons.Default.Settings, NavRoutes.SETTINGS),
+    Info("Status", Icons.Default.Info, NavRoutes.INFO)
 }
 
 
