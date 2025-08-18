@@ -1,5 +1,9 @@
 package app.chesspresso.model
 
-enum class TeamColor {
-    BLACK, WHITE
+import kotlinx.coroutines.internal.OpDescriptor
+
+enum class TeamColor(val description: String) {
+    BLACK("Schwarz"),
+    WHITE("Weiß"),
+    RANDOM("Zufällig")
 }

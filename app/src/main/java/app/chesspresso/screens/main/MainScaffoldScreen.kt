@@ -45,14 +45,14 @@ fun MainScaffoldScreen(authViewModel: AuthViewModel){
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Image(
-                            painter = painterResource(id = R.drawable.watermark_chess), // <- dein Logo aus drawable
+                            painter = painterResource(id = R.drawable.watermark_chess),
                             contentDescription = "App-Logo",
                             modifier = Modifier
-                                .size(32.dp) // Passe die Größe nach Wunsch an
+                                .size(32.dp)
                                 .padding(end = 8.dp),
                             contentScale = ContentScale.Fit
                         )
-                        Text("ChessPresso") // oder dein App-Name
+                        Text("ChessPresso")
                     }
                 }
             )
@@ -79,25 +79,47 @@ fun MainScaffoldScreen(authViewModel: AuthViewModel){
     ) { padding ->
         NavHost(
             navController = innerNavController,
-            startDestination = "home",
+            startDestination = NavRoutes.HOME,
             modifier = Modifier.padding(padding)
-        ){
-            composable("home") {
+        ) {
+            composable(NavRoutes.HOME) {
                 HomeScreen(
-                    onPrivateGameClick = { },
-                    onPublicGameClick = { }
+                    onPrivateGameClick = { innerNavController.navigate(NavRoutes.PRIVATE_GAME_CHOICE) },
+                    onPublicGameClick = { innerNavController.navigate(NavRoutes.PUBLIC_GAME) }
                 )
             }
-            composable("stats") {
+            composable(NavRoutes.PRIVATE_GAME_CHOICE) {
+                app.chesspresso.screens.dialogs.PrivateGameChoiceScreen(
+                    onCreateClick = { innerNavController.navigate(NavRoutes.CREATE_PRIVATE_GAME) },
+                    onJoinClick = { innerNavController.navigate(NavRoutes.JOIN_PRIVATE_GAME) },
+                    onDismiss = { innerNavController.navigate(NavRoutes.HOME) }
+                )
+            }
+            composable(NavRoutes.CREATE_PRIVATE_GAME) {
+                app.chesspresso.screens.dialogs.CreatePrivateGameScreen(
+                    onDismiss = { innerNavController.navigate(NavRoutes.HOME) },
+                    onCreateGame = { duration, color ->
+                        // TODO: Implementiere die Logik zum Erstellen des Spiels
+                        innerNavController.navigate(NavRoutes.HOME)
+                    }
+                )
+            }
+            composable(NavRoutes.JOIN_PRIVATE_GAME) {
+                app.chesspresso.screens.dialogs.JoinPrivateGameScreen(
+                    onJoin = { /* TODO: Implementiere Beitreten-Logik */ },
+                    onDismiss = { innerNavController.navigate(NavRoutes.HOME) }
+                )
+            }
+            composable(NavRoutes.STATS) {
                 StatsScreen()
             }
-            composable("profile"){
+            composable(NavRoutes.PROFILE) {
                 ProfileScreen()
             }
-            composable("settings"){
+            composable(NavRoutes.SETTINGS) {
                 SettingsScreen()
             }
-            composable("info") {
+            composable(NavRoutes.INFO) {
                 InfoScreen(
                     authViewModel = authViewModel,
                     onLogout = {
@@ -105,6 +127,15 @@ fun MainScaffoldScreen(authViewModel: AuthViewModel){
                         // Hier wäre Navigation zum welcome Screen nötig, aber innerNavController
                         // kann nur innerhalb des MainScaffolds navigieren
                         // Stattdessen sollte die App eine Callback-Funktion für Logout verwenden
+                    }
+                )
+            }
+            composable(NavRoutes.PUBLIC_GAME) {
+                app.chesspresso.screens.dialogs.CreatePublicGameScreen(
+                    onDismiss = { innerNavController.navigate(NavRoutes.HOME) },
+                    onCreateGame = { duration ->
+                        // TODO: Implementiere die Logik zum Erstellen des öffentlichen Spiels
+                        innerNavController.navigate(NavRoutes.HOME)
                     }
                 )
             }
@@ -122,9 +153,13 @@ enum class NavigationItem(val label: String, val icon: ImageVector, val route: S
 
 
 object NavRoutes {
+    const val HOME = "home"
     const val PROFILE = "profile"
     const val STATS = "stats"
-    const val HOME = "home"
     const val SETTINGS = "settings"
     const val INFO = "info"
+    const val PRIVATE_GAME_CHOICE = "privateGameChoice"
+    const val CREATE_PRIVATE_GAME = "createPrivateGame"
+    const val JOIN_PRIVATE_GAME = "joinPrivateGame"
+    const val PUBLIC_GAME = "publicGame"
 }
