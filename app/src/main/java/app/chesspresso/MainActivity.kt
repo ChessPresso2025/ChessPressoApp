@@ -102,8 +102,8 @@ class MainActivity : ComponentActivity() {
         LaunchedEffect(authState) {
             when (authState) {
                 is AuthState.Success -> {
-                    if (navController.currentDestination?.route != "main_app") {
-                        navController.navigate("main_app") {
+                    if (navController.currentDestination?.route != "home_screen") {
+                        navController.navigate("home_screen") {
                             popUpTo("main_screen") { inclusive = true }
                             popUpTo("login_screen") { inclusive = true }
                         }
