@@ -1,4 +1,4 @@
-package app.chesspresso.auth.presemtation
+package app.chesspresso.screens
 
 import android.app.Activity
 import android.util.Log
@@ -91,7 +91,6 @@ fun LoginScreen(
                             Log.d("LoginScreen", "Previous sign-out completed, launching sign-in")
                             googleSignInLauncher.launch(googleSignInClient.signInIntent)
                         }
-                        navController.navigate("main")
                     } catch (e: Exception) {
                         Log.e("LoginScreen", "Error starting Google Sign-In: ${e.message}", e)
                         viewModel.setErrorMessage("Fehler beim Starten der Google-Anmeldung: ${e.message}")

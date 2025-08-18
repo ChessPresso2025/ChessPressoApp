@@ -13,7 +13,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import app.chesspresso.auth.presemtation.LoginScreen
+import app.chesspresso.screens.LoginScreen
 import app.chesspresso.auth.presentation.AuthState
 import app.chesspresso.auth.presentation.AuthViewModel
 import app.chesspresso.screens.main.MainScaffoldScreen
@@ -51,8 +51,6 @@ class MainActivity : ComponentActivity() {
             }
             composable("login") {
                 LoginScreen(navController, authViewModel)
-                val authViewModel: AuthViewModel = hiltViewModel()
-                LoginScreen(navController, authViewModel)
             }
 
             //Hauptteil mit Scaffold-View
@@ -63,12 +61,20 @@ class MainActivity : ComponentActivity() {
 
         // Automatische Navigation bei erfolgreicher Anmeldung
         LaunchedEffect(authState) {
+            // Debug-Logging
+            val stateDesc = when(authState) {
+                is AuthState.Success -> "Success: ${(authState as AuthState.Success).response.name}"
+                is AuthState.Error -> "Error: ${(authState as AuthState.Error).message}"
+                is AuthState.Loading -> "Loading"
+                AuthState.Idle -> "Idle"
+            }
+            android.util.Log.d("MainActivity", "AuthState changed: $stateDesc")
+
             when (authState) {
                 is AuthState.Success -> {
-                    if (navController.currentDestination?.route != "main_app") {
-                        navController.navigate("main_app") {
-                            popUpTo("main") { inclusive = true }
-                            popUpTo("login") { inclusive = true }
+                    if (navController.currentDestination?.route != "main") {
+                        navController.navigate("main") {
+                            popUpTo("welcome") { inclusive = true }
                         }
                     }
                 }
