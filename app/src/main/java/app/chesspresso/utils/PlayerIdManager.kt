@@ -1,7 +1,5 @@
 package app.chesspresso.utils
 
-import android.content.Context
-import android.content.SharedPreferences
 import app.chesspresso.auth.data.AuthRepository
 import app.chesspresso.auth.data.PlayerInfo
 import javax.inject.Inject
