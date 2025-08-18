@@ -32,38 +32,36 @@ class AuthViewModel @Inject constructor(
         _authState.value = AuthState.Error(message)
     }
 
-    fun loginWithGoogle(idToken: String) {
-        Log.d("AuthViewModel", "Starting Google login with token length: ${idToken.length}")
-        performLogin(
-            loginAction = { repository.sendTokenToServer(idToken) },
-            loginType = "Google login"
+    fun login(username: String, password: String) {
+        Log.d("AuthViewModel", "Starting login for user: $username")
+        performAuthAction(
+            authAction = { repository.login(username, password) },
+            actionType = "Login"
         )
     }
 
-    fun loginWithGoogleAlternative(accountId: String, email: String) {
-        Log.d("AuthViewModel", "Starting alternative Google login")
-        Log.d("AuthViewModel", "Account ID: $accountId")
-        Log.d("AuthViewModel", "Email: $email")
-        performLogin(
-            loginAction = { repository.sendAlternativeTokenToServer(accountId, email) },
-            loginType = "Alternative Google login"
+    fun register(username: String, password: String, email: String) {
+        Log.d("AuthViewModel", "Starting registration for user: $username")
+        performAuthAction(
+            authAction = { repository.register(username, password, email) },
+            actionType = "Registration"
         )
     }
 
-    private fun performLogin(
-        loginAction: suspend () -> AuthResponse,
-        loginType: String
+    private fun performAuthAction(
+        authAction: suspend () -> AuthResponse,
+        actionType: String
     ) {
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
-                Log.d("AuthViewModel", "Calling repository for $loginType")
-                val response = loginAction()
-                Log.d("AuthViewModel", "$loginType successful for user: ${response.name}")
+                Log.d("AuthViewModel", "Calling repository for $actionType")
+                val response = authAction()
+                Log.d("AuthViewModel", "$actionType successful for user: ${response.name}")
                 _authState.value = AuthState.Success(response)
                 connectToWebSocket()
             } catch (e: Exception) {
-                Log.e("AuthViewModel", "$loginType failed: ${e.message}", e)
+                Log.e("AuthViewModel", "$actionType failed: ${e.message}", e)
                 _authState.value = AuthState.Error(mapErrorMessage(e))
             }
         }
@@ -130,6 +128,10 @@ class AuthViewModel @Inject constructor(
 
     fun getStoredPlayerInfo(): PlayerInfo? {
         return repository.getStoredPlayerInfo()
+    }
+
+    fun getStoredUsername(): String? {
+        return repository.getStoredUsername()
     }
 }
 

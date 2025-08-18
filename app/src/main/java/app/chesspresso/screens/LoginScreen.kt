@@ -1,114 +1,167 @@
 package app.chesspresso.screens
 
-import android.app.Activity
-import android.util.Log
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.material3.Button
+import androidx.compose.material3.Text
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.TextButton
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import app.chesspresso.auth.presentation.AuthState
 import app.chesspresso.auth.presentation.AuthViewModel
-import com.google.android.gms.auth.api.signin.GoogleSignIn
-import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 
 @Composable
 fun LoginScreen(
     navController: NavController,
-    viewModel: AuthViewModel) {
-    val context = LocalContext.current
+    viewModel: AuthViewModel
+) {
     val authState by viewModel.authState.collectAsState()
+    var isRegistering by remember { mutableStateOf(false) }
 
-    // Launcher für Google Sign-In ohne ID Token (funktioniert immer)
-    val googleSignInLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        Log.d("LoginScreen", "Google Sign-In result: ${result.resultCode}")
+    var username by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var email by remember { mutableStateOf("") }
 
-        if (result.resultCode == Activity.RESULT_OK) {
-            try {
-                val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-                val account = task.getResult(Exception::class.java)
-
-                if (account?.id != null && account.email != null) {
-                    Log.d("LoginScreen", "Google Sign-In successful, sending to server...")
-                    viewModel.loginWithGoogleAlternative(account.id!!, account.email!!)
-                } else {
-                    Log.e("LoginScreen", "Google account data incomplete")
-                    viewModel.setErrorMessage("Google-Account-Daten unvollständig")
-                }
-            } catch (e: Exception) {
-                Log.e("LoginScreen", "Google Sign-In error: ${e.message}", e)
-                viewModel.setErrorMessage("Google Sign-In Fehler: ${e.message}")
-            }
-        } else if (result.resultCode == Activity.RESULT_CANCELED) {
-            Log.w("LoginScreen", "Google Sign-In was cancelled by user")
-            viewModel.setErrorMessage("Anmeldung wurde abgebrochen")
-        } else {
-            Log.w("LoginScreen", "Google Sign-In failed with result code: ${result.resultCode}")
-            viewModel.setErrorMessage("Google Sign-In fehlgeschlagen")
-        }
+    // Vorausgefüllter Benutzername, falls vorhanden
+    val storedUsername = remember { viewModel.getStoredUsername() }
+    if (username.isEmpty() && storedUsername != null) {
+        username = storedUsername
     }
 
-    // UI
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(24.dp),
-            modifier = Modifier.padding(32.dp)
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(32.dp),
+            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
         ) {
-            Button(
-                onClick = {
-                    Log.d("LoginScreen", "Starting Google Sign-In...")
-
-                    try {
-
-                        val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                            .requestEmail()
-                            .requestProfile()
-                            .requestId()
-                            .build()
-
-                        val googleSignInClient = GoogleSignIn.getClient(context, gso)
-
-                        googleSignInClient.signOut().addOnCompleteListener {
-                            Log.d("LoginScreen", "Previous sign-out completed, launching sign-in")
-                            googleSignInLauncher.launch(googleSignInClient.signInIntent)
-                        }
-                    } catch (e: Exception) {
-                        Log.e("LoginScreen", "Error starting Google Sign-In: ${e.message}", e)
-                        viewModel.setErrorMessage("Fehler beim Starten der Google-Anmeldung: ${e.message}")
-                    }
-                },
-                modifier = Modifier.fillMaxWidth(),
-                enabled = authState !is AuthState.Loading
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                modifier = Modifier.padding(24.dp)
             ) {
-                Text("Mit Google anmelden")
-            }
+                Text(
+                    text = if (isRegistering) "Registrierung" else "Anmeldung",
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
 
+                Spacer(modifier = Modifier.height(8.dp))
 
+                OutlinedTextField(
+                    value = username,
+                    onValueChange = { username = it },
+                    label = { Text("Benutzername") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    enabled = authState !is AuthState.Loading
+                )
 
-            when (val state = authState) {
-                is AuthState.Loading -> Text("Anmeldung läuft...")
-                is AuthState.Success -> Text("Willkommen ${state.response.name}!")
-                is AuthState.Error -> Text("Fehler: ${state.message}")
-                AuthState.Idle -> Text("Bereit zum Anmelden")
+                OutlinedTextField(
+                    value = password,
+                    onValueChange = { password = it },
+                    label = { Text("Passwort") },
+                    visualTransformation = PasswordVisualTransformation(),
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    enabled = authState !is AuthState.Loading
+                )
+
+                if (isRegistering) {
+                    OutlinedTextField(
+                        value = email,
+                        onValueChange = { email = it },
+                        label = { Text("E-Mail") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        enabled = authState !is AuthState.Loading
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                Button(
+                    onClick = {
+                        if (isRegistering) {
+                            if (username.isNotBlank() && password.isNotBlank() && email.isNotBlank()) {
+                                viewModel.register(username.trim(), password, email.trim())
+                            } else {
+                                viewModel.setErrorMessage("Alle Felder müssen ausgefüllt werden")
+                            }
+                        } else {
+                            if (username.isNotBlank() && password.isNotBlank()) {
+                                viewModel.login(username.trim(), password)
+                            } else {
+                                viewModel.setErrorMessage("Benutzername und Passwort müssen ausgefüllt werden")
+                            }
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    enabled = authState !is AuthState.Loading
+                ) {
+                    Text(if (isRegistering) "Registrieren" else "Anmelden")
+                }
+
+                Row {
+                    Text(
+                        text = if (isRegistering) "Bereits ein Konto?" else "Noch kein Konto?",
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    TextButton(
+                        onClick = {
+                            isRegistering = !isRegistering
+                            email = "" // Reset email field when switching
+                        },
+                        enabled = authState !is AuthState.Loading
+                    ) {
+                        Text(if (isRegistering) "Anmelden" else "Registrieren")
+                    }
+                }
+
+                when (val state = authState) {
+                    is AuthState.Loading -> Text(
+                        text = if (isRegistering) "Registrierung läuft..." else "Anmeldung läuft...",
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    is AuthState.Success -> Text(
+                        text = "Willkommen ${state.response.name}!",
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    is AuthState.Error -> Text(
+                        text = "Fehler: ${state.message}",
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    AuthState.Idle -> Text(
+                        text = "Bereit zur Anmeldung",
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
             }
         }
     }

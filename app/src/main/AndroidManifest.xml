@@ -1,11 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:tools="http://schemas.android.com/tools"
-    package="app.chesspresso">
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.GET_ACCOUNTS" />
 
     <application
         android:name=".ChessPressoApplication"
@@ -19,7 +17,7 @@
         android:theme="@style/Theme.ChessPressoApp"
         android:networkSecurityConfig="@xml/network_security_config"
         tools:targetApi="31">
-
+        
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -32,11 +30,6 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <!-- Google Sign-In Meta-Data -->
-        <meta-data
-            android:name="com.google.android.gms.version"
-            android:value="@integer/google_play_services_version" />
 
     </application>
 
