@@ -33,6 +33,11 @@ android {
         buildConfigField("String", "DEBUG_SHA1", "\"E3:D2:D2:1E:06:1D:14:ED:D1:4B:5D:22:38:48:7D:65:E6:D5:AA:2C\"")
     }
 
+    buildFeatures {
+        buildConfig = true // Aktiviere BuildConfig
+        compose = true
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -48,10 +53,6 @@ android {
     }
     kotlinOptions {
         jvmTarget = "11"
-    }
-    buildFeatures {
-        compose = true
-        buildConfig = true
     }
 }
 

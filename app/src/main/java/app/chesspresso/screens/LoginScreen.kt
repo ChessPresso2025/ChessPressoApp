@@ -22,6 +22,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.navigation.NavController
 import app.chesspresso.auth.presentation.AuthState
 import app.chesspresso.auth.presentation.AuthViewModel
+import app.chesspresso.BuildConfig
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 
@@ -32,7 +33,7 @@ fun LoginScreen(
     val context = LocalContext.current
     val authState by viewModel.authState.collectAsState()
 
-    // Launcher für Google Sign-In ohne ID Token (funktioniert immer)
+    // Launcher für echte Google Sign-In mit ID Token
     val googleSignInLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
@@ -43,12 +44,15 @@ fun LoginScreen(
                 val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
                 val account = task.getResult(Exception::class.java)
 
-                if (account?.id != null && account.email != null) {
-                    Log.d("LoginScreen", "Google Sign-In successful, sending to server...")
-                    viewModel.loginWithGoogleAlternative(account.id!!, account.email!!)
+                // Verwende den echten ID Token anstatt Mock-Daten
+                val idToken = account?.idToken
+                if (idToken != null) {
+                    Log.d("LoginScreen", "Google Sign-In successful with ID token, sending to server...")
+                    Log.d("LoginScreen", "ID Token length: ${idToken.length}")
+                    viewModel.loginWithGoogle(idToken)
                 } else {
-                    Log.e("LoginScreen", "Google account data incomplete")
-                    viewModel.setErrorMessage("Google-Account-Daten unvollständig")
+                    Log.e("LoginScreen", "Google ID Token is null")
+                    viewModel.setErrorMessage("Google ID Token konnte nicht abgerufen werden")
                 }
             } catch (e: Exception) {
                 Log.e("LoginScreen", "Google Sign-In error: ${e.message}", e)
@@ -75,14 +79,14 @@ fun LoginScreen(
         ) {
             Button(
                 onClick = {
-                    Log.d("LoginScreen", "Starting Google Sign-In...")
+                    Log.d("LoginScreen", "Starting Google Sign-In with ID Token request...")
 
                     try {
-
+                        // Konfiguration für echte ID Token mit Web Client ID
                         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
+                            .requestIdToken(BuildConfig.WEB_CLIENT_ID) // Wichtig: Verwende Web Client ID für ID Token
                             .requestEmail()
                             .requestProfile()
-                            .requestId()
                             .build()
 
                         val googleSignInClient = GoogleSignIn.getClient(context, gso)
@@ -91,7 +95,6 @@ fun LoginScreen(
                             Log.d("LoginScreen", "Previous sign-out completed, launching sign-in")
                             googleSignInLauncher.launch(googleSignInClient.signInIntent)
                         }
-                        navController.navigate("home_screen")
                     } catch (e: Exception) {
                         Log.e("LoginScreen", "Error starting Google Sign-In: ${e.message}", e)
                         viewModel.setErrorMessage("Fehler beim Starten der Google-Anmeldung: ${e.message}")

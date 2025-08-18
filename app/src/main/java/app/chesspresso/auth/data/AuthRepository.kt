@@ -6,19 +6,9 @@ import android.util.Log
 class AuthRepository(private val api: AuthApi, private val context: Context) {
 
     suspend fun sendTokenToServer(idToken: String): AuthResponse {
-        Log.d("AuthRepository", "Sending token to server, token length: ${idToken.length}")
+        Log.d("AuthRepository", "Sending Google ID token to server, token length: ${idToken.length}")
         Log.d("AuthRepository", "Token preview: ${idToken.take(50)}...")
-        return processAuthRequest(idToken, "token")
-    }
-
-    suspend fun sendAlternativeTokenToServer(accountId: String, email: String): AuthResponse {
-        Log.d("AuthRepository", "Sending alternative auth to server")
-        Log.d("AuthRepository", "Account ID: $accountId")
-        Log.d("AuthRepository", "Email: $email")
-
-        val alternativeToken = "google_account_${accountId}_${email}"
-        Log.d("AuthRepository", "Alternative token created: ${alternativeToken.take(50)}...")
-        return processAuthRequest(alternativeToken, "alternative token")
+        return processAuthRequest(idToken, "Google ID token")
     }
 
     private suspend fun processAuthRequest(token: String, tokenType: String): AuthResponse {

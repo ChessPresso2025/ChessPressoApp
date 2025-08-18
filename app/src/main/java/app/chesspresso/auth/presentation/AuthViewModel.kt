@@ -33,37 +33,17 @@ class AuthViewModel @Inject constructor(
     }
 
     fun loginWithGoogle(idToken: String) {
-        Log.d("AuthViewModel", "Starting Google login with token length: ${idToken.length}")
-        performLogin(
-            loginAction = { repository.sendTokenToServer(idToken) },
-            loginType = "Google login"
-        )
-    }
-
-    fun loginWithGoogleAlternative(accountId: String, email: String) {
-        Log.d("AuthViewModel", "Starting alternative Google login")
-        Log.d("AuthViewModel", "Account ID: $accountId")
-        Log.d("AuthViewModel", "Email: $email")
-        performLogin(
-            loginAction = { repository.sendAlternativeTokenToServer(accountId, email) },
-            loginType = "Alternative Google login"
-        )
-    }
-
-    private fun performLogin(
-        loginAction: suspend () -> AuthResponse,
-        loginType: String
-    ) {
+        Log.d("AuthViewModel", "Starting Google login with real ID token, length: ${idToken.length}")
         viewModelScope.launch {
             _authState.value = AuthState.Loading
             try {
-                Log.d("AuthViewModel", "Calling repository for $loginType")
-                val response = loginAction()
-                Log.d("AuthViewModel", "$loginType successful for user: ${response.name}")
+                Log.d("AuthViewModel", "Sending real Google ID token to server")
+                val response = repository.sendTokenToServer(idToken)
+                Log.d("AuthViewModel", "Google login successful for user: ${response.name}")
                 _authState.value = AuthState.Success(response)
                 connectToWebSocket()
             } catch (e: Exception) {
-                Log.e("AuthViewModel", "$loginType failed: ${e.message}", e)
+                Log.e("AuthViewModel", "Google login failed: ${e.message}", e)
                 _authState.value = AuthState.Error(mapErrorMessage(e))
             }
         }
