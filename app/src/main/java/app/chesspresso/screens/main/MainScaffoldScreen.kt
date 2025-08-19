@@ -31,6 +31,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import app.chesspresso.R
 import app.chesspresso.auth.presentation.AuthViewModel
+import app.chesspresso.screens.lobby.QuickMatchScreen
+import app.chesspresso.screens.lobby.PrivateLobbyScreen
+import app.chesspresso.screens.lobby.LobbyWaitingScreen
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -84,32 +87,60 @@ fun MainScaffoldScreen(authViewModel: AuthViewModel){
         ) {
             composable(NavRoutes.HOME) {
                 HomeScreen(
-                    onPrivateGameClick = { innerNavController.navigate(NavRoutes.PRIVATE_GAME_CHOICE) },
-                    onPublicGameClick = { innerNavController.navigate(NavRoutes.PUBLIC_GAME) }
+                    onPrivateGameClick = { innerNavController.navigate(NavRoutes.PRIVATE_LOBBY) },
+                    onPublicGameClick = { innerNavController.navigate(NavRoutes.QUICK_MATCH) }
                 )
             }
-            composable(NavRoutes.PRIVATE_GAME_CHOICE) {
-                app.chesspresso.screens.dialogs.PrivateGameChoiceScreen(
-                    onCreateClick = { innerNavController.navigate(NavRoutes.CREATE_PRIVATE_GAME) },
-                    onJoinClick = { innerNavController.navigate(NavRoutes.JOIN_PRIVATE_GAME) },
-                    onDismiss = { innerNavController.navigate(NavRoutes.HOME) }
-                )
-            }
-            composable(NavRoutes.CREATE_PRIVATE_GAME) {
-                app.chesspresso.screens.dialogs.CreatePrivateGameScreen(
-                    onDismiss = { innerNavController.navigate(NavRoutes.HOME) },
-                    onCreateGame = { duration, color ->
-                        // TODO: Implementiere die Logik zum Erstellen des Spiels
-                        innerNavController.navigate(NavRoutes.HOME)
+
+            // Neue Lobby-Screens
+            composable(NavRoutes.QUICK_MATCH) {
+                QuickMatchScreen(
+                    onBackClick = { innerNavController.navigateUp() },
+                    onGameStart = { lobbyId ->
+                        // TODO: Navigation zum Spiel-Screen
+                        innerNavController.navigate("game/$lobbyId")
                     }
                 )
             }
-            composable(NavRoutes.JOIN_PRIVATE_GAME) {
-                app.chesspresso.screens.dialogs.JoinPrivateGameScreen(
-                    onJoin = { /* TODO: Implementiere Beitreten-Logik */ },
-                    onDismiss = { innerNavController.navigate(NavRoutes.HOME) }
+
+            composable(NavRoutes.PRIVATE_LOBBY) {
+                PrivateLobbyScreen(
+                    onBackClick = { innerNavController.navigateUp() },
+                    onLobbyCreated = { lobbyCode ->
+                        innerNavController.navigate("lobby_waiting/$lobbyCode")
+                    },
+                    onLobbyJoined = { lobbyCode ->
+                        innerNavController.navigate("lobby_waiting/$lobbyCode")
+                    }
                 )
             }
+
+            composable("lobby_waiting/{lobbyCode}") { backStackEntry ->
+                val lobbyCode = backStackEntry.arguments?.getString("lobbyCode") ?: ""
+                LobbyWaitingScreen(
+                    lobbyCode = lobbyCode,
+                    onBackClick = { 
+                        // Explizit zum Home-Screen navigieren und alles andere löschen
+                        innerNavController.navigate(NavRoutes.HOME) {
+                            popUpTo(NavRoutes.HOME) { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    },
+                    onGameStart = { lobbyId ->
+                        // TODO: Navigation zum Spiel-Screen
+                        innerNavController.navigate("game/$lobbyId")
+                    }
+                )
+            }
+
+            // Placeholder für Spiel-Screen
+            composable("game/{lobbyId}") { backStackEntry ->
+                val lobbyId = backStackEntry.arguments?.getString("lobbyId") ?: ""
+                // TODO: GameScreen implementieren
+                Text("Spiel startet mit Lobby: $lobbyId")
+            }
+
+            // Bestehende Screens
             composable(NavRoutes.STATS) {
                 StatsScreen()
             }
@@ -127,15 +158,6 @@ fun MainScaffoldScreen(authViewModel: AuthViewModel){
                         // Hier wäre Navigation zum welcome Screen nötig, aber innerNavController
                         // kann nur innerhalb des MainScaffolds navigieren
                         // Stattdessen sollte die App eine Callback-Funktion für Logout verwenden
-                    }
-                )
-            }
-            composable(NavRoutes.PUBLIC_GAME) {
-                app.chesspresso.screens.dialogs.CreatePublicGameScreen(
-                    onDismiss = { innerNavController.navigate(NavRoutes.HOME) },
-                    onCreateGame = { duration ->
-                        // TODO: Implementiere die Logik zum Erstellen des öffentlichen Spiels
-                        innerNavController.navigate(NavRoutes.HOME)
                     }
                 )
             }
@@ -158,8 +180,6 @@ object NavRoutes {
     const val STATS = "stats"
     const val SETTINGS = "settings"
     const val INFO = "info"
-    const val PRIVATE_GAME_CHOICE = "privateGameChoice"
-    const val CREATE_PRIVATE_GAME = "createPrivateGame"
-    const val JOIN_PRIVATE_GAME = "joinPrivateGame"
-    const val PUBLIC_GAME = "publicGame"
+    const val QUICK_MATCH = "quick_match"
+    const val PRIVATE_LOBBY = "private_lobby"
 }

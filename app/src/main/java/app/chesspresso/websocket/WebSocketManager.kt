@@ -26,14 +26,19 @@ object WebSocketManager : WebSocketListener(){
     private var onConnectionFailure: ((String) -> Unit)? = null
     private var onDisconnected: (() -> Unit)? = null
 
+    // Callback für Nachrichten
+    private var onMessageReceived: ((String) -> Unit)? = null
+
     fun init (playerId: String,
               onSuccess: (() -> Unit)? = null,
               onFailure: ((String) -> Unit)? = null,
-              onDisconnect: (() -> Unit)? = null) {
+              onDisconnect: (() -> Unit)? = null,
+              onMessage: ((String) -> Unit)? = null) {
         this.playerId = playerId
         this.onConnectionSuccess = onSuccess
         this.onConnectionFailure = onFailure
         this.onDisconnected = onDisconnect
+        this.onMessageReceived = onMessage
         connect()
     }
 
@@ -55,7 +60,7 @@ object WebSocketManager : WebSocketListener(){
 
     override fun onMessage(webSocket: WebSocket, text: String) {
         Log.d("WebSocket", "Nachricht vom Server: $text")
-        // für debugging
+        onMessageReceived?.invoke(text)
     }
 
     override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {

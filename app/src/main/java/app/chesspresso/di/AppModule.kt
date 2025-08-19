@@ -1,9 +1,12 @@
 package app.chesspresso.di
 
 import android.content.Context
+import app.chesspresso.api.LobbyApiService
 import app.chesspresso.auth.data.AuthApi
 import app.chesspresso.auth.data.AuthRepository
+import app.chesspresso.service.LobbyService
 import app.chesspresso.websocket.WebSocketManager
+import com.google.gson.Gson
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -39,7 +42,7 @@ object AppModule {
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:8080") // Android Emulator localhost
+            .baseUrl("http://10.0.2.2:8080/") // Android Emulator localhost
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -49,6 +52,27 @@ object AppModule {
     @Singleton
     fun provideAuthApi(retrofit: Retrofit): AuthApi {
         return retrofit.create(AuthApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideLobbyApiService(retrofit: Retrofit): LobbyApiService {
+        return retrofit.create(LobbyApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideGson(): Gson {
+        return Gson()
+    }
+
+    @Provides
+    @Singleton
+    fun provideLobbyService(
+        lobbyApiService: LobbyApiService,
+        gson: Gson
+    ): LobbyService {
+        return LobbyService(lobbyApiService, gson)
     }
 
     @Provides
