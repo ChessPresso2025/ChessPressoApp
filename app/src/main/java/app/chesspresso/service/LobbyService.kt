@@ -32,30 +32,39 @@ class LobbyService @Inject constructor(
     val gameStarted: StateFlow<GameStartMessage?> = _gameStarted.asStateFlow()
 
     init {
-        // WebSocket-Verbindung initialisieren
-        initializeWebSocket()
+        // WebSocket-Verbindung nur initialisieren, wenn noch nicht verbunden
+        initializeWebSocketIfNeeded()
     }
 
-    private fun initializeWebSocket() {
-        // Temporäre Player-ID generieren (sollte später aus UserSession kommen)
-        val tempPlayerId = java.util.UUID.randomUUID().toString()
+    private fun initializeWebSocketIfNeeded() {
+        // Prüfe ob WebSocket bereits verbunden ist
+        if (!WebSocketManager.isConnected()) {
+            // Temporäre Player-ID generieren (sollte später aus UserSession kommen)
+            val tempPlayerId = java.util.UUID.randomUUID().toString()
 
-        WebSocketManager.init(
-            playerId = tempPlayerId,
-            onSuccess = {
-                Log.d("LobbyService", "WebSocket erfolgreich verbunden")
-            },
-            onFailure = { error ->
-                Log.e("LobbyService", "WebSocket-Verbindung fehlgeschlagen: $error")
-                _lobbyError.value = "Verbindung zum Server fehlgeschlagen"
-            },
-            onDisconnect = {
-                Log.w("LobbyService", "WebSocket-Verbindung getrennt")
-            },
-            onMessage = { message ->
+            WebSocketManager.init(
+                playerId = tempPlayerId,
+                onSuccess = {
+                    Log.d("LobbyService", "WebSocket erfolgreich verbunden")
+                },
+                onFailure = { error ->
+                    Log.e("LobbyService", "WebSocket-Verbindung fehlgeschlagen: $error")
+                    _lobbyError.value = "Verbindung zum Server fehlgeschlagen"
+                },
+                onDisconnect = {
+                    Log.w("LobbyService", "WebSocket-Verbindung getrennt")
+                },
+                onMessage = { message ->
+                    handleWebSocketMessage(message)
+                }
+            )
+        } else {
+            // WebSocket ist bereits verbunden, registriere nur den Message-Handler
+            WebSocketManager.setMessageHandler { message ->
                 handleWebSocketMessage(message)
             }
-        )
+            Log.d("LobbyService", "WebSocket bereits verbunden - Message-Handler registriert")
+        }
     }
 
     // Quick Match beitreten
