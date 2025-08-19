@@ -149,10 +149,24 @@ class LobbyService @Inject constructor(
             val response = lobbyApiService.getLobbyInfo(lobbyId)
             if (response.isSuccessful) {
                 val lobbyInfo = response.body() ?: return Result.failure(Exception("Keine Lobby-Daten erhalten"))
+
+                // Sichere Behandlung von gameTime - kann null oder "null" sein
+                val gameTime = when {
+                    lobbyInfo.gameTime == null -> null
+                    lobbyInfo.gameTime == "null" -> null
+                    lobbyInfo.gameTime.isBlank() -> null
+                    else -> try {
+                        GameTime.valueOf(lobbyInfo.gameTime)
+                    } catch (e: IllegalArgumentException) {
+                        Log.w("LobbyService", "Unbekannte GameTime: ${lobbyInfo.gameTime}")
+                        null
+                    }
+                }
+
                 val lobby = Lobby(
                     lobbyId = lobbyInfo.lobbyId,
                     lobbyType = LobbyType.valueOf(lobbyInfo.lobbyType),
-                    gameTime = lobbyInfo.gameTime?.let { GameTime.valueOf(it) },
+                    gameTime = gameTime,
                     players = lobbyInfo.players,
                     creator = lobbyInfo.creator,
                     isGameStarted = lobbyInfo.isGameStarted,
