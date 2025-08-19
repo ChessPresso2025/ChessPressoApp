@@ -2,7 +2,7 @@ package app.chesspresso.model.lobby
 
 // Request Models
 data class QuickJoinRequest(
-    val gameTime: GameTime
+    val gameDuration: GameDuration
 )
 
 data class JoinPrivateLobbyRequest(
@@ -15,7 +15,7 @@ data class LeaveLobbyRequest(
 
 data class ConfigureLobbyRequest(
     val lobbyCode: String,
-    val gameTime: GameTime,
+    val gameDuration: GameDuration,
     val whitePlayer: String? = null,
     val blackPlayer: String? = null,
     val randomColors: Boolean = false

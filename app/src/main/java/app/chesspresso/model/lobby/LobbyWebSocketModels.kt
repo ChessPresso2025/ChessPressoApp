@@ -24,7 +24,7 @@ data class PlayerReadyMessage(
 
 data class ConfigureLobbyMessage(
     val lobbyCode: String,
-    val gameTime: GameTime,
+    val gameDuration: GameDuration,
     val whitePlayer: String? = null,
     val blackPlayer: String? = null,
     val randomColors: Boolean = false

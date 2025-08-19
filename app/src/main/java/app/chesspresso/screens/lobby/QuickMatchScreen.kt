@@ -10,7 +10,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import app.chesspresso.model.lobby.GameTime
+import app.chesspresso.model.lobby.GameDuration
 import app.chesspresso.viewmodel.QuickMatchViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -25,7 +25,7 @@ fun QuickMatchScreen(
     val error by viewModel.lobbyError.collectAsStateWithLifecycle()
     val gameStarted by viewModel.gameStarted.collectAsStateWithLifecycle()
 
-    var selectedGameTime by remember { mutableStateOf(GameTime.MIDDLE) }
+    var selectedGameDuration by remember { mutableStateOf(GameDuration.MEDIUM) }
 
     // Automatische Navigation bei Spielstart
     LaunchedEffect(gameStarted) {
@@ -81,7 +81,7 @@ fun QuickMatchScreen(
                         style = MaterialTheme.typography.bodyLarge
                     )
                     Text(
-                        text = "Spielzeit: ${selectedGameTime.displayName}",
+                        text = "Spielzeit: ${selectedGameDuration.displayName}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -111,20 +111,20 @@ fun QuickMatchScreen(
                         fontWeight = FontWeight.Bold
                     )
 
-                    GameTime.entries.filter { it != GameTime.UNLIMITED }.forEach { gameTime ->
+                    GameDuration.entries.filter { it != GameDuration.UNLIMITED }.forEach { gameTime ->
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .selectable(
-                                    selected = selectedGameTime == gameTime,
-                                    onClick = { selectedGameTime = gameTime }
+                                    selected = selectedGameDuration == gameTime,
+                                    onClick = { selectedGameDuration = gameTime }
                                 )
                                 .padding(vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             RadioButton(
-                                selected = selectedGameTime == gameTime,
-                                onClick = { selectedGameTime = gameTime }
+                                selected = selectedGameDuration == gameTime,
+                                onClick = { selectedGameDuration = gameTime }
                             )
                             Text(
                                 text = gameTime.displayName,
@@ -156,7 +156,7 @@ fun QuickMatchScreen(
 
             // Spiel starten Button
             Button(
-                onClick = { viewModel.joinQuickMatch(selectedGameTime) },
+                onClick = { viewModel.joinQuickMatch(selectedGameDuration) },
                 modifier = Modifier.fillMaxWidth(),
                 enabled = !uiState.isLoading
             ) {

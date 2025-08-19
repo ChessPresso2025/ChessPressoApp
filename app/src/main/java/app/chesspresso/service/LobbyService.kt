@@ -68,9 +68,9 @@ class LobbyService @Inject constructor(
     }
 
     // Quick Match beitreten
-    suspend fun joinQuickMatch(gameTime: GameTime): Result<String> {
+    suspend fun joinQuickMatch(gameDuration: GameDuration): Result<String> {
         return try {
-            val response = lobbyApiService.joinQuickMatch(QuickJoinRequest(gameTime))
+            val response = lobbyApiService.joinQuickMatch(QuickJoinRequest(gameDuration))
             if (response.isSuccessful && response.body()?.success == true) {
                 val lobbyId = response.body()?.lobbyId ?: return Result.failure(Exception("Keine Lobby-ID erhalten"))
                 _isWaitingForMatch.value = true
@@ -160,12 +160,12 @@ class LobbyService @Inject constructor(
                 val lobbyInfo = response.body() ?: return Result.failure(Exception("Keine Lobby-Daten erhalten"))
 
                 // Sichere Behandlung von gameTime - kann null oder "null" sein
-                val gameTime = when {
+                val gameDuration = when {
                     lobbyInfo.gameTime == null -> null
                     lobbyInfo.gameTime == "null" -> null
                     lobbyInfo.gameTime.isBlank() -> null
                     else -> try {
-                        GameTime.valueOf(lobbyInfo.gameTime)
+                        GameDuration.valueOf(lobbyInfo.gameTime)
                     } catch (e: IllegalArgumentException) {
                         Log.w("LobbyService", "Unbekannte GameTime: ${lobbyInfo.gameTime}")
                         null
@@ -175,7 +175,7 @@ class LobbyService @Inject constructor(
                 val lobby = Lobby(
                     lobbyId = lobbyInfo.lobbyId,
                     lobbyType = LobbyType.valueOf(lobbyInfo.lobbyType),
-                    gameTime = gameTime,
+                    gameDuration = gameDuration,
                     players = lobbyInfo.players,
                     creator = lobbyInfo.creator,
                     isGameStarted = lobbyInfo.isGameStarted,

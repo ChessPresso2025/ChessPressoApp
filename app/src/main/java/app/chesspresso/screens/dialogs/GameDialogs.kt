@@ -8,7 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import app.chesspresso.model.GameDuration
+import app.chesspresso.model.lobby.GameDuration
 import app.chesspresso.model.TeamColor
 
 @Composable
@@ -55,7 +55,7 @@ private fun GameDurationDropdown(
     ) {
         TextField(
             readOnly = true,
-            value = selectedDuration.description ?: selectedDuration.toString(),
+            value = selectedDuration.displayName,
             onValueChange = { },
             label = { Text("Spieldauer") },
             trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) },
@@ -69,7 +69,7 @@ private fun GameDurationDropdown(
         ) {
             availableDurations.forEach { duration ->
                 DropdownMenuItem(
-                    text = { Text(duration.description ?: duration.toString()) },
+                    text = { Text(duration.displayName) },
                     onClick = {
                         onDurationSelected(duration)
                         expanded = false

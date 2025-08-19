@@ -15,7 +15,7 @@ enum class LobbyStatus {
 data class Lobby(
     val lobbyId: String,
     val lobbyType: LobbyType,
-    val gameTime: GameTime?,
+    val gameDuration: GameDuration?,
     val players: List<String>,
     val creator: String,
     val isGameStarted: Boolean,

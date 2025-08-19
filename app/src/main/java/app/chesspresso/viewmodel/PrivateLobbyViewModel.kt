@@ -4,8 +4,7 @@ import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.chesspresso.model.lobby.ConfigureLobbyMessage
-import app.chesspresso.model.lobby.GameTime
-import app.chesspresso.model.lobby.Lobby
+import app.chesspresso.model.lobby.GameDuration
 import app.chesspresso.service.LobbyService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -105,7 +104,7 @@ class PrivateLobbyViewModel @Inject constructor(
 
     fun configureAndStartGame(
         lobbyCode: String,
-        gameTime: GameTime,
+        gameDuration: GameDuration,
         whitePlayer: String? = null,
         blackPlayer: String? = null,
         randomColors: Boolean = false
@@ -116,7 +115,7 @@ class PrivateLobbyViewModel @Inject constructor(
 
             val configMessage = ConfigureLobbyMessage(
                 lobbyCode = lobbyCode,
-                gameTime = gameTime,
+                gameDuration = gameDuration,
                 whitePlayer = whitePlayer,
                 blackPlayer = blackPlayer,
                 randomColors = randomColors

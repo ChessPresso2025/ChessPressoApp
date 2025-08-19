@@ -2,7 +2,7 @@ package app.chesspresso.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import app.chesspresso.model.lobby.GameTime
+import app.chesspresso.model.lobby.GameDuration
 import app.chesspresso.service.LobbyService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,16 +23,16 @@ class QuickMatchViewModel @Inject constructor(
     val lobbyError = lobbyService.lobbyError
     val gameStarted = lobbyService.gameStarted
 
-    fun joinQuickMatch(gameTime: GameTime) {
+    fun joinQuickMatch(gameDuration: GameDuration) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
-            lobbyService.joinQuickMatch(gameTime)
+            lobbyService.joinQuickMatch(gameDuration)
                 .onSuccess { lobbyId ->
                     _uiState.value = _uiState.value.copy(
                         isLoading = false,
                         lobbyId = lobbyId,
-                        selectedGameTime = gameTime
+                        selectedGameDuration = gameDuration
                     )
                 }
                 .onFailure { exception ->
@@ -67,5 +67,5 @@ data class QuickMatchUiState(
     val isLoading: Boolean = false,
     val error: String? = null,
     val lobbyId: String? = null,
-    val selectedGameTime: GameTime? = null
+    val selectedGameDuration: GameDuration? = null
 )

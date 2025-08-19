@@ -13,7 +13,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import app.chesspresso.model.lobby.GameTime
+import app.chesspresso.model.lobby.GameDuration
 import app.chesspresso.viewmodel.PrivateLobbyViewModel
 
 @Composable
@@ -28,7 +28,7 @@ fun LobbyWaitingScreen(
     val error by viewModel.lobbyError.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    var selectedGameTime by remember { mutableStateOf(GameTime.MIDDLE) }
+    var selectedGameDuration by remember { mutableStateOf(GameDuration.MEDIUM) }
     var selectedWhitePlayer by remember { mutableStateOf("") }
     var randomColors by remember { mutableStateOf(true) }
 
@@ -185,20 +185,20 @@ fun LobbyWaitingScreen(
                             fontWeight = FontWeight.Medium
                         )
 
-                        GameTime.entries.forEach { gameTime ->
+                        GameDuration.entries.forEach { gameTime ->
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .selectable(
-                                        selected = selectedGameTime == gameTime,
-                                        onClick = { selectedGameTime = gameTime }
+                                        selected = selectedGameDuration == gameTime,
+                                        onClick = { selectedGameDuration = gameTime }
                                     )
                                     .padding(vertical = 4.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 RadioButton(
-                                    selected = selectedGameTime == gameTime,
-                                    onClick = { selectedGameTime = gameTime }
+                                    selected = selectedGameDuration == gameTime,
+                                    onClick = { selectedGameDuration = gameTime }
                                 )
                                 Text(
                                     text = gameTime.displayName,
@@ -297,7 +297,7 @@ fun LobbyWaitingScreen(
 
                                 viewModel.configureAndStartGame(
                                     lobbyCode = lobbyCode,
-                                    gameTime = selectedGameTime,
+                                    gameDuration = selectedGameDuration,
                                     whitePlayer = whitePlayerFinal,
                                     blackPlayer = blackPlayerFinal,
                                     randomColors = randomColors
