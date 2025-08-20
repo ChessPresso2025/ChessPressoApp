@@ -4,6 +4,10 @@ import android.content.Context
 import app.chesspresso.api.LobbyApiService
 import app.chesspresso.auth.data.AuthApi
 import app.chesspresso.auth.data.AuthRepository
+import app.chesspresso.data.api.AuthApi as JwtAuthApi
+import app.chesspresso.data.api.GameApi
+import app.chesspresso.data.network.AuthInterceptor
+import app.chesspresso.data.storage.TokenStorage
 import app.chesspresso.service.LobbyService
 import app.chesspresso.websocket.WebSocketManager
 import com.google.gson.Gson
@@ -25,12 +29,25 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
+    fun provideTokenStorage(@ApplicationContext context: Context): TokenStorage {
+        return TokenStorage(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideAuthInterceptor(tokenStorage: TokenStorage): AuthInterceptor {
+        return AuthInterceptor(tokenStorage)
+    }
+
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
 
         return OkHttpClient.Builder()
+            .addInterceptor(authInterceptor)
             .addInterceptor(loggingInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
@@ -52,6 +69,18 @@ object AppModule {
     @Singleton
     fun provideAuthApi(retrofit: Retrofit): AuthApi {
         return retrofit.create(AuthApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideJwtAuthApi(retrofit: Retrofit): JwtAuthApi {
+        return retrofit.create(JwtAuthApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideGameApi(retrofit: Retrofit): GameApi {
+        return retrofit.create(GameApi::class.java)
     }
 
     @Provides
@@ -79,9 +108,11 @@ object AppModule {
     @Singleton
     fun provideAuthRepository(
         authApi: AuthApi,
+        jwtAuthApi: JwtAuthApi,
+        tokenStorage: TokenStorage,
         @ApplicationContext context: Context
     ): AuthRepository {
-        return AuthRepository(authApi, context)
+        return AuthRepository(authApi, jwtAuthApi, tokenStorage, context)
     }
 
     @Provides

@@ -2,23 +2,102 @@ package app.chesspresso.auth.data
 
 import android.content.Context
 import android.util.Log
+import app.chesspresso.data.api.AuthApi as JwtAuthApi
+import app.chesspresso.data.models.LoginRequest as JwtLoginRequest
+import app.chesspresso.data.models.RegisterRequest as JwtRegisterRequest
+import app.chesspresso.data.storage.TokenStorage
+import kotlinx.coroutines.flow.first
+import javax.inject.Inject
+import javax.inject.Singleton
 
-class AuthRepository(private val api: AuthApi, private val context: Context) {
+@Singleton
+class AuthRepository @Inject constructor(
+    private val api: AuthApi,
+    private val jwtApi: JwtAuthApi,
+    private val tokenStorage: TokenStorage,
+    private val context: Context
+) {
 
     suspend fun login(username: String, password: String): AuthResponse {
-        Log.d("AuthRepository", "Attempting login for user: $username")
-        return processAuthRequest(
-            authAction = { api.login(LoginRequest(username, password)) },
-            actionType = "login"
-        )
+        Log.d("AuthRepository", "Attempting JWT login for user: $username")
+
+        // Zuerst JWT-Login versuchen
+        try {
+            val jwtRequest = JwtLoginRequest(username, password)
+            val jwtResponse = jwtApi.login(jwtRequest)
+
+            if (jwtResponse.isSuccessful && jwtResponse.body() != null) {
+                val tokenResponse = jwtResponse.body()!!
+                tokenStorage.saveToken(tokenResponse.accessToken)
+                Log.d("AuthRepository", "JWT login successful, token saved")
+
+                // Erstelle AuthResponse basierend auf JWT-Response (ohne altes System zu verwenden)
+                val authResponse = AuthResponse(
+                    playerId = "jwt_user_" + System.currentTimeMillis(), // Temporäre ID bis echte Stats verfügbar sind
+                    name = tokenResponse.username ?: username,
+                    email = "", // Wird später über API geholt
+                    playedGames = 0,
+                    win = 0,
+                    draw = 0,
+                    lose = 0
+                )
+
+                storePlayerData(authResponse)
+                storeCredentials(authResponse.name)
+                Log.d("AuthRepository", "JWT Player data stored locally")
+                return authResponse
+            } else {
+                throw Exception("JWT Login failed: ${jwtResponse.message()}")
+            }
+        } catch (e: Exception) {
+            Log.e("AuthRepository", "JWT login failed, falling back to old system: ${e.message}")
+            // Fallback zum alten System nur wenn JWT komplett fehlschlägt
+            return processAuthRequest(
+                authAction = { api.login(LoginRequest(username, password)) },
+                actionType = "login"
+            )
+        }
     }
 
     suspend fun register(username: String, password: String, email: String): AuthResponse {
-        Log.d("AuthRepository", "Attempting registration for user: $username")
-        return processAuthRequest(
-            authAction = { api.register(RegisterRequest(username, password, email)) },
-            actionType = "registration"
-        )
+        Log.d("AuthRepository", "Attempting JWT registration for user: $username")
+
+        // Zuerst JWT-Registrierung versuchen
+        try {
+            val jwtRequest = JwtRegisterRequest(username, email, password)
+            val jwtResponse = jwtApi.register(jwtRequest)
+
+            if (jwtResponse.isSuccessful && jwtResponse.body() != null) {
+                val tokenResponse = jwtResponse.body()!!
+                tokenStorage.saveToken(tokenResponse.accessToken)
+                Log.d("AuthRepository", "JWT registration successful, token saved")
+
+                // Erstelle AuthResponse basierend auf JWT-Response (ohne altes System zu verwenden)
+                val authResponse = AuthResponse(
+                    playerId = "jwt_user_" + System.currentTimeMillis(), // Temporäre ID bis echte Stats verfügbar sind
+                    name = tokenResponse.username ?: username,
+                    email = email,
+                    playedGames = 0,
+                    win = 0,
+                    draw = 0,
+                    lose = 0
+                )
+
+                storePlayerData(authResponse)
+                storeCredentials(authResponse.name)
+                Log.d("AuthRepository", "JWT Player data stored locally")
+                return authResponse
+            } else {
+                throw Exception("JWT Registration failed: ${jwtResponse.message()}")
+            }
+        } catch (e: Exception) {
+            Log.e("AuthRepository", "JWT registration failed, falling back to old system: ${e.message}")
+            // Fallback zum alten System nur wenn JWT komplett fehlschlägt
+            return processAuthRequest(
+                authAction = { api.register(RegisterRequest(username, password, email)) },
+                actionType = "registration"
+            )
+        }
     }
 
     private suspend fun processAuthRequest(
@@ -92,6 +171,19 @@ class AuthRepository(private val api: AuthApi, private val context: Context) {
     fun clearStoredPlayerInfo() {
         val prefs = context.getSharedPreferences("chessapp", Context.MODE_PRIVATE)
         prefs.edit().clear().apply()
+
+        // Auch JWT Token löschen
+        kotlinx.coroutines.runBlocking {
+            tokenStorage.clearToken()
+        }
+    }
+
+    suspend fun getJwtToken(): String? {
+        return tokenStorage.getToken().first()
+    }
+
+    suspend fun isLoggedInWithJwt(): Boolean {
+        return getJwtToken() != null
     }
 }
 
