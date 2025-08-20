@@ -27,19 +27,19 @@ class PrivateLobbyViewModel @Inject constructor(
 
     fun createPrivateLobby() {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            _uiState.value = _uiState.value.copy(isCreating = true, error = null)
 
             lobbyService.createPrivateLobby()
                 .onSuccess { lobbyCode ->
                     _uiState.value = _uiState.value.copy(
-                        isLoading = false,
+                        isCreating = false,
                         createdLobbyCode = lobbyCode,
                         isLobbyCreated = true
                     )
                 }
                 .onFailure { exception ->
                     _uiState.value = _uiState.value.copy(
-                        isLoading = false,
+                        isCreating = false,
                         error = exception.message
                     )
                 }
@@ -48,12 +48,12 @@ class PrivateLobbyViewModel @Inject constructor(
 
     fun joinPrivateLobby(lobbyCode: String) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
+            _uiState.value = _uiState.value.copy(isJoining = true, error = null)
 
             lobbyService.joinPrivateLobby(lobbyCode)
                 .onSuccess { code ->
                     _uiState.value = _uiState.value.copy(
-                        isLoading = false,
+                        isJoining = false,
                         joinedLobbyCode = code,
                         isLobbyJoined = true
                     )
@@ -62,7 +62,7 @@ class PrivateLobbyViewModel @Inject constructor(
                 }
                 .onFailure { exception ->
                     _uiState.value = _uiState.value.copy(
-                        isLoading = false,
+                        isJoining = false,
                         error = exception.message
                     )
                 }
@@ -110,9 +110,6 @@ class PrivateLobbyViewModel @Inject constructor(
         randomColors: Boolean = false
     ) {
         viewModelScope.launch {
-            _uiState.value = _uiState.value.copy(isLoading = true, error = null)
-
-
             val configMessage = ConfigureLobbyMessage(
                 lobbyCode = lobbyCode,
                 gameDuration = gameDuration,
@@ -123,8 +120,6 @@ class PrivateLobbyViewModel @Inject constructor(
 
             // Für jetzt loggen wir die Konfiguration
             Log.d("PrivateLobbyViewModel", "Konfiguriere Spiel: $configMessage")
-
-            _uiState.value = _uiState.value.copy(isLoading = false)
         }
     }
 
@@ -148,9 +143,10 @@ class PrivateLobbyViewModel @Inject constructor(
 }
 
 data class PrivateLobbyUiState(
-    val isLoading: Boolean = false,
-    val error: String? = null,
     val joinCode: String = "",
+    val error: String? = null,
+    val isCreating: Boolean = false,
+    val isJoining: Boolean = false,
     val createdLobbyCode: String? = null,
     val joinedLobbyCode: String? = null,
     val isLobbyCreated: Boolean = false,

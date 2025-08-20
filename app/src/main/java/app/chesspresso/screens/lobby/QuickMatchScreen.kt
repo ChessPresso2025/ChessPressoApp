@@ -49,22 +49,6 @@ fun QuickMatchScreen(
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBackClick) {
-                Text("←", style = MaterialTheme.typography.headlineMedium)
-            }
-            Text(
-                text = "Quick Match",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(start = 8.dp)
-            )
-        }
-
         if (isWaiting) {
             // Wartezustand
             Card(

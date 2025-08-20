@@ -57,22 +57,6 @@ fun PrivateLobbyScreen(
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBackClick) {
-                Text("←", style = MaterialTheme.typography.headlineMedium)
-            }
-            Text(
-                text = "Private Lobby",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(start = 8.dp)
-            )
-        }
-
         // Lobby erstellen
         Card(
             modifier = Modifier.fillMaxWidth()
@@ -95,9 +79,9 @@ fun PrivateLobbyScreen(
                 Button(
                     onClick = { viewModel.createPrivateLobby() },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !uiState.isLoading
+                    enabled = !uiState.isCreating
                 ) {
-                    if (uiState.isLoading) {
+                    if (uiState.isCreating) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(20.dp),
                             color = MaterialTheme.colorScheme.onPrimary
@@ -109,17 +93,24 @@ fun PrivateLobbyScreen(
             }
         }
 
-        // Trennlinie
-        HorizontalDivider()
-
+        // Trennlinie mit ODER
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.Center
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            HorizontalDivider(
+                modifier = Modifier.weight(1f),
+                thickness = 1.dp
+            )
             Text(
                 text = "ODER",
                 style = MaterialTheme.typography.labelMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            HorizontalDivider(
+                modifier = Modifier.weight(1f),
+                thickness = 1.dp
             )
         }
 
@@ -148,13 +139,14 @@ fun PrivateLobbyScreen(
                     label = { Text("Lobby-Code") },
                     placeholder = { Text("ABC123") },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !uiState.isLoading,
+                    enabled = !uiState.isJoining,
+                    singleLine = true,
                     keyboardOptions = KeyboardOptions(
                         capitalization = KeyboardCapitalization.Characters,
-                        imeAction = ImeAction.Go
+                        imeAction = ImeAction.Done
                     ),
                     keyboardActions = KeyboardActions(
-                        onGo = {
+                        onDone = {
                             if (uiState.joinCode.length == 6) {
                                 keyboardController?.hide()
                                 viewModel.joinPrivateLobby(uiState.joinCode)
@@ -172,9 +164,9 @@ fun PrivateLobbyScreen(
                         viewModel.joinPrivateLobby(uiState.joinCode)
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !uiState.isLoading && uiState.joinCode.length == 6
+                    enabled = !uiState.isJoining && uiState.joinCode.length == 6
                 ) {
-                    if (uiState.isLoading) {
+                    if (uiState.isJoining) {
                         CircularProgressIndicator(
                             modifier = Modifier.size(20.dp),
                             color = MaterialTheme.colorScheme.onPrimary

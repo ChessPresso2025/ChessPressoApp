@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
@@ -12,6 +13,8 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -34,13 +37,23 @@ import app.chesspresso.auth.presentation.AuthViewModel
 import app.chesspresso.screens.lobby.QuickMatchScreen
 import app.chesspresso.screens.lobby.PrivateLobbyScreen
 import app.chesspresso.screens.lobby.LobbyWaitingScreen
+import androidx.hilt.navigation.compose.hiltViewModel
+import app.chesspresso.viewmodel.PrivateLobbyViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScaffoldScreen(authViewModel: AuthViewModel){
     val innerNavController = rememberNavController()
     val currentRoute by innerNavController.currentBackStackEntryAsState()
-    val selectedRoute = currentRoute?.destination?.route ?: "home"
+    val selectedRoute = currentRoute?.destination?.route ?: NavRoutes.HOME
+
+    // Prüfen, ob der aktuelle Screen einen Zurück-Button benötigt
+    val showBackButton = selectedRoute == NavRoutes.QUICK_MATCH ||
+                        selectedRoute == NavRoutes.PRIVATE_LOBBY ||
+                        selectedRoute.startsWith("lobby_waiting/")
+
+    // ViewModel für die Lobby-Funktionalität
+    val lobbyViewModel: PrivateLobbyViewModel = hiltViewModel()
 
     Scaffold(
         topBar = {
@@ -56,6 +69,24 @@ fun MainScaffoldScreen(authViewModel: AuthViewModel){
                             contentScale = ContentScale.Fit
                         )
                         Text("ChessPresso")
+                    }
+                },
+                navigationIcon = {
+                    if (showBackButton) {
+                        IconButton(
+                            onClick = {
+                                // Wenn wir uns in einer Lobby befinden, diese verlassen
+                                if (selectedRoute.startsWith("lobby_waiting/")) {
+                                    lobbyViewModel.leaveLobby()
+                                }
+                                innerNavController.navigateUp()
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = "Zurück"
+                            )
+                        }
                     }
                 }
             )
@@ -119,13 +150,6 @@ fun MainScaffoldScreen(authViewModel: AuthViewModel){
                 val lobbyCode = backStackEntry.arguments?.getString("lobbyCode") ?: ""
                 LobbyWaitingScreen(
                     lobbyCode = lobbyCode,
-                    onBackClick = { 
-                        // Explizit zum Home-Screen navigieren und alles andere löschen
-                        innerNavController.navigate(NavRoutes.HOME) {
-                            popUpTo(NavRoutes.HOME) { inclusive = false }
-                            launchSingleTop = true
-                        }
-                    },
                     onGameStart = { lobbyId ->
                         // TODO: Navigation zum Spiel-Screen
                         innerNavController.navigate("game/$lobbyId")
