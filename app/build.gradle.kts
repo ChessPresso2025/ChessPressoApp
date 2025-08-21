@@ -62,6 +62,10 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.material3)
+
+    // Lifecycle Process dependency für ProcessLifecycleOwner
+    implementation("androidx.lifecycle:lifecycle-process:2.7.0")
+
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)

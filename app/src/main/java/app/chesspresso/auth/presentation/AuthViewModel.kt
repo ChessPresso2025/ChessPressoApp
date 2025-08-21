@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import app.chesspresso.auth.data.AuthRepository
 import app.chesspresso.auth.data.AuthResponse
 import app.chesspresso.auth.data.PlayerInfo
-import app.chesspresso.websocket.WebSocketManager
+import app.chesspresso.websocket.StompWebSocketService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -17,7 +17,7 @@ import javax.inject.Inject
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val repository: AuthRepository,
-    private val webSocketManager: WebSocketManager
+    private val webSocketService: StompWebSocketService
 ) : ViewModel() {
 
     private val _authState = MutableStateFlow<AuthState>(AuthState.Idle)
@@ -59,7 +59,8 @@ class AuthViewModel @Inject constructor(
                 val response = authAction()
                 Log.d("AuthViewModel", "$actionType successful for user: ${response.name}")
                 _authState.value = AuthState.Success(response)
-                connectToWebSocket()
+                // WebSocket-Verbindung wird bereits im AuthRepository aufgebaut
+                Log.d("AuthViewModel", "WebSocket connection handled by AuthRepository")
             } catch (e: Exception) {
                 Log.e("AuthViewModel", "$actionType failed: ${e.message}", e)
                 _authState.value = AuthState.Error(mapErrorMessage(e))
@@ -77,52 +78,50 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    private fun connectToWebSocket() {
-        try {
-            Log.d("AuthViewModel", "Starting automatic WebSocket connection after login...")
-            val playerInfo = repository.getStoredPlayerInfo()
-            val playerId = playerInfo?.playerId ?: "anonymous_user"
-
-            webSocketManager.init(
-                playerId = playerId,
-                onSuccess = {
-                    Log.d("AuthViewModel", "WebSocket connection successful")
-                },
-                onFailure = { error ->
-                    Log.e("AuthViewModel", "WebSocket connection failed: $error")
-                },
-                onDisconnect = {
-                    Log.d("AuthViewModel", "WebSocket disconnected")
-                }
-            )
-        } catch (e: Exception) {
-            Log.e("AuthViewModel", "Failed to connect to WebSocket: ${e.message}", e)
+    fun logout() {
+        viewModelScope.launch {
+            // Sende App-Closing-Nachricht vor dem Logout
+            try {
+                webSocketService.sendAppClosingMessageSync()
+                Log.d("AuthViewModel", "App closing message sent before logout")
+            } catch (e: Exception) {
+                Log.e("AuthViewModel", "Failed to send app closing message before logout: ${e.message}")
+            }
+            
+            repository.logout() // Verwendet jetzt die neue logout() Methode die auch WebSocket trennt
+            _authState.value = AuthState.Idle
+            Log.d("AuthViewModel", "User logged out successfully")
         }
     }
 
-    fun logout() {
-        repository.clearStoredPlayerInfo()
-        webSocketManager.disconnect()
-        _authState.value = AuthState.Idle
-    }
-
     private fun checkStoredAuth() {
-        val playerInfo = repository.getStoredPlayerInfo()
-        if (playerInfo != null) {
-            // Konvertiere PlayerInfo zu AuthResponse für konsistente State-Behandlung
-            val authResponse = AuthResponse(
-                playerId = playerInfo.playerId,
-                name = playerInfo.name,
-                email = playerInfo.email ?: "",
-                playedGames = playerInfo.playedGames,
-                win = playerInfo.win,
-                draw = playerInfo.draw,
-                lose = playerInfo.lose
-            )
-            _authState.value = AuthState.Success(authResponse)
+        viewModelScope.launch {
+            val playerInfo = repository.getStoredPlayerInfo()
+            if (playerInfo != null) {
+                Log.d("AuthViewModel", "Found stored auth for user: ${playerInfo.name}")
 
-            // Wichtig: WebSocket-Verbindung auch beim automatischen Login herstellen
-            connectToWebSocket()
+                // Konvertiere PlayerInfo zu AuthResponse für konsistente State-Behandlung
+                val authResponse = AuthResponse(
+                    playerId = playerInfo.playerId,
+                    name = playerInfo.name,
+                    email = playerInfo.email ?: "",
+                    playedGames = playerInfo.playedGames,
+                    win = playerInfo.win,
+                    draw = playerInfo.draw,
+                    lose = playerInfo.lose
+                )
+                _authState.value = AuthState.Success(authResponse)
+
+                // Wichtig: STOMP WebSocket-Verbindung für automatische Anmeldung herstellen
+                try {
+                    webSocketService.connect(playerInfo.name)
+                    Log.d("AuthViewModel", "STOMP WebSocket connection initiated for auto-login user: ${playerInfo.name}")
+                } catch (e: Exception) {
+                    Log.e("AuthViewModel", "Failed to establish STOMP WebSocket connection for auto-login: ${e.message}")
+                }
+            } else {
+                Log.d("AuthViewModel", "No stored authentication found")
+            }
         }
     }
 

@@ -20,7 +20,7 @@ class StompWebSocketService @Inject constructor(
     companion object {
         private const val TAG = "StompWebSocket"
         private const val WS_URL = "ws://10.0.2.2:8080/ws"
-        private const val HEARTBEAT_INTERVAL = 60000L // 60 Sekunden (1 Minute)
+        private const val HEARTBEAT_INTERVAL = 30000L // 30 Sekunden
         private const val RECONNECT_DELAY = 3000L // 3 Sekunden
     }
 
@@ -277,6 +277,12 @@ class StompWebSocketService @Inject constructor(
         stopHeartbeat()
         reconnectJob?.cancel()
 
+        // Sende App-Closing-Nachricht an Server bevor Verbindung getrennt wird
+        sendAppClosingMessage()
+
+        // Kurz warten damit Nachricht gesendet werden kann
+        Thread.sleep(100)
+
         // Sende DISCONNECT Frame
         val disconnectFrame = buildString {
             append("DISCONNECT\n")
@@ -290,6 +296,50 @@ class StompWebSocketService @Inject constructor(
 
         _connectionState.value = ConnectionState.DISCONNECTED
         _onlinePlayers.value = emptySet()
+    }
+
+    private fun sendAppClosingMessage() {
+        playerId?.let { id ->
+            val appClosingFrame = buildString {
+                append("SEND\n")
+                append("destination:/app/disconnect\n")
+                append("content-type:application/json\n")
+                append("\n")
+                append("""{"type":"app-closing","playerId":"$id","reason":"app-shutdown"}""")
+                append("\u0000")
+            }
+
+            webSocket?.send(appClosingFrame)
+            Log.d(TAG, "Sent app closing message for player: $id")
+        }
+    }
+
+    fun sendAppClosingMessageSync() {
+        // Synchrone Version für App-Shutdown
+        if (_connectionState.value == ConnectionState.CONNECTED) {
+            sendAppClosingMessage()
+            Thread.sleep(200) // Etwas länger warten für synchronen Aufruf
+        }
+    }
+
+    fun sendAppClosingMessageWithReason(reason: String) {
+        // Neue Methode mit spezifischem Grund
+        playerId?.let { id ->
+            val appClosingFrame = buildString {
+                append("SEND\n")
+                append("destination:/app/disconnect\n")
+                append("content-type:application/json\n")
+                append("\n")
+                append("""{"type":"app-closing","playerId":"$id","reason":"$reason","timestamp":"${System.currentTimeMillis()}"}""")
+                append("\u0000")
+            }
+
+            webSocket?.send(appClosingFrame)
+            Log.d(TAG, "Sent app closing message for player: $id with reason: $reason")
+
+            // Kurz warten damit Nachricht gesendet werden kann
+            Thread.sleep(150)
+        }
     }
 
     fun requestOnlinePlayers() {
