@@ -3,7 +3,7 @@ package app.chesspresso.service
 import android.util.Log
 import app.chesspresso.api.LobbyApiService
 import app.chesspresso.model.lobby.*
-import app.chesspresso.websocket.WebSocketManager
+import app.chesspresso.websocket.StompWebSocketService
 import com.google.gson.Gson
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,6 +14,7 @@ import javax.inject.Singleton
 @Singleton
 class LobbyService @Inject constructor(
     private val lobbyApiService: LobbyApiService,
+    private val webSocketService: StompWebSocketService,
     private val gson: Gson
 ) {
     private val _currentLobby = MutableStateFlow<Lobby?>(null)
@@ -32,38 +33,8 @@ class LobbyService @Inject constructor(
     val gameStarted: StateFlow<GameStartMessage?> = _gameStarted.asStateFlow()
 
     init {
-        // WebSocket-Verbindung nur initialisieren, wenn noch nicht verbunden
-        initializeWebSocketIfNeeded()
-    }
-
-    private fun initializeWebSocketIfNeeded() {
-        // Prüfe ob WebSocket bereits verbunden ist
-        if (!WebSocketManager.isConnected()) {
-            // Temporäre Player-ID generieren (sollte später aus UserSession kommen)
-            val tempPlayerId = java.util.UUID.randomUUID().toString()
-
-            WebSocketManager.init(
-                playerId = tempPlayerId,
-                onSuccess = {
-                    Log.d("LobbyService", "WebSocket erfolgreich verbunden")
-                },
-                onFailure = { error ->
-                    Log.e("LobbyService", "WebSocket-Verbindung fehlgeschlagen: $error")
-                    _lobbyError.value = "Verbindung zum Server fehlgeschlagen"
-                },
-                onDisconnect = {
-                    Log.w("LobbyService", "WebSocket-Verbindung getrennt")
-                },
-                onMessage = { message ->
-                    handleWebSocketMessage(message)
-                }
-            )
-        } else {
-            // WebSocket ist bereits verbunden, registriere nur den Message-Handler
-            WebSocketManager.setMessageHandler { message ->
-                handleWebSocketMessage(message)
-            }
-            Log.d("LobbyService", "WebSocket bereits verbunden - Message-Handler registriert")
+        webSocketService.setLobbyMessageHandler { message ->
+            handleWebSocketMessage(message)
         }
     }
 
@@ -74,6 +45,10 @@ class LobbyService @Inject constructor(
             if (response.isSuccessful && response.body()?.success == true) {
                 val lobbyId = response.body()?.lobbyId ?: return Result.failure(Exception("Keine Lobby-ID erhalten"))
                 _isWaitingForMatch.value = true
+
+                // Nach erfolgreichem REST-Call: WebSocket-Lobby beitreten für Real-time Updates
+                webSocketService.subscribeToLobby(lobbyId)
+
                 Log.d("LobbyService", "Quick Match erfolgreich beigetreten: $lobbyId")
                 Result.success(lobbyId)
             } else {
@@ -93,8 +68,8 @@ class LobbyService @Inject constructor(
             if (response.isSuccessful && response.body()?.success == true) {
                 val lobbyCode = response.body()?.lobbyCode ?: return Result.failure(Exception("Kein Lobby-Code erhalten"))
 
-                // Setze die Lobby-ID im WebSocketManager
-                WebSocketManager.setLobby(lobbyCode)
+                // Nach erfolgreichem REST-Call: WebSocket-Lobby beitreten für Real-time Updates
+                webSocketService.subscribeToLobby(lobbyCode)
 
                 Log.d("LobbyService", "Private Lobby erstellt: $lobbyCode")
                 Result.success(lobbyCode)
@@ -114,8 +89,8 @@ class LobbyService @Inject constructor(
             val response = lobbyApiService.joinPrivateLobby(JoinPrivateLobbyRequest(lobbyCode))
             if (response.isSuccessful && response.body()?.success == true) {
 
-                // Setze die Lobby-ID im WebSocketManager
-                WebSocketManager.setLobby(lobbyCode)
+                // Nach erfolgreichem REST-Call: WebSocket-Lobby beitreten für Real-time Updates
+                webSocketService.subscribeToLobby(lobbyCode)
 
                 Log.d("LobbyService", "Private Lobby beigetreten: $lobbyCode")
                 Result.success(lobbyCode)
@@ -132,14 +107,14 @@ class LobbyService @Inject constructor(
     // Lobby verlassen
     suspend fun leaveLobby(lobbyId: String): Result<Unit> {
         return try {
+            // Zuerst WebSocket-Subscription beenden
+            webSocketService.unsubscribeFromLobby()
+
             val response = lobbyApiService.leaveLobby(LeaveLobbyRequest(lobbyId))
             if (response.isSuccessful) {
                 _currentLobby.value = null
                 _isWaitingForMatch.value = false
                 _lobbyMessages.value = emptyList()
-
-                // Entferne die Lobby-ID aus dem WebSocketManager
-                WebSocketManager.setLobby(null)
 
                 Log.d("LobbyService", "Lobby verlassen: $lobbyId")
                 Result.success(Unit)
@@ -370,21 +345,13 @@ class LobbyService @Inject constructor(
 
     // Neue Methode für Lobby-Chat-Nachrichten
     fun sendLobbyMessage(lobbyId: String, content: String) {
-        val message = LobbyMessage(
-            content = content,
-            messageType = "CHAT"
-        )
-        // TODO: Über WebSocket senden
+        webSocketService.sendLobbyChat(content)
         Log.d("LobbyService", "Sende Chat-Nachricht in Lobby $lobbyId: $content")
     }
 
     // Neue Methode für Player-Ready-Status
     fun setPlayerReady(lobbyId: String, ready: Boolean) {
-        val message = PlayerReadyMessage(
-            lobbyId = lobbyId,
-            ready = ready
-        )
-        // TODO: Über WebSocket senden
+        webSocketService.sendPlayerReady(ready)
         Log.d("LobbyService", "Setze Spieler-Status: ${if (ready) "bereit" else "nicht bereit"}")
     }
 

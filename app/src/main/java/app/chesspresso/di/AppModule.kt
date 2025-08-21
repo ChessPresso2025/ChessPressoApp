@@ -3,13 +3,12 @@ package app.chesspresso.di
 import android.content.Context
 import app.chesspresso.api.LobbyApiService
 import app.chesspresso.auth.data.AuthApi
-import app.chesspresso.auth.data.AuthRepository
 import app.chesspresso.data.api.AuthApi as JwtAuthApi
 import app.chesspresso.data.api.GameApi
 import app.chesspresso.data.network.AuthInterceptor
+import app.chesspresso.auth.data.AuthRepository
 import app.chesspresso.data.storage.TokenStorage
 import app.chesspresso.service.LobbyService
-import app.chesspresso.websocket.WebSocketManager
 import app.chesspresso.websocket.StompWebSocketService
 import com.google.gson.Gson
 import dagger.Module
@@ -100,9 +99,10 @@ object AppModule {
     @Singleton
     fun provideLobbyService(
         lobbyApiService: LobbyApiService,
+        webSocketService: StompWebSocketService,
         gson: Gson
     ): LobbyService {
-        return LobbyService(lobbyApiService, gson)
+        return LobbyService(lobbyApiService, webSocketService, gson)
     }
 
     @Provides
@@ -115,12 +115,6 @@ object AppModule {
         webSocketService: StompWebSocketService
     ): AuthRepository {
         return AuthRepository(authApi, jwtAuthApi, tokenStorage, context, webSocketService)
-    }
-
-    @Provides
-    @Singleton
-    fun provideWebSocketManager(): WebSocketManager {
-        return WebSocketManager
     }
 
     @Provides

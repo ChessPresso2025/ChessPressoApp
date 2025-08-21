@@ -28,6 +28,7 @@ class StompWebSocketService @Inject constructor(
     private var heartbeatJob: Job? = null
     private var reconnectJob: Job? = null
     private var playerId: String? = null
+    private var currentLobbyId: String? = null
 
     private val _connectionState = MutableStateFlow(ConnectionState.DISCONNECTED)
     val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
@@ -37,6 +38,13 @@ class StompWebSocketService @Inject constructor(
 
     private val _connectionMessages = MutableStateFlow<List<String>>(emptyList())
     val connectionMessages: StateFlow<List<String>> = _connectionMessages.asStateFlow()
+
+    // Lobby-spezifische Flows
+    private val _lobbyMessages = MutableStateFlow<List<String>>(emptyList())
+    val lobbyMessages: StateFlow<List<String>> = _lobbyMessages.asStateFlow()
+
+    // Callback für Lobby-Message-Handling
+    private var lobbyMessageHandler: ((String) -> Unit)? = null
 
     enum class ConnectionState {
         DISCONNECTED, CONNECTING, CONNECTED, RECONNECTING
@@ -236,6 +244,19 @@ class StompWebSocketService @Inject constructor(
                     _onlinePlayers.value = players
                     Log.d(TAG, "Players update received: $players")
                 }
+                "lobby-message" -> {
+                    // Lobby-spezifische Nachrichten verarbeiten
+                    val lobbyId = json.optString("lobbyId")
+                    val messageContent = json.optString("message")
+
+                    if (lobbyId == currentLobbyId) {
+                        // Nur Nachrichten für den aktuellen Lobby-Kontext weiterleiten
+                        _lobbyMessages.value = _lobbyMessages.value + messageContent
+                        Log.d(TAG, "Lobby message received: $messageContent")
+                        // Optional: Direktes Handling der Nachricht über den Handler
+                        lobbyMessageHandler?.invoke(messageContent)
+                    }
+                }
             }
 
             // Füge Nachricht zur Liste hinzu
@@ -358,5 +379,91 @@ class StompWebSocketService @Inject constructor(
         }
     }
 
+    fun setLobbyMessageHandler(handler: (String) -> Unit) {
+        lobbyMessageHandler = handler
+    }
+
     fun isConnected(): Boolean = _connectionState.value == ConnectionState.CONNECTED
+
+    // Lobby-spezifische Funktionen
+
+    fun subscribeToLobby(lobbyId: String) {
+        currentLobbyId = lobbyId
+
+        // Subscribe zu lobby-spezifischen Topics
+        val subscribeLobbyFrame = buildString {
+            append("SUBSCRIBE\n")
+            append("id:sub-lobby-$lobbyId\n")
+            append("destination:/topic/lobby/$lobbyId\n")
+            append("\n")
+            append("\u0000")
+        }
+
+        webSocket?.send(subscribeLobbyFrame)
+        Log.d(TAG, "Subscribed to lobby updates: $lobbyId")
+    }
+
+    fun unsubscribeFromLobby() {
+        currentLobbyId?.let { lobbyId ->
+            val unsubscribeFrame = buildString {
+                append("UNSUBSCRIBE\n")
+                append("id:sub-lobby-$lobbyId\n")
+                append("\n")
+                append("\u0000")
+            }
+
+            webSocket?.send(unsubscribeFrame)
+            Log.d(TAG, "Unsubscribed from lobby: $lobbyId")
+        }
+        currentLobbyId = null
+    }
+
+    fun sendLobbyChat(message: String) {
+        currentLobbyId?.let { lobbyId ->
+            playerId?.let { id ->
+                val chatFrame = buildString {
+                    append("SEND\n")
+                    append("destination:/app/lobby/chat\n")
+                    append("content-type:application/json\n")
+                    append("\n")
+                    append("""{"type":"chat","playerId":"$id","lobbyId":"$lobbyId","message":"$message"}""")
+                    append("\u0000")
+                }
+
+                webSocket?.send(chatFrame)
+                Log.d(TAG, "Sent lobby chat message: $message")
+            }
+        }
+    }
+
+    fun sendPlayerReady(ready: Boolean) {
+        currentLobbyId?.let { lobbyId ->
+            playerId?.let { id ->
+                val readyFrame = buildString {
+                    append("SEND\n")
+                    append("destination:/app/lobby/ready\n")
+                    append("content-type:application/json\n")
+                    append("\n")
+                    append("""{"type":"player-ready","playerId":"$id","lobbyId":"$lobbyId","ready":$ready}""")
+                    append("\u0000")
+                }
+
+                webSocket?.send(readyFrame)
+                Log.d(TAG, "Sent player ready status: $ready")
+            }
+        }
+    }
+
+    // Legacy-Methoden für Kompatibilität (werden intern umgeleitet)
+    fun joinLobby(lobbyId: String) {
+        subscribeToLobby(lobbyId)
+    }
+
+    fun leaveLobby() {
+        unsubscribeFromLobby()
+    }
+
+    fun sendLobbyMessage(message: String) {
+        sendLobbyChat(message)
+    }
 }
