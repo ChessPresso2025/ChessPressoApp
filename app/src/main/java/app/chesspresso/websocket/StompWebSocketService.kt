@@ -1,0 +1,312 @@
+package app.chesspresso.websocket
+
+import android.util.Log
+import app.chesspresso.data.storage.TokenStorage
+import kotlinx.coroutines.*
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
+import okhttp3.*
+import org.json.JSONObject
+import java.util.concurrent.TimeUnit
+import javax.inject.Inject
+import javax.inject.Singleton
+
+@Singleton
+class StompWebSocketService @Inject constructor(
+    private val tokenStorage: TokenStorage
+) {
+    companion object {
+        private const val TAG = "StompWebSocket"
+        private const val WS_URL = "ws://10.0.2.2:8080/ws"
+        private const val HEARTBEAT_INTERVAL = 60000L // 60 Sekunden (1 Minute)
+        private const val RECONNECT_DELAY = 3000L // 3 Sekunden
+    }
+
+    private var webSocket: WebSocket? = null
+    private var heartbeatJob: Job? = null
+    private var reconnectJob: Job? = null
+    private var playerId: String? = null
+
+    private val _connectionState = MutableStateFlow(ConnectionState.DISCONNECTED)
+    val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
+
+    private val _onlinePlayers = MutableStateFlow<Set<String>>(emptySet())
+    val onlinePlayers: StateFlow<Set<String>> = _onlinePlayers.asStateFlow()
+
+    private val _connectionMessages = MutableStateFlow<List<String>>(emptyList())
+    val connectionMessages: StateFlow<List<String>> = _connectionMessages.asStateFlow()
+
+    enum class ConnectionState {
+        DISCONNECTED, CONNECTING, CONNECTED, RECONNECTING
+    }
+
+    private val webSocketListener = object : WebSocketListener() {
+        override fun onOpen(webSocket: WebSocket, response: Response) {
+            Log.d(TAG, "WebSocket connection opened")
+            _connectionState.value = ConnectionState.CONNECTED
+
+            // Sende STOMP CONNECT Frame
+            sendStompConnect()
+
+            // Starte Heartbeat
+            startHeartbeat()
+
+            // Subscribe zu Topics
+            subscribeToTopics()
+        }
+
+        override fun onMessage(webSocket: WebSocket, text: String) {
+            Log.d(TAG, "Received message: $text")
+            handleStompMessage(text)
+        }
+
+        override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
+            Log.e(TAG, "WebSocket connection failed: ${t.message}")
+            _connectionState.value = ConnectionState.DISCONNECTED
+            stopHeartbeat()
+            scheduleReconnect()
+        }
+
+        override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
+            Log.i(TAG, "WebSocket connection closed: $reason")
+            _connectionState.value = ConnectionState.DISCONNECTED
+            stopHeartbeat()
+        }
+    }
+
+    suspend fun connect(username: String) {
+        if (_connectionState.value == ConnectionState.CONNECTED) {
+            Log.d(TAG, "Already connected")
+            return
+        }
+
+        playerId = username
+        _connectionState.value = ConnectionState.CONNECTING
+
+        try {
+            // Token synchron abrufen
+            val token = tokenStorage.getToken().first()
+            Log.d(TAG, "Retrieved token for WebSocket connection: ${token?.take(20)}...")
+
+            val client = OkHttpClient.Builder()
+                .pingInterval(30, TimeUnit.SECONDS)
+                .build()
+
+            val requestBuilder = Request.Builder().url(WS_URL)
+
+            // Nur Authorization Header hinzufügen wenn Token verfügbar ist
+            token?.let {
+                requestBuilder.addHeader("Authorization", "Bearer $it")
+                Log.d(TAG, "Added Authorization header to WebSocket request")
+            } ?: Log.w(TAG, "No token available for WebSocket connection")
+
+            val request = requestBuilder.build()
+            webSocket = client.newWebSocket(request, webSocketListener)
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to connect: ${e.message}")
+            _connectionState.value = ConnectionState.DISCONNECTED
+        }
+    }
+
+    private fun sendStompConnect() {
+        val connectFrame = buildString {
+            append("CONNECT\n")
+            append("accept-version:1.0,1.1,2.0\n")
+            append("heart-beat:5000,5000\n")
+            playerId?.let { append("login:$it\n") }
+            append("\n")
+            append("\u0000")
+        }
+
+        webSocket?.send(connectFrame)
+        Log.d(TAG, "Sent STOMP CONNECT frame")
+    }
+
+    private fun subscribeToTopics() {
+        playerId?.let { id ->
+            // Subscribe zu persönlichen Nachrichten
+            val subscribeFrame1 = buildString {
+                append("SUBSCRIBE\n")
+                append("id:sub-1\n")
+                append("destination:/user/$id/queue/status\n")
+                append("\n")
+                append("\u0000")
+            }
+            webSocket?.send(subscribeFrame1)
+
+            // Subscribe zu öffentlichen Player-Updates
+            val subscribeFrame2 = buildString {
+                append("SUBSCRIBE\n")
+                append("id:sub-2\n")
+                append("destination:/topic/players\n")
+                append("\n")
+                append("\u0000")
+            }
+            webSocket?.send(subscribeFrame2)
+
+            Log.d(TAG, "Subscribed to topics")
+        }
+    }
+
+    private fun startHeartbeat() {
+        heartbeatJob = CoroutineScope(Dispatchers.IO).launch {
+            while (isActive && _connectionState.value == ConnectionState.CONNECTED) {
+                sendHeartbeat()
+                delay(HEARTBEAT_INTERVAL)
+            }
+        }
+        Log.d(TAG, "Heartbeat started")
+    }
+
+    private fun sendHeartbeat() {
+        playerId?.let { id ->
+            val heartbeatFrame = buildString {
+                append("SEND\n")
+                append("destination:/app/heartbeat\n")
+                append("content-type:application/json\n")
+                append("\n")
+                append("""{"type":"heartbeat","playerId":"$id"}""")
+                append("\u0000")
+            }
+
+            webSocket?.send(heartbeatFrame)
+            Log.d(TAG, "Sent heartbeat for player: $id")
+        }
+    }
+
+    private fun handleStompMessage(message: String) {
+        try {
+            if (message.startsWith("MESSAGE")) {
+                val lines = message.split("\n")
+                var body = ""
+                var isBody = false
+
+                for (line in lines) {
+                    if (isBody) {
+                        body += line
+                    } else if (line.isEmpty()) {
+                        isBody = true
+                    }
+                }
+
+                // Entferne Null-Terminator
+                body = body.replace("\u0000", "")
+
+                if (body.isNotEmpty()) {
+                    handleMessageBody(body)
+                }
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error handling STOMP message: ${e.message}")
+        }
+    }
+
+    private fun handleMessageBody(body: String) {
+        try {
+            val json = JSONObject(body)
+            val type = json.optString("type")
+
+            when (type) {
+                "connection-status" -> {
+                    val onlinePlayersArray = json.optJSONArray("onlinePlayers")
+                    val players = mutableSetOf<String>()
+
+                    onlinePlayersArray?.let { array ->
+                        for (i in 0 until array.length()) {
+                            players.add(array.getString(i))
+                        }
+                    }
+
+                    _onlinePlayers.value = players
+                    Log.d(TAG, "Updated online players: $players")
+                }
+                "players-update" -> {
+                    val onlinePlayersArray = json.optJSONArray("onlinePlayers")
+                    val players = mutableSetOf<String>()
+
+                    onlinePlayersArray?.let { array ->
+                        for (i in 0 until array.length()) {
+                            players.add(array.getString(i))
+                        }
+                    }
+
+                    _onlinePlayers.value = players
+                    Log.d(TAG, "Players update received: $players")
+                }
+            }
+
+            // Füge Nachricht zur Liste hinzu
+            val currentMessages = _connectionMessages.value.toMutableList()
+            currentMessages.add(body)
+            if (currentMessages.size > 50) { // Begrenze auf 50 Nachrichten
+                currentMessages.removeAt(0)
+            }
+            _connectionMessages.value = currentMessages
+
+        } catch (e: Exception) {
+            Log.e(TAG, "Error parsing message body: ${e.message}")
+        }
+    }
+
+    private fun stopHeartbeat() {
+        heartbeatJob?.cancel()
+        heartbeatJob = null
+        Log.d(TAG, "Heartbeat stopped")
+    }
+
+    private fun scheduleReconnect() {
+        if (reconnectJob?.isActive == true) return
+
+        reconnectJob = CoroutineScope(Dispatchers.IO).launch {
+            delay(RECONNECT_DELAY)
+            playerId?.let { id ->
+                if (_connectionState.value == ConnectionState.DISCONNECTED) {
+                    Log.d(TAG, "Attempting to reconnect...")
+                    _connectionState.value = ConnectionState.RECONNECTING
+                    connect(id)
+                }
+            }
+        }
+    }
+
+    fun disconnect() {
+        Log.d(TAG, "Disconnecting WebSocket")
+        stopHeartbeat()
+        reconnectJob?.cancel()
+
+        // Sende DISCONNECT Frame
+        val disconnectFrame = buildString {
+            append("DISCONNECT\n")
+            append("\n")
+            append("\u0000")
+        }
+
+        webSocket?.send(disconnectFrame)
+        webSocket?.close(1000, "Client disconnecting")
+        webSocket = null
+
+        _connectionState.value = ConnectionState.DISCONNECTED
+        _onlinePlayers.value = emptySet()
+    }
+
+    fun requestOnlinePlayers() {
+        playerId?.let { id ->
+            val requestFrame = buildString {
+                append("SEND\n")
+                append("destination:/app/players\n")
+                append("content-type:application/json\n")
+                append("\n")
+                append("""{"type":"request","playerId":"$id"}""")
+                append("\u0000")
+            }
+
+            webSocket?.send(requestFrame)
+            Log.d(TAG, "Requested online players list")
+        }
+    }
+
+    fun isConnected(): Boolean = _connectionState.value == ConnectionState.CONNECTED
+}

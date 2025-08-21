@@ -10,6 +10,7 @@ import app.chesspresso.data.network.AuthInterceptor
 import app.chesspresso.data.storage.TokenStorage
 import app.chesspresso.service.LobbyService
 import app.chesspresso.websocket.WebSocketManager
+import app.chesspresso.websocket.StompWebSocketService
 import com.google.gson.Gson
 import dagger.Module
 import dagger.Provides
@@ -110,14 +111,23 @@ object AppModule {
         authApi: AuthApi,
         jwtAuthApi: JwtAuthApi,
         tokenStorage: TokenStorage,
-        @ApplicationContext context: Context
+        @ApplicationContext context: Context,
+        webSocketService: StompWebSocketService
     ): AuthRepository {
-        return AuthRepository(authApi, jwtAuthApi, tokenStorage, context)
+        return AuthRepository(authApi, jwtAuthApi, tokenStorage, context, webSocketService)
     }
 
     @Provides
     @Singleton
     fun provideWebSocketManager(): WebSocketManager {
         return WebSocketManager
+    }
+
+    @Provides
+    @Singleton
+    fun provideStompWebSocketService(
+        tokenStorage: TokenStorage
+    ): StompWebSocketService {
+        return StompWebSocketService(tokenStorage)
     }
 }
