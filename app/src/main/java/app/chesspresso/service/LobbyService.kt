@@ -45,10 +45,10 @@ class LobbyService @Inject constructor(
             if (response.isSuccessful && response.body()?.success == true) {
                 val lobbyId = response.body()?.lobbyId ?: return Result.failure(Exception("Keine Lobby-ID erhalten"))
                 _isWaitingForMatch.value = true
-
+                
                 // Nach erfolgreichem REST-Call: WebSocket-Lobby beitreten für Real-time Updates
                 webSocketService.subscribeToLobby(lobbyId)
-
+                
                 Log.d("LobbyService", "Quick Match erfolgreich beigetreten: $lobbyId")
                 Result.success(lobbyId)
             } else {
@@ -109,7 +109,7 @@ class LobbyService @Inject constructor(
         return try {
             // Zuerst WebSocket-Subscription beenden
             webSocketService.unsubscribeFromLobby()
-
+            
             val response = lobbyApiService.leaveLobby(LeaveLobbyRequest(lobbyId))
             if (response.isSuccessful) {
                 _currentLobby.value = null
