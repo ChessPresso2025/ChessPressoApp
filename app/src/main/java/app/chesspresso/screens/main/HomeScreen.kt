@@ -26,12 +26,22 @@ fun HomeScreen(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Button(onClick = onPrivateGameClick, modifier = Modifier.fillMaxWidth()) {
+        Button(
+            onClick = onPrivateGameClick,
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text("Privates Spiel starten")
         }
-        Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = onPublicGameClick, modifier = Modifier.fillMaxWidth()) {
-            Text("Öffentliches Spiel starten")
+        Spacer(
+            modifier = Modifier.height(
+                16.dp
+            )
+        )
+       Button(
+            onClick = onPublicGameClick,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+           Text("Öffentliches Spiel starten")
         }
     }
 }
