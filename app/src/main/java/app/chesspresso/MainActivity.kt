@@ -1,6 +1,7 @@
 package app.chesspresso
 
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -19,19 +20,59 @@ import app.chesspresso.screens.LoginScreen
 import app.chesspresso.screens.WelcomeScreen
 import app.chesspresso.screens.main.MainScaffoldScreen
 import app.chesspresso.ui.theme.ChessPressoAppTheme
+import app.chesspresso.websocket.StompWebSocketService
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var webSocketService: StompWebSocketService
+
+    companion object {
+        private const val TAG = "MainActivity"
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        Log.d(TAG, "MainActivity created")
+
         setContent {
             ChessPressoAppTheme {
                 val navController = rememberNavController()
                 AppNavigation(navController)
             }
         }
+    }
+
+    override fun onDestroy() {
+        Log.d(TAG, "MainActivity is being destroyed")
+
+        // Sende App-Closing-Nachricht wenn MainActivity zerstört wird
+        try {
+            webSocketService.sendAppClosingMessageWithReason("activity-destroyed")
+            Log.d(TAG, "App closing message sent from MainActivity.onDestroy()")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to send app closing message from MainActivity: ${e.message}")
+        }
+
+        super.onDestroy()
+    }
+
+    override fun finish() {
+        Log.d(TAG, "MainActivity.finish() called")
+
+        // Sende App-Closing-Nachricht wenn App explizit beendet wird
+        try {
+            webSocketService.sendAppClosingMessageWithReason("app-finished")
+            Log.d(TAG, "App closing message sent from MainActivity.finish()")
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to send app closing message from finish(): ${e.message}")
+        }
+
+        super.finish()
     }
 
     @Composable
