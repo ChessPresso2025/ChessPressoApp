@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Person
@@ -12,6 +13,7 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -42,9 +44,22 @@ fun MainScaffoldScreen(authViewModel: AuthViewModel){
     val currentRoute by innerNavController.currentBackStackEntryAsState()
     val selectedRoute = currentRoute?.destination?.route ?: "home"
 
+    // Prüfe, ob wir uns in einem Lobby-Screen befinden
+    val isLobbyScreen = selectedRoute == NavRoutes.QUICK_MATCH || selectedRoute == NavRoutes.PRIVATE_LOBBY
+
     Scaffold(
         topBar = {
             TopAppBar(
+                navigationIcon = {
+                    if (isLobbyScreen) {
+                        IconButton(onClick = { innerNavController.navigateUp() }) {
+                            Icon(
+                                imageVector = Icons.Default.ArrowBack,
+                                contentDescription = "Zurück"
+                            )
+                        }
+                    }
+                },
                 title = {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Image(
@@ -95,7 +110,6 @@ fun MainScaffoldScreen(authViewModel: AuthViewModel){
             // Neue Lobby-Screens
             composable(NavRoutes.QUICK_MATCH) {
                 QuickMatchScreen(
-                    onBackClick = { innerNavController.navigateUp() },
                     onGameStart = { lobbyId ->
                         // TODO: Navigation zum Spiel-Screen
                         innerNavController.navigate("game/$lobbyId")
@@ -105,7 +119,6 @@ fun MainScaffoldScreen(authViewModel: AuthViewModel){
 
             composable(NavRoutes.PRIVATE_LOBBY) {
                 PrivateLobbyScreen(
-                    onBackClick = { innerNavController.navigateUp() },
                     onLobbyCreated = { lobbyCode ->
                         innerNavController.navigate("lobby_waiting/$lobbyCode")
                     },

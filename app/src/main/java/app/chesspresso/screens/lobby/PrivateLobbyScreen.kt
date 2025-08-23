@@ -20,7 +20,6 @@ import app.chesspresso.viewmodel.PrivateLobbyViewModel
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PrivateLobbyScreen(
-    onBackClick: () -> Unit,
     onLobbyCreated: (String) -> Unit,
     onLobbyJoined: (String) -> Unit,
     viewModel: PrivateLobbyViewModel = hiltViewModel()
@@ -57,21 +56,6 @@ fun PrivateLobbyScreen(
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBackClick) {
-                Text("←", style = MaterialTheme.typography.headlineMedium)
-            }
-            Text(
-                text = "Private Lobby",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(start = 8.dp)
-            )
-        }
 
         // Lobby erstellen
         Card(
