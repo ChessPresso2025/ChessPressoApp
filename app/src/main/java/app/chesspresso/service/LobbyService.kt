@@ -2,7 +2,17 @@ package app.chesspresso.service
 
 import android.util.Log
 import app.chesspresso.api.LobbyApiService
-import app.chesspresso.model.lobby.*
+import app.chesspresso.model.lobby.GameStartMessage
+import app.chesspresso.model.lobby.GameTime
+import app.chesspresso.model.lobby.JoinPrivateLobbyRequest
+import app.chesspresso.model.lobby.LeaveLobbyRequest
+import app.chesspresso.model.lobby.Lobby
+import app.chesspresso.model.lobby.LobbyErrorMessage
+import app.chesspresso.model.lobby.LobbyMessage
+import app.chesspresso.model.lobby.LobbyStatus
+import app.chesspresso.model.lobby.LobbyType
+import app.chesspresso.model.lobby.LobbyWaitingMessage
+import app.chesspresso.model.lobby.QuickJoinRequest
 import app.chesspresso.websocket.StompWebSocketService
 import com.google.gson.Gson
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -16,7 +26,7 @@ class LobbyService @Inject constructor(
     private val lobbyApiService: LobbyApiService,
     private val webSocketService: StompWebSocketService,
     private val gson: Gson
-) : LobbyListener{
+) : LobbyListener {
     private val _currentLobby = MutableStateFlow<Lobby?>(null)
     override val currentLobby: StateFlow<Lobby?> = _currentLobby.asStateFlow()
 
@@ -44,12 +54,13 @@ class LobbyService @Inject constructor(
         return try {
             val response = lobbyApiService.joinQuickMatch(QuickJoinRequest(gameTime))
             if (response.isSuccessful && response.body()?.success == true) {
-                val lobbyId = response.body()?.lobbyId ?: return Result.failure(Exception("Keine Lobby-ID erhalten"))
+                val lobbyId = response.body()?.lobbyId
+                    ?: return Result.failure(Exception("Keine Lobby-ID erhalten"))
                 _isWaitingForMatch.value = true
-                
+
                 // Nach erfolgreichem REST-Call: WebSocket-Lobby beitreten für Real-time Updates
                 webSocketService.subscribeToLobby(lobbyId)
-                
+
                 Log.d("LobbyService", "Quick Match erfolgreich beigetreten: $lobbyId")
                 Result.success(lobbyId)
             } else {
@@ -67,7 +78,8 @@ class LobbyService @Inject constructor(
         return try {
             val response = lobbyApiService.createPrivateLobby()
             if (response.isSuccessful && response.body()?.success == true) {
-                val lobbyCode = response.body()?.lobbyCode ?: return Result.failure(Exception("Kein Lobby-Code erhalten"))
+                val lobbyCode = response.body()?.lobbyCode
+                    ?: return Result.failure(Exception("Kein Lobby-Code erhalten"))
 
                 // Nach erfolgreichem REST-Call: WebSocket-Lobby beitreten für Real-time Updates
                 webSocketService.subscribeToLobby(lobbyCode)
@@ -110,7 +122,7 @@ class LobbyService @Inject constructor(
         return try {
             // Zuerst WebSocket-Subscription beenden
             webSocketService.unsubscribeFromLobby()
-            
+
             Log.d("LobbyService", "Sende Leave-Request an API: LeaveLobbyRequest(lobbyId=$lobbyId)")
             val response = lobbyApiService.leaveLobby(LeaveLobbyRequest(lobbyId))
             if (response.isSuccessful) {
@@ -134,7 +146,8 @@ class LobbyService @Inject constructor(
         return try {
             val response = lobbyApiService.getLobbyInfo(lobbyId)
             if (response.isSuccessful) {
-                val lobbyInfo = response.body() ?: return Result.failure(Exception("Keine Lobby-Daten erhalten"))
+                val lobbyInfo = response.body()
+                    ?: return Result.failure(Exception("Keine Lobby-Daten erhalten"))
 
                 // Sichere Behandlung von gameTime - kann null oder "null" sein
                 val gameTime = when {
@@ -206,7 +219,8 @@ class LobbyService @Inject constructor(
                         if (currentLobby.lobbyId == lobbyId) {
                             val updatedLobby = currentLobby.copy(
                                 players = players,
-                                status = status?.let { LobbyStatus.valueOf(it) } ?: currentLobby.status
+                                status = status?.let { LobbyStatus.valueOf(it) }
+                                    ?: currentLobby.status
                             )
                             _currentLobby.value = updatedLobby
                         }
@@ -228,7 +242,8 @@ class LobbyService @Inject constructor(
                         if (currentLobby.lobbyId == lobbyId) {
                             val updatedLobby = currentLobby.copy(
                                 players = players,
-                                status = status?.let { LobbyStatus.valueOf(it) } ?: currentLobby.status,
+                                status = status?.let { LobbyStatus.valueOf(it) }
+                                    ?: currentLobby.status,
                                 creator = creatorId ?: currentLobby.creator
                             )
                             _currentLobby.value = updatedLobby
@@ -249,7 +264,8 @@ class LobbyService @Inject constructor(
                         if (currentLobby.lobbyId == lobbyId) {
                             val updatedLobby = currentLobby.copy(
                                 players = players,
-                                status = status?.let { LobbyStatus.valueOf(it) } ?: currentLobby.status
+                                status = status?.let { LobbyStatus.valueOf(it) }
+                                    ?: currentLobby.status
                             )
                             _currentLobby.value = updatedLobby
                         }
@@ -325,15 +341,18 @@ class LobbyService @Inject constructor(
                             _lobbyError.value = errorMsg.error
                             _isWaitingForMatch.value = false
                         }
+
                         message.contains("\"lobbyId\"") && message.contains("\"message\"") -> {
                             val waitingMsg = gson.fromJson(message, LobbyWaitingMessage::class.java)
                             _isWaitingForMatch.value = true
                         }
+
                         message.contains("\"gameTime\"") && message.contains("\"whitePlayer\"") -> {
                             val gameStart = gson.fromJson(message, GameStartMessage::class.java)
                             _gameStarted.value = gameStart
                             _isWaitingForMatch.value = false
                         }
+
                         else -> {
                             Log.w("LobbyService", "Unbekannter Nachrichtentyp: $message")
                         }

@@ -5,12 +5,8 @@ import android.util.Log
 import androidx.lifecycle.DefaultLifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.ProcessLifecycleOwner
-import app.chesspresso.service.LobbyService
 import app.chesspresso.websocket.StompWebSocketService
 import dagger.hilt.android.HiltAndroidApp
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltAndroidApp
@@ -42,7 +38,7 @@ class ChessPressoApplication : Application(), DefaultLifecycleObserver {
     override fun onDestroy(owner: LifecycleOwner) {
         super<DefaultLifecycleObserver>.onDestroy(owner)
         Log.d(TAG, "App process is being destroyed")
-        
+
         // Sende finale App-Closing-Nachricht bei Process-Zerstörung
         sendAppClosingMessage("app-destroyed")
     }

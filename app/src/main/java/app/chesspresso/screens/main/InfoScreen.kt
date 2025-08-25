@@ -77,9 +77,9 @@ fun InfoScreen(
 
                     Card(
                         modifier = Modifier
-                        .padding(32.dp)
-                        .fillMaxWidth()
-                    ){
+                            .padding(32.dp)
+                            .fillMaxWidth()
+                    ) {
                         Text(
                             text = "Serverstatus:",
                             fontSize = 24.sp,

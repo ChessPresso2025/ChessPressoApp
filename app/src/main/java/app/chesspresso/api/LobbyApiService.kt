@@ -1,8 +1,17 @@
 package app.chesspresso.api
 
-import app.chesspresso.model.lobby.*
+import app.chesspresso.model.lobby.CreatePrivateLobbyResponse
+import app.chesspresso.model.lobby.JoinPrivateLobbyRequest
+import app.chesspresso.model.lobby.JoinPrivateLobbyResponse
+import app.chesspresso.model.lobby.LeaveLobbyRequest
+import app.chesspresso.model.lobby.LobbyInfoResponse
+import app.chesspresso.model.lobby.QuickJoinRequest
+import app.chesspresso.model.lobby.QuickJoinResponse
 import retrofit2.Response
-import retrofit2.http.*
+import retrofit2.http.Body
+import retrofit2.http.GET
+import retrofit2.http.POST
+import retrofit2.http.Path
 
 interface LobbyApiService {
 

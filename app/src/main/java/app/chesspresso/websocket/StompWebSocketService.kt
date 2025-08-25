@@ -1,17 +1,23 @@
 package app.chesspresso.websocket
 
 import android.util.Log
-import app.chesspresso.ChessPressoApplication
 import app.chesspresso.data.storage.TokenStorage
-import app.chesspresso.di.AppModule.provideLobbyService
 import app.chesspresso.service.LobbyListener
-import app.chesspresso.service.LobbyService
-import kotlinx.coroutines.*
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
-import okhttp3.*
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.WebSocket
+import okhttp3.WebSocketListener
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -56,7 +62,7 @@ class StompWebSocketService @Inject constructor(
         DISCONNECTED, CONNECTING, CONNECTED, RECONNECTING
     }
 
-    fun setLobbyListener(listener: LobbyListener){
+    fun setLobbyListener(listener: LobbyListener) {
         this.lobbyListener = listener
     }
 
@@ -241,6 +247,7 @@ class StompWebSocketService @Inject constructor(
                     _onlinePlayers.value = players
                     Log.d(TAG, "Updated online players: $players")
                 }
+
                 "players-update" -> {
                     val onlinePlayersArray = json.optJSONArray("onlinePlayers")
                     val players = mutableSetOf<String>()
@@ -254,6 +261,7 @@ class StompWebSocketService @Inject constructor(
                     _onlinePlayers.value = players
                     Log.d(TAG, "Players update received: $players")
                 }
+
                 "lobby-message" -> {
                     // Lobby-spezifische Nachrichten verarbeiten
                     val lobbyId = json.optString("lobbyId")
@@ -354,9 +362,9 @@ class StompWebSocketService @Inject constructor(
     }
 
     fun sendAppClosingMessageWithReason(reason: String) {
-        if(lobbyListener == null){
+        if (lobbyListener == null) {
             Log.w(TAG, "LobbyListener is not set. Cannot leave lobby on app closing.")
-        }else{
+        } else {
             // Neue Methode mit spezifischem Grund
             CoroutineScope(Dispatchers.IO).launch {
                 val currentLobby = lobbyListener!!.currentLobby.value
@@ -364,10 +372,17 @@ class StompWebSocketService @Inject constructor(
                 currentLobby?.let {
                     lobbyListener!!.leaveLobby(it.lobbyId)
                         .onSuccess {
-                            Log.d("StompWebSocket", "Successfully left lobby ${currentLobby.lobbyId} during app closing")
+                            Log.d(
+                                "StompWebSocket",
+                                "Successfully left lobby ${currentLobby.lobbyId} during app closing"
+                            )
                         }
                         .onFailure { exception ->
-                            Log.e("StompWebSocket", "Failed to leave lobby during app closing", exception)
+                            Log.e(
+                                "StompWebSocket",
+                                "Failed to leave lobby during app closing",
+                                exception
+                            )
                         }
                 }
             }
@@ -439,7 +454,10 @@ class StompWebSocketService @Inject constructor(
                 append("\u0000")
             }
 
-            Log.d(TAG, "Sending STOMP unsubscribe frame: ${unsubscribeFrame.replace("\u0000", "[NULL]")}")
+            Log.d(
+                TAG,
+                "Sending STOMP unsubscribe frame: ${unsubscribeFrame.replace("\u0000", "[NULL]")}"
+            )
             webSocket?.send(unsubscribeFrame)
             Log.d(TAG, "Unsubscribed from lobby: $lobbyId")
         }

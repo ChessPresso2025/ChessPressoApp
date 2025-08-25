@@ -1,29 +1,34 @@
 package app.chesspresso.model.board
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import app.chesspresso.model.PieceType
 import app.chesspresso.model.TeamColor
 
 class Board {
-    val board : List<Field> = boardInit().toMutableList()
+    val board: List<Field> = boardInit().toMutableList()
 
-    fun boardInit() : List<Field> {
+    fun boardInit(): List<Field> {
         val list = mutableListOf<Field>()
         val cols = 'A'..'H'
         val rows = 1..8
 
-        for(row in rows.reversed()){
-            for(col in cols){
+        for (row in rows.reversed()) {
+            for (col in cols) {
                 val field = Field("$col$row")
                 // Setze die Farbe der Felder
                 field.isLightSquare = (row + col.code) % 2 == 0
 
                 // Platziere die Figuren
-                when(row) {
+                when (row) {
                     8 -> { // Schwarze Hauptfiguren
-                        field.piece = when(col) {
+                        field.piece = when (col) {
                             'A', 'H' -> Piece(PieceType.ROOK, TeamColor.BLACK)
                             'B', 'G' -> Piece(PieceType.KNIGHT, TeamColor.BLACK)
                             'C', 'F' -> Piece(PieceType.BISHOP, TeamColor.BLACK)
@@ -32,14 +37,17 @@ class Board {
                             else -> null
                         }
                     }
+
                     7 -> { // Schwarze Bauern
                         field.piece = Piece(PieceType.PAWN, TeamColor.BLACK)
                     }
+
                     2 -> { // Weiße Bauern
                         field.piece = Piece(PieceType.PAWN, TeamColor.WHITE)
                     }
+
                     1 -> { // Weiße Hauptfiguren
-                        field.piece = when(col) {
+                        field.piece = when (col) {
                             'A', 'H' -> Piece(PieceType.ROOK, TeamColor.WHITE)
                             'B', 'G' -> Piece(PieceType.KNIGHT, TeamColor.WHITE)
                             'C', 'F' -> Piece(PieceType.BISHOP, TeamColor.WHITE)
@@ -59,7 +67,7 @@ class Board {
         setStartPosition()
     }
 
-    private fun setStartPosition(){
+    private fun setStartPosition() {
         board.forEach { it.piece = null }
         val startMap: Map<String, Piece> = buildMap {
 

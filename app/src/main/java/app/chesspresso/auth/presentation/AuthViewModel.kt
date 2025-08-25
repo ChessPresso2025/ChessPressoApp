@@ -85,7 +85,10 @@ class AuthViewModel @Inject constructor(
                 webSocketService.sendAppClosingMessageSync()
                 Log.d("AuthViewModel", "App closing message sent before logout")
             } catch (e: Exception) {
-                Log.e("AuthViewModel", "Failed to send app closing message before logout: ${e.message}")
+                Log.e(
+                    "AuthViewModel",
+                    "Failed to send app closing message before logout: ${e.message}"
+                )
             }
 
             repository.logout() // Verwendet jetzt die neue logout() Methode die auch WebSocket trennt
@@ -115,9 +118,15 @@ class AuthViewModel @Inject constructor(
                 // Wichtig: STOMP WebSocket-Verbindung für automatische Anmeldung herstellen
                 try {
                     webSocketService.connect(playerInfo.name)
-                    Log.d("AuthViewModel", "STOMP WebSocket connection initiated for auto-login user: ${playerInfo.name}")
+                    Log.d(
+                        "AuthViewModel",
+                        "STOMP WebSocket connection initiated for auto-login user: ${playerInfo.name}"
+                    )
                 } catch (e: Exception) {
-                    Log.e("AuthViewModel", "Failed to establish STOMP WebSocket connection for auto-login: ${e.message}")
+                    Log.e(
+                        "AuthViewModel",
+                        "Failed to establish STOMP WebSocket connection for auto-login: ${e.message}"
+                    )
                 }
             } else {
                 Log.d("AuthViewModel", "No stored authentication found")

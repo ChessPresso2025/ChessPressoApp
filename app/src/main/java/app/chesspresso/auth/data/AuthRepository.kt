@@ -2,14 +2,14 @@ package app.chesspresso.auth.data
 
 import android.content.Context
 import android.util.Log
-import app.chesspresso.data.api.AuthApi as JwtAuthApi
-import app.chesspresso.data.models.LoginRequest as JwtLoginRequest
-import app.chesspresso.data.models.RegisterRequest as JwtRegisterRequest
 import app.chesspresso.data.storage.TokenStorage
 import app.chesspresso.websocket.StompWebSocketService
 import kotlinx.coroutines.flow.first
 import javax.inject.Inject
 import javax.inject.Singleton
+import app.chesspresso.data.api.AuthApi as JwtAuthApi
+import app.chesspresso.data.models.LoginRequest as JwtLoginRequest
+import app.chesspresso.data.models.RegisterRequest as JwtRegisterRequest
 
 @Singleton
 class AuthRepository @Inject constructor(
@@ -43,7 +43,7 @@ class AuthRepository @Inject constructor(
                     draw = 0,
                     lose = 0
                 )
-                
+
                 storePlayerData(authResponse)
                 storeCredentials(authResponse.name)
                 Log.d("AuthRepository", "JWT Player data stored locally")
@@ -51,9 +51,15 @@ class AuthRepository @Inject constructor(
                 // Nach erfolgreicher Authentifizierung WebSocket-Verbindung aufbauen
                 try {
                     webSocketService.connect(authResponse.name)
-                    Log.d("AuthRepository", "WebSocket connection initiated for user: ${authResponse.name}")
+                    Log.d(
+                        "AuthRepository",
+                        "WebSocket connection initiated for user: ${authResponse.name}"
+                    )
                 } catch (e: Exception) {
-                    Log.e("AuthRepository", "Failed to establish WebSocket connection: ${e.message}")
+                    Log.e(
+                        "AuthRepository",
+                        "Failed to establish WebSocket connection: ${e.message}"
+                    )
                     // WebSocket-Fehler soll Login nicht fehlschlagen lassen
                 }
 
@@ -72,9 +78,15 @@ class AuthRepository @Inject constructor(
             // Auch bei Fallback WebSocket-Verbindung versuchen
             try {
                 webSocketService.connect(fallbackResponse.name)
-                Log.d("AuthRepository", "WebSocket connection initiated for fallback user: ${fallbackResponse.name}")
+                Log.d(
+                    "AuthRepository",
+                    "WebSocket connection initiated for fallback user: ${fallbackResponse.name}"
+                )
             } catch (wsError: Exception) {
-                Log.e("AuthRepository", "Failed to establish WebSocket connection for fallback: ${wsError.message}")
+                Log.e(
+                    "AuthRepository",
+                    "Failed to establish WebSocket connection for fallback: ${wsError.message}"
+                )
             }
 
             return fallbackResponse
@@ -104,7 +116,7 @@ class AuthRepository @Inject constructor(
                     draw = 0,
                     lose = 0
                 )
-                
+
                 storePlayerData(authResponse)
                 storeCredentials(authResponse.name)
                 Log.d("AuthRepository", "JWT Player data stored locally")
@@ -112,9 +124,15 @@ class AuthRepository @Inject constructor(
                 // Nach erfolgreicher Registrierung WebSocket-Verbindung aufbauen
                 try {
                     webSocketService.connect(authResponse.name)
-                    Log.d("AuthRepository", "WebSocket connection initiated for registered user: ${authResponse.name}")
+                    Log.d(
+                        "AuthRepository",
+                        "WebSocket connection initiated for registered user: ${authResponse.name}"
+                    )
                 } catch (e: Exception) {
-                    Log.e("AuthRepository", "Failed to establish WebSocket connection: ${e.message}")
+                    Log.e(
+                        "AuthRepository",
+                        "Failed to establish WebSocket connection: ${e.message}"
+                    )
                     // WebSocket-Fehler soll Registrierung nicht fehlschlagen lassen
                 }
 
@@ -123,7 +141,10 @@ class AuthRepository @Inject constructor(
                 throw Exception("JWT Registration failed: ${jwtResponse.message()}")
             }
         } catch (e: Exception) {
-            Log.e("AuthRepository", "JWT registration failed, falling back to old system: ${e.message}")
+            Log.e(
+                "AuthRepository",
+                "JWT registration failed, falling back to old system: ${e.message}"
+            )
             // Fallback zum alten System nur wenn JWT komplett fehlschlägt
             val fallbackResponse = processAuthRequest(
                 authAction = { api.register(RegisterRequest(username, password, email)) },
@@ -133,9 +154,15 @@ class AuthRepository @Inject constructor(
             // Auch bei Fallback WebSocket-Verbindung versuchen
             try {
                 webSocketService.connect(fallbackResponse.name)
-                Log.d("AuthRepository", "WebSocket connection initiated for fallback registered user: ${fallbackResponse.name}")
+                Log.d(
+                    "AuthRepository",
+                    "WebSocket connection initiated for fallback registered user: ${fallbackResponse.name}"
+                )
             } catch (wsError: Exception) {
-                Log.e("AuthRepository", "Failed to establish WebSocket connection for fallback: ${wsError.message}")
+                Log.e(
+                    "AuthRepository",
+                    "Failed to establish WebSocket connection for fallback: ${wsError.message}"
+                )
             }
 
             return fallbackResponse

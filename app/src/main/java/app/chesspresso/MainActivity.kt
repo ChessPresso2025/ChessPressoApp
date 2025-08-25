@@ -77,7 +77,7 @@ class MainActivity : ComponentActivity() {
     }
 
     @Composable
-    fun AppNavigation(navController: NavHostController){
+    fun AppNavigation(navController: NavHostController) {
         val authViewModel: AuthViewModel = hiltViewModel()
         val webSocketViewModel: WebSocketViewModel = hiltViewModel()
         val authState by authViewModel.authState.collectAsState()
@@ -85,7 +85,7 @@ class MainActivity : ComponentActivity() {
         NavHost(
             navController = navController,
             startDestination = "welcome"
-        ){
+        ) {
             //Login-Teil der App
             composable("welcome") {
                 WelcomeScreen(
@@ -108,7 +108,7 @@ class MainActivity : ComponentActivity() {
         // Automatische Navigation bei erfolgreicher Anmeldung
         LaunchedEffect(authState) {
             // Debug-Logging
-            val stateDesc = when(authState) {
+            val stateDesc = when (authState) {
                 is AuthState.Success -> "Success: ${(authState as AuthState.Success).response.name}"
                 is AuthState.Error -> "Error: ${(authState as AuthState.Error).message}"
                 is AuthState.Loading -> "Loading"
@@ -124,6 +124,7 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
+
                 else -> {
                     // Keine Aktion, wenn nicht angemeldet
                 }

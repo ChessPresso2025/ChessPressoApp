@@ -3,10 +3,9 @@ package app.chesspresso.di
 import android.content.Context
 import app.chesspresso.api.LobbyApiService
 import app.chesspresso.auth.data.AuthApi
-import app.chesspresso.data.api.AuthApi as JwtAuthApi
+import app.chesspresso.auth.data.AuthRepository
 import app.chesspresso.data.api.GameApi
 import app.chesspresso.data.network.AuthInterceptor
-import app.chesspresso.auth.data.AuthRepository
 import app.chesspresso.data.storage.TokenStorage
 import app.chesspresso.service.LobbyService
 import app.chesspresso.websocket.StompWebSocketService
@@ -22,6 +21,7 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
+import app.chesspresso.data.api.AuthApi as JwtAuthApi
 
 @Module
 @InstallIn(SingletonComponent::class)

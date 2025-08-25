@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.chesspresso.model.lobby.ConfigureLobbyMessage
 import app.chesspresso.model.lobby.GameTime
-import app.chesspresso.model.lobby.Lobby
 import app.chesspresso.service.LobbyService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -136,7 +135,8 @@ class PrivateLobbyViewModel @Inject constructor(
 
     fun refreshLobbyInfo(lobbyCode: String? = null) {
         viewModelScope.launch {
-            val codeToUse = lobbyCode ?: _uiState.value.createdLobbyCode ?: _uiState.value.joinedLobbyCode
+            val codeToUse =
+                lobbyCode ?: _uiState.value.createdLobbyCode ?: _uiState.value.joinedLobbyCode
             codeToUse?.let { code ->
                 lobbyService.getLobbyInfo(code)
                     .onSuccess { lobby ->
@@ -145,13 +145,20 @@ class PrivateLobbyViewModel @Inject constructor(
                             _uiState.value = _uiState.value.copy(
                                 joinedLobbyCode = code
                             )
-                            Log.d("PrivateLobbyViewModel", "LobbyCode im uiState aktualisiert: $code")
+                            Log.d(
+                                "PrivateLobbyViewModel",
+                                "LobbyCode im uiState aktualisiert: $code"
+                            )
                         }
                     }
                     .onFailure { exception ->
                         resetState()
                         _navigationEvent.value = "home"
-                        Log.e("PrivateLobbyViewModel", "Fehler beim Laden der Lobby-Info", exception)
+                        Log.e(
+                            "PrivateLobbyViewModel",
+                            "Fehler beim Laden der Lobby-Info",
+                            exception
+                        )
                     }
             }
         }

@@ -33,9 +33,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import app.chesspresso.R
 import app.chesspresso.auth.presentation.AuthViewModel
-import app.chesspresso.screens.lobby.QuickMatchScreen
-import app.chesspresso.screens.lobby.PrivateLobbyScreen
 import app.chesspresso.screens.lobby.LobbyWaitingScreen
+import app.chesspresso.screens.lobby.PrivateLobbyScreen
+import app.chesspresso.screens.lobby.QuickMatchScreen
 import app.chesspresso.websocket.WebSocketViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -43,13 +43,14 @@ import app.chesspresso.websocket.WebSocketViewModel
 fun MainScaffoldScreen(
     authViewModel: AuthViewModel,
     webSocketViewModel: WebSocketViewModel
-){
+) {
     val innerNavController = rememberNavController()
     val currentRoute by innerNavController.currentBackStackEntryAsState()
     val selectedRoute = currentRoute?.destination?.route ?: "home"
-    
+
     // Prüfe, ob wir uns in einem Lobby-Screen befinden
-    val isLobbyScreen = selectedRoute == NavRoutes.QUICK_MATCH || selectedRoute == NavRoutes.PRIVATE_LOBBY
+    val isLobbyScreen =
+        selectedRoute == NavRoutes.QUICK_MATCH || selectedRoute == NavRoutes.PRIVATE_LOBBY
 
     Scaffold(
         topBar = {
@@ -87,9 +88,9 @@ fun MainScaffoldScreen(
                         label = { Text(item.label) },
                         selected = item.route == selectedRoute,
                         onClick = {
-                            if(selectedRoute != item.route) {
-                                innerNavController.navigate(item.route){
-                                    popUpTo("home") {inclusive = false}
+                            if (selectedRoute != item.route) {
+                                innerNavController.navigate(item.route) {
+                                    popUpTo("home") { inclusive = false }
                                     launchSingleTop = true
                                 }
                             }
@@ -136,7 +137,7 @@ fun MainScaffoldScreen(
                 val lobbyCode = backStackEntry.arguments?.getString("lobbyCode") ?: ""
                 LobbyWaitingScreen(
                     lobbyCode = lobbyCode,
-                    onBackClick = { 
+                    onBackClick = {
                         // Explizit zum Home-Screen navigieren und alles andere löschen
                         innerNavController.navigate(NavRoutes.HOME) {
                             popUpTo(NavRoutes.HOME) { inclusive = false }
