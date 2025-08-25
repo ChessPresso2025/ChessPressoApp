@@ -218,7 +218,7 @@ class StompWebSocketService @Inject constructor(
                 }
 
                 // Entferne Null-Terminator
-                body = body.replace("\u0000", "")
+                body = body.replace(MESSAGE_END, "")
 
                 if (body.isNotEmpty()) {
                     handleMessageBody(body)
@@ -457,7 +457,7 @@ class StompWebSocketService @Inject constructor(
 
             Log.d(
                 TAG,
-                "Sending STOMP unsubscribe frame: ${unsubscribeFrame.replace("\u0000", "[NULL]")}"
+                "Sending STOMP unsubscribe frame: ${unsubscribeFrame.replace(MESSAGE_END, "[NULL]")}"
             )
             webSocket?.send(unsubscribeFrame)
             Log.d(TAG, "Unsubscribed from lobby: $lobbyId")
