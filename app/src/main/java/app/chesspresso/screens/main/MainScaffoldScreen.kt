@@ -36,14 +36,18 @@ import app.chesspresso.auth.presentation.AuthViewModel
 import app.chesspresso.screens.lobby.QuickMatchScreen
 import app.chesspresso.screens.lobby.PrivateLobbyScreen
 import app.chesspresso.screens.lobby.LobbyWaitingScreen
+import app.chesspresso.websocket.WebSocketViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MainScaffoldScreen(authViewModel: AuthViewModel){
+fun MainScaffoldScreen(
+    authViewModel: AuthViewModel,
+    webSocketViewModel: WebSocketViewModel
+){
     val innerNavController = rememberNavController()
     val currentRoute by innerNavController.currentBackStackEntryAsState()
     val selectedRoute = currentRoute?.destination?.route ?: "home"
-
+    
     // Prüfe, ob wir uns in einem Lobby-Screen befinden
     val isLobbyScreen = selectedRoute == NavRoutes.QUICK_MATCH || selectedRoute == NavRoutes.PRIVATE_LOBBY
 
@@ -167,6 +171,7 @@ fun MainScaffoldScreen(authViewModel: AuthViewModel){
                 InfoScreen(
                     authViewModel = authViewModel,
                     onLogout = {
+                        webSocketViewModel.disconnect()
                         authViewModel.logout()
                         // Hier wäre Navigation zum welcome Screen nötig, aber innerNavController
                         // kann nur innerhalb des MainScaffolds navigieren

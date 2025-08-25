@@ -110,6 +110,7 @@ class LobbyService @Inject constructor(
             // Zuerst WebSocket-Subscription beenden
             webSocketService.unsubscribeFromLobby()
             
+            Log.d("LobbyService", "Sende Leave-Request an API: LeaveLobbyRequest(lobbyId=$lobbyId)")
             val response = lobbyApiService.leaveLobby(LeaveLobbyRequest(lobbyId))
             if (response.isSuccessful) {
                 _currentLobby.value = null

@@ -412,6 +412,7 @@ class StompWebSocketService @Inject constructor(
                 append("\u0000")
             }
 
+            Log.d(TAG, "Sending STOMP unsubscribe frame: ${unsubscribeFrame.replace("\u0000", "[NULL]")}")
             webSocket?.send(unsubscribeFrame)
             Log.d(TAG, "Unsubscribed from lobby: $lobbyId")
         }

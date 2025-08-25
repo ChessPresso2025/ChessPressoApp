@@ -22,6 +22,9 @@ class PrivateLobbyViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(PrivateLobbyUiState())
     val uiState: StateFlow<PrivateLobbyUiState> = _uiState.asStateFlow()
 
+    private val _navigationEvent = MutableStateFlow<String?>(null)
+    val navigationEvent: StateFlow<String?> = _navigationEvent.asStateFlow()
+
     val currentLobby = lobbyService.currentLobby
     val lobbyError = lobbyService.lobbyError
     val gameStarted = lobbyService.gameStarted
@@ -83,9 +86,11 @@ class PrivateLobbyViewModel @Inject constructor(
     fun leaveLobby() {
         viewModelScope.launch {
             val lobbyCode = _uiState.value.createdLobbyCode ?: _uiState.value.joinedLobbyCode
+            Log.d("PrivateLobbyViewModel", "Verlasse Lobby: $lobbyCode")
             lobbyCode?.let { code ->
                 lobbyService.leaveLobby(code)
                 resetState()
+                _navigationEvent.value = "home"
             }
         }
     }
@@ -134,6 +139,15 @@ class PrivateLobbyViewModel @Inject constructor(
             val codeToUse = lobbyCode ?: _uiState.value.createdLobbyCode ?: _uiState.value.joinedLobbyCode
             codeToUse?.let { code ->
                 lobbyService.getLobbyInfo(code)
+                    .onSuccess { lobby ->
+                        // Stelle sicher, dass der Lobby-Code im uiState gespeichert ist
+                        if (_uiState.value.createdLobbyCode == null && _uiState.value.joinedLobbyCode == null) {
+                            _uiState.value = _uiState.value.copy(
+                                joinedLobbyCode = code
+                            )
+                            Log.d("PrivateLobbyViewModel", "LobbyCode im uiState aktualisiert: $code")
+                        }
+                    }
                     .onFailure { exception ->
                         Log.e("PrivateLobbyViewModel", "Fehler beim Laden der Lobby-Info", exception)
                     }
@@ -145,6 +159,10 @@ class PrivateLobbyViewModel @Inject constructor(
         viewModelScope.launch {
             lobbyService.setPlayerReady(lobbyId, ready)
         }
+    }
+
+    fun onNavigated() {
+        _navigationEvent.value = null
     }
 }
 
