@@ -16,9 +16,9 @@ class LobbyService @Inject constructor(
     private val lobbyApiService: LobbyApiService,
     private val webSocketService: StompWebSocketService,
     private val gson: Gson
-) {
+) : LobbyListener{
     private val _currentLobby = MutableStateFlow<Lobby?>(null)
-    val currentLobby: StateFlow<Lobby?> = _currentLobby.asStateFlow()
+    override val currentLobby: StateFlow<Lobby?> = _currentLobby.asStateFlow()
 
     private val _lobbyMessages = MutableStateFlow<List<LobbyMessage>>(emptyList())
     val lobbyMessages: StateFlow<List<LobbyMessage>> = _lobbyMessages.asStateFlow()
@@ -36,6 +36,7 @@ class LobbyService @Inject constructor(
         webSocketService.setLobbyMessageHandler { message ->
             handleWebSocketMessage(message)
         }
+        webSocketService.setLobbyListener(this)
     }
 
     // Quick Match beitreten
@@ -105,7 +106,7 @@ class LobbyService @Inject constructor(
     }
 
     // Lobby verlassen
-    suspend fun leaveLobby(lobbyId: String): Result<Unit> {
+    override suspend fun leaveLobby(lobbyId: String): Result<Unit> {
         return try {
             // Zuerst WebSocket-Subscription beenden
             webSocketService.unsubscribeFromLobby()

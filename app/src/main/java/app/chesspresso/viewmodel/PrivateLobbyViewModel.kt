@@ -149,6 +149,8 @@ class PrivateLobbyViewModel @Inject constructor(
                         }
                     }
                     .onFailure { exception ->
+                        resetState()
+                        _navigationEvent.value = "home"
                         Log.e("PrivateLobbyViewModel", "Fehler beim Laden der Lobby-Info", exception)
                     }
             }

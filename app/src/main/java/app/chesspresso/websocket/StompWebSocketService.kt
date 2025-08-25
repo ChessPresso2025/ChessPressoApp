@@ -1,7 +1,11 @@
 package app.chesspresso.websocket
 
 import android.util.Log
+import app.chesspresso.ChessPressoApplication
 import app.chesspresso.data.storage.TokenStorage
+import app.chesspresso.di.AppModule.provideLobbyService
+import app.chesspresso.service.LobbyListener
+import app.chesspresso.service.LobbyService
 import kotlinx.coroutines.*
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -30,6 +34,8 @@ class StompWebSocketService @Inject constructor(
     private var playerId: String? = null
     private var currentLobbyId: String? = null
 
+    private var lobbyListener: LobbyListener? = null
+
     private val _connectionState = MutableStateFlow(ConnectionState.DISCONNECTED)
     val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
 
@@ -48,6 +54,10 @@ class StompWebSocketService @Inject constructor(
 
     enum class ConnectionState {
         DISCONNECTED, CONNECTING, CONNECTED, RECONNECTING
+    }
+
+    fun setLobbyListener(listener: LobbyListener){
+        this.lobbyListener = listener
     }
 
     private val webSocketListener = object : WebSocketListener() {
@@ -344,7 +354,24 @@ class StompWebSocketService @Inject constructor(
     }
 
     fun sendAppClosingMessageWithReason(reason: String) {
-        // Neue Methode mit spezifischem Grund
+        if(lobbyListener == null){
+            Log.w(TAG, "LobbyListener is not set. Cannot leave lobby on app closing.")
+        }else{
+            // Neue Methode mit spezifischem Grund
+            CoroutineScope(Dispatchers.IO).launch {
+                val currentLobby = lobbyListener!!.currentLobby.value
+                Log.d("StompWebSocket", "checking if in a lobby: current Lobby: $currentLobby")
+                currentLobby?.let {
+                    lobbyListener!!.leaveLobby(it.lobbyId)
+                        .onSuccess {
+                            Log.d("StompWebSocket", "Successfully left lobby ${currentLobby.lobbyId} during app closing")
+                        }
+                        .onFailure { exception ->
+                            Log.e("StompWebSocket", "Failed to leave lobby during app closing", exception)
+                        }
+                }
+            }
+        }
         playerId?.let { id ->
             val appClosingFrame = buildString {
                 append("SEND\n")
