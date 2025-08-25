@@ -57,6 +57,7 @@ class StompWebSocketService @Inject constructor(
 
     // Callback für Lobby-Message-Handling
     private var lobbyMessageHandler: ((String) -> Unit)? = null
+    val MESSAGE_END = "\u0000"
 
     enum class ConnectionState {
         DISCONNECTED, CONNECTING, CONNECTED, RECONNECTING
@@ -142,7 +143,7 @@ class StompWebSocketService @Inject constructor(
             append("heart-beat:5000,5000\n")
             playerId?.let { append("login:$it\n") }
             append("\n")
-            append("\u0000")
+            append(MESSAGE_END)
         }
 
         webSocket?.send(connectFrame)
@@ -157,7 +158,7 @@ class StompWebSocketService @Inject constructor(
                 append("id:sub-1\n")
                 append("destination:/user/$id/queue/status\n")
                 append("\n")
-                append("\u0000")
+                append(MESSAGE_END)
             }
             webSocket?.send(subscribeFrame1)
 
@@ -167,7 +168,7 @@ class StompWebSocketService @Inject constructor(
                 append("id:sub-2\n")
                 append("destination:/topic/players\n")
                 append("\n")
-                append("\u0000")
+                append(MESSAGE_END)
             }
             webSocket?.send(subscribeFrame2)
 
@@ -193,7 +194,7 @@ class StompWebSocketService @Inject constructor(
                 append("content-type:application/json\n")
                 append("\n")
                 append("""{"type":"heartbeat","playerId":"$id"}""")
-                append("\u0000")
+                append(MESSAGE_END)
             }
 
             webSocket?.send(heartbeatFrame)
@@ -326,7 +327,7 @@ class StompWebSocketService @Inject constructor(
         val disconnectFrame = buildString {
             append("DISCONNECT\n")
             append("\n")
-            append("\u0000")
+            append(MESSAGE_END)
         }
 
         webSocket?.send(disconnectFrame)
@@ -345,7 +346,7 @@ class StompWebSocketService @Inject constructor(
                 append("content-type:application/json\n")
                 append("\n")
                 append("""{"type":"app-closing","playerId":"$id","reason":"app-shutdown"}""")
-                append("\u0000")
+                append(MESSAGE_END)
             }
 
             webSocket?.send(appClosingFrame)
@@ -394,7 +395,7 @@ class StompWebSocketService @Inject constructor(
                 append("content-type:application/json\n")
                 append("\n")
                 append("""{"type":"app-closing","playerId":"$id","reason":"$reason","timestamp":"${System.currentTimeMillis()}"}""")
-                append("\u0000")
+                append(MESSAGE_END)
             }
 
             webSocket?.send(appClosingFrame)
@@ -413,7 +414,7 @@ class StompWebSocketService @Inject constructor(
                 append("content-type:application/json\n")
                 append("\n")
                 append("""{"type":"request","playerId":"$id"}""")
-                append("\u0000")
+                append(MESSAGE_END)
             }
 
             webSocket?.send(requestFrame)
@@ -438,7 +439,7 @@ class StompWebSocketService @Inject constructor(
             append("id:sub-lobby-$lobbyId\n")
             append("destination:/topic/lobby/$lobbyId\n")
             append("\n")
-            append("\u0000")
+            append(MESSAGE_END)
         }
 
         webSocket?.send(subscribeLobbyFrame)
@@ -451,7 +452,7 @@ class StompWebSocketService @Inject constructor(
                 append("UNSUBSCRIBE\n")
                 append("id:sub-lobby-$lobbyId\n")
                 append("\n")
-                append("\u0000")
+                append(MESSAGE_END)
             }
 
             Log.d(
@@ -473,7 +474,7 @@ class StompWebSocketService @Inject constructor(
                     append("content-type:application/json\n")
                     append("\n")
                     append("""{"type":"chat","playerId":"$id","lobbyId":"$lobbyId","message":"$message"}""")
-                    append("\u0000")
+                    append(MESSAGE_END)
                 }
 
                 webSocket?.send(chatFrame)
@@ -491,7 +492,7 @@ class StompWebSocketService @Inject constructor(
                     append("content-type:application/json\n")
                     append("\n")
                     append("""{"type":"player-ready","playerId":"$id","lobbyId":"$lobbyId","ready":$ready}""")
-                    append("\u0000")
+                    append(MESSAGE_END)
                 }
 
                 webSocket?.send(readyFrame)

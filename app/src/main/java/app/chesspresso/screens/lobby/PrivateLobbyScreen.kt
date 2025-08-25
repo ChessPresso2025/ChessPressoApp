@@ -159,6 +159,7 @@ fun PrivateLobbyScreen(
                     placeholder = { Text("ABC123") },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !uiState.isLoading,
+                    singleLine = true,
                     keyboardOptions = KeyboardOptions(
                         capitalization = KeyboardCapitalization.Characters,
                         imeAction = ImeAction.Go
