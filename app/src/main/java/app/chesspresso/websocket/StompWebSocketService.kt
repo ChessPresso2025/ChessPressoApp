@@ -2,12 +2,22 @@ package app.chesspresso.websocket
 
 import android.util.Log
 import app.chesspresso.data.storage.TokenStorage
-import kotlinx.coroutines.*
+import app.chesspresso.service.LobbyListener
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
-import okhttp3.*
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import okhttp3.Response
+import okhttp3.WebSocket
+import okhttp3.WebSocketListener
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -30,6 +40,8 @@ class StompWebSocketService @Inject constructor(
     private var playerId: String? = null
     private var currentLobbyId: String? = null
 
+    private var lobbyListener: LobbyListener? = null
+
     private val _connectionState = MutableStateFlow(ConnectionState.DISCONNECTED)
     val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
 
@@ -45,9 +57,14 @@ class StompWebSocketService @Inject constructor(
 
     // Callback für Lobby-Message-Handling
     private var lobbyMessageHandler: ((String) -> Unit)? = null
+    val MESSAGE_END = "\u0000"
 
     enum class ConnectionState {
         DISCONNECTED, CONNECTING, CONNECTED, RECONNECTING
+    }
+
+    fun setLobbyListener(listener: LobbyListener) {
+        this.lobbyListener = listener
     }
 
     private val webSocketListener = object : WebSocketListener() {
@@ -126,7 +143,7 @@ class StompWebSocketService @Inject constructor(
             append("heart-beat:5000,5000\n")
             playerId?.let { append("login:$it\n") }
             append("\n")
-            append("\u0000")
+            append(MESSAGE_END)
         }
 
         webSocket?.send(connectFrame)
@@ -141,7 +158,7 @@ class StompWebSocketService @Inject constructor(
                 append("id:sub-1\n")
                 append("destination:/user/$id/queue/status\n")
                 append("\n")
-                append("\u0000")
+                append(MESSAGE_END)
             }
             webSocket?.send(subscribeFrame1)
 
@@ -151,7 +168,7 @@ class StompWebSocketService @Inject constructor(
                 append("id:sub-2\n")
                 append("destination:/topic/players\n")
                 append("\n")
-                append("\u0000")
+                append(MESSAGE_END)
             }
             webSocket?.send(subscribeFrame2)
 
@@ -177,7 +194,7 @@ class StompWebSocketService @Inject constructor(
                 append("content-type:application/json\n")
                 append("\n")
                 append("""{"type":"heartbeat","playerId":"$id"}""")
-                append("\u0000")
+                append(MESSAGE_END)
             }
 
             webSocket?.send(heartbeatFrame)
@@ -201,7 +218,7 @@ class StompWebSocketService @Inject constructor(
                 }
 
                 // Entferne Null-Terminator
-                body = body.replace("\u0000", "")
+                body = body.replace(MESSAGE_END, "")
 
                 if (body.isNotEmpty()) {
                     handleMessageBody(body)
@@ -231,6 +248,7 @@ class StompWebSocketService @Inject constructor(
                     _onlinePlayers.value = players
                     Log.d(TAG, "Updated online players: $players")
                 }
+
                 "players-update" -> {
                     val onlinePlayersArray = json.optJSONArray("onlinePlayers")
                     val players = mutableSetOf<String>()
@@ -244,6 +262,7 @@ class StompWebSocketService @Inject constructor(
                     _onlinePlayers.value = players
                     Log.d(TAG, "Players update received: $players")
                 }
+
                 "lobby-message" -> {
                     // Lobby-spezifische Nachrichten verarbeiten
                     val lobbyId = json.optString("lobbyId")
@@ -308,7 +327,7 @@ class StompWebSocketService @Inject constructor(
         val disconnectFrame = buildString {
             append("DISCONNECT\n")
             append("\n")
-            append("\u0000")
+            append(MESSAGE_END)
         }
 
         webSocket?.send(disconnectFrame)
@@ -327,7 +346,7 @@ class StompWebSocketService @Inject constructor(
                 append("content-type:application/json\n")
                 append("\n")
                 append("""{"type":"app-closing","playerId":"$id","reason":"app-shutdown"}""")
-                append("\u0000")
+                append(MESSAGE_END)
             }
 
             webSocket?.send(appClosingFrame)
@@ -344,7 +363,31 @@ class StompWebSocketService @Inject constructor(
     }
 
     fun sendAppClosingMessageWithReason(reason: String) {
-        // Neue Methode mit spezifischem Grund
+        if (lobbyListener == null) {
+            Log.w(TAG, "LobbyListener is not set. Cannot leave lobby on app closing.")
+        } else {
+            // Neue Methode mit spezifischem Grund
+            CoroutineScope(Dispatchers.IO).launch {
+                val currentLobby = lobbyListener!!.currentLobby.value
+                Log.d("StompWebSocket", "checking if in a lobby: current Lobby: $currentLobby")
+                currentLobby?.let {
+                    lobbyListener!!.leaveLobby(it.lobbyId)
+                        .onSuccess {
+                            Log.d(
+                                "StompWebSocket",
+                                "Successfully left lobby ${currentLobby.lobbyId} during app closing"
+                            )
+                        }
+                        .onFailure { exception ->
+                            Log.e(
+                                "StompWebSocket",
+                                "Failed to leave lobby during app closing",
+                                exception
+                            )
+                        }
+                }
+            }
+        }
         playerId?.let { id ->
             val appClosingFrame = buildString {
                 append("SEND\n")
@@ -352,7 +395,7 @@ class StompWebSocketService @Inject constructor(
                 append("content-type:application/json\n")
                 append("\n")
                 append("""{"type":"app-closing","playerId":"$id","reason":"$reason","timestamp":"${System.currentTimeMillis()}"}""")
-                append("\u0000")
+                append(MESSAGE_END)
             }
 
             webSocket?.send(appClosingFrame)
@@ -371,7 +414,7 @@ class StompWebSocketService @Inject constructor(
                 append("content-type:application/json\n")
                 append("\n")
                 append("""{"type":"request","playerId":"$id"}""")
-                append("\u0000")
+                append(MESSAGE_END)
             }
 
             webSocket?.send(requestFrame)
@@ -396,7 +439,7 @@ class StompWebSocketService @Inject constructor(
             append("id:sub-lobby-$lobbyId\n")
             append("destination:/topic/lobby/$lobbyId\n")
             append("\n")
-            append("\u0000")
+            append(MESSAGE_END)
         }
 
         webSocket?.send(subscribeLobbyFrame)
@@ -409,9 +452,13 @@ class StompWebSocketService @Inject constructor(
                 append("UNSUBSCRIBE\n")
                 append("id:sub-lobby-$lobbyId\n")
                 append("\n")
-                append("\u0000")
+                append(MESSAGE_END)
             }
 
+            Log.d(
+                TAG,
+                "Sending STOMP unsubscribe frame: ${unsubscribeFrame.replace(MESSAGE_END, "[NULL]")}"
+            )
             webSocket?.send(unsubscribeFrame)
             Log.d(TAG, "Unsubscribed from lobby: $lobbyId")
         }
@@ -427,7 +474,7 @@ class StompWebSocketService @Inject constructor(
                     append("content-type:application/json\n")
                     append("\n")
                     append("""{"type":"chat","playerId":"$id","lobbyId":"$lobbyId","message":"$message"}""")
-                    append("\u0000")
+                    append(MESSAGE_END)
                 }
 
                 webSocket?.send(chatFrame)
@@ -445,7 +492,7 @@ class StompWebSocketService @Inject constructor(
                     append("content-type:application/json\n")
                     append("\n")
                     append("""{"type":"player-ready","playerId":"$id","lobbyId":"$lobbyId","ready":$ready}""")
-                    append("\u0000")
+                    append(MESSAGE_END)
                 }
 
                 webSocket?.send(readyFrame)

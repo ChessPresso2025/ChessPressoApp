@@ -7,6 +7,7 @@ sealed class Screen(val route: String) {
     object LobbyWaiting : Screen("lobby_waiting/{lobbyCode}") {
         fun createRoute(lobbyCode: String) = "lobby_waiting/$lobbyCode"
     }
+
     object Game : Screen("game/{lobbyId}") {
         fun createRoute(lobbyId: String) = "game/$lobbyId"
     }

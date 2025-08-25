@@ -1,11 +1,35 @@
 package app.chesspresso.screens.lobby
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -27,10 +51,22 @@ fun LobbyWaitingScreen(
     val gameStarted by viewModel.gameStarted.collectAsStateWithLifecycle()
     val error by viewModel.lobbyError.collectAsStateWithLifecycle()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val navigationEvent by viewModel.navigationEvent.collectAsStateWithLifecycle()
 
     var selectedGameTime by remember { mutableStateOf(GameTime.MIDDLE) }
     var selectedWhitePlayer by remember { mutableStateOf("") }
     var randomColors by remember { mutableStateOf(true) }
+
+    // State für Ersteller-Status
+    var isCreator by remember { mutableStateOf(false) }
+
+    // Navigation nach Home wenn Lobby verlassen wurde
+    LaunchedEffect(navigationEvent) {
+        if (navigationEvent == "home") {
+            onBackClick()
+            viewModel.onNavigated()
+        }
+    }
 
     // Automatische Navigation bei Spielstart
     LaunchedEffect(gameStarted) {
@@ -65,48 +101,41 @@ fun LobbyWaitingScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .verticalScroll(rememberScrollState())
             .padding(24.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Header (ohne Zurück-Button)
+        // Header
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "Lobby: $lobbyCode",
+                text = "Deine Lobby: $lobbyCode",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold
             )
         }
 
-        // Lobby-Code anzeigen
-        Card(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+        // nur wenn nur ein Spieler in der Lobby ist
+        if (isCreator) {
+            Card(
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
-                    text = "Lobby-Code:",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = lobbyCode,
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = MaterialTheme.typography.headlineLarge.letterSpacing * 2
-                )
-                Text(
-                    text = "Teile diesen Code mit deinem Freund",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center
-                )
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Teile diesen Code mit deinem Freund",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                }
             }
         }
+
 
         // Spieler-Status
         Card(
@@ -140,31 +169,32 @@ fun LobbyWaitingScreen(
                             )
                         }
                     }
-                }
 
-                if (currentLobby?.players?.size != 2) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(24.dp),
-                            strokeWidth = 2.dp
-                        )
-                        Text(
-                            text = "Warte auf zweiten Spieler...",
-                            modifier = Modifier.padding(start = 8.dp),
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
+                    if (currentLobby?.players?.size != 2) {
+                        isCreator = true
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.dp
+                            )
+                            Text(
+                                text = "Warte auf zweiten Spieler...",
+                                modifier = Modifier.padding(start = 8.dp),
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
                     }
                 }
             }
         }
 
-        // Spiel-Konfiguration (nur für Lobby-Ersteller sichtbar)
+        // Spieleinstellungen Card (nur für Ersteller)
         currentLobby?.let { lobby ->
-            if (lobby.players.size == 2 && lobby.creator == lobby.players.firstOrNull()) {
+            if (isCreator) {
                 Card(
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -173,7 +203,7 @@ fun LobbyWaitingScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         Text(
-                            text = "Spiel-Einstellungen:",
+                            text = "Spiel-Einstellungen",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold
                         )
@@ -207,118 +237,128 @@ fun LobbyWaitingScreen(
                                 )
                             }
                         }
+                    }
+                }
 
-                        HorizontalDivider()
+                // Farbauswahl Card (nur wenn beide Spieler da sind)
+                if (lobby.players.size == 2) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Text(
+                                text = "Farbauswahl",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
 
-                        // Farb-Auswahl
-                        Text(
-                            text = "Farben:",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
-                        )
-
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .selectable(
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .selectable(
+                                        selected = randomColors,
+                                        onClick = { randomColors = true }
+                                    )
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
                                     selected = randomColors,
                                     onClick = { randomColors = true }
                                 )
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = randomColors,
-                                onClick = { randomColors = true }
-                            )
-                            Text(
-                                text = "Zufällig",
-                                modifier = Modifier.padding(start = 8.dp),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
+                                Text(
+                                    text = "Zufällig",
+                                    modifier = Modifier.padding(start = 8.dp),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
 
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .selectable(
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .selectable(
+                                        selected = !randomColors,
+                                        onClick = { randomColors = false }
+                                    )
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                RadioButton(
                                     selected = !randomColors,
                                     onClick = { randomColors = false }
                                 )
-                                .padding(vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            RadioButton(
-                                selected = !randomColors,
-                                onClick = { randomColors = false }
-                            )
-                            Text(
-                                text = "Manuell auswählen",
-                                modifier = Modifier.padding(start = 8.dp),
-                                style = MaterialTheme.typography.bodyMedium
-                            )
-                        }
+                                Text(
+                                    text = "Manuell auswählen",
+                                    modifier = Modifier.padding(start = 8.dp),
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                            }
 
-                        // Manuelle Farbauswahl
-                        if (!randomColors && lobby.players.size == 2) {
-                            Text(
-                                text = "Weiß spielt:",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                            lobby.players.forEachIndexed { index, player ->
-                                Row(
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .selectable(
+                            if (!randomColors) {
+                                Text(
+                                    text = "Weiß spielt:",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                lobby.players.forEachIndexed { index, player ->
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .selectable(
+                                                selected = selectedWhitePlayer == player,
+                                                onClick = { selectedWhitePlayer = player }
+                                            )
+                                            .padding(vertical = 2.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        RadioButton(
                                             selected = selectedWhitePlayer == player,
                                             onClick = { selectedWhitePlayer = player }
                                         )
-                                        .padding(vertical = 2.dp),
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    RadioButton(
-                                        selected = selectedWhitePlayer == player,
-                                        onClick = { selectedWhitePlayer = player }
-                                    )
-                                    Text(
-                                        text = "Spieler ${index + 1}${if (player == lobby.creator) " (Ersteller)" else ""}",
-                                        modifier = Modifier.padding(start = 8.dp),
-                                        style = MaterialTheme.typography.bodySmall
-                                    )
+                                        Text(
+                                            text = "Spieler ${index + 1}${if (player == lobby.creator) " (Ersteller)" else ""}",
+                                            modifier = Modifier.padding(start = 8.dp),
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
                                 }
                             }
                         }
+                    }
 
-                        Button(
-                            onClick = {
-                                val whitePlayerFinal = if (randomColors) null else selectedWhitePlayer
-                                val blackPlayerFinal = if (randomColors) null else lobby.players.find { it != selectedWhitePlayer }
+                    // Spiel starten Button
+                    Button(
+                        onClick = {
+                            val whitePlayerFinal = if (randomColors) null else selectedWhitePlayer
+                            val blackPlayerFinal =
+                                if (randomColors) null else lobby.players.find { it != selectedWhitePlayer }
 
-                                viewModel.configureAndStartGame(
-                                    lobbyCode = lobbyCode,
-                                    gameTime = selectedGameTime,
-                                    whitePlayer = whitePlayerFinal,
-                                    blackPlayer = blackPlayerFinal,
-                                    randomColors = randomColors
-                                )
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = !uiState.isLoading
-                        ) {
-                            if (uiState.isLoading) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    color = MaterialTheme.colorScheme.onPrimary
-                                )
-                                Spacer(modifier = Modifier.width(8.dp))
-                            }
-                            Text("Spiel starten")
+                            viewModel.configureAndStartGame(
+                                lobbyCode = lobbyCode,
+                                gameTime = selectedGameTime,
+                                whitePlayer = whitePlayerFinal,
+                                blackPlayer = blackPlayerFinal,
+                                randomColors = randomColors
+                            )
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !uiState.isLoading
+                    ) {
+                        if (uiState.isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
                         }
+                        Text("Spiel starten")
                     }
                 }
             } else if (lobby.players.size == 2) {
-                // Für nicht-Ersteller: Warten auf Spiel-Start
+                // Warte-Status für den zweiten Spieler
                 Card(
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -333,7 +373,7 @@ fun LobbyWaitingScreen(
                             style = MaterialTheme.typography.bodyLarge
                         )
                         Text(
-                            text = "Der Lobby-Ersteller konfiguriert das Spiel.",
+                            text = "Der Lobby-Ersteller richtet das Spiel ein.",
                             style = MaterialTheme.typography.bodyMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center
@@ -365,7 +405,6 @@ fun LobbyWaitingScreen(
         OutlinedButton(
             onClick = {
                 viewModel.leaveLobby()
-                onBackClick()
             },
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.outlinedButtonColors(

@@ -38,7 +38,7 @@ class ChessPressoApplication : Application(), DefaultLifecycleObserver {
     override fun onDestroy(owner: LifecycleOwner) {
         super<DefaultLifecycleObserver>.onDestroy(owner)
         Log.d(TAG, "App process is being destroyed")
-        
+
         // Sende finale App-Closing-Nachricht bei Process-Zerstörung
         sendAppClosingMessage("app-destroyed")
     }

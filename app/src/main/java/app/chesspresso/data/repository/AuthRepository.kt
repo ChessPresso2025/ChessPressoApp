@@ -7,7 +7,6 @@ import app.chesspresso.data.models.TokenResponse
 import app.chesspresso.data.storage.TokenStorage
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
-import retrofit2.Response
 import javax.inject.Inject
 import javax.inject.Singleton
 

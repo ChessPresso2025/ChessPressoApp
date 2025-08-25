@@ -70,6 +70,7 @@ fun LoginScreen(
             is AuthState.Error -> {
                 snackbarHostState.showSnackbar(state.message)
             }
+
             else -> {}
         }
     }
@@ -178,14 +179,17 @@ fun LoginScreen(
                         text = if (isRegistering) "Registrierung läuft..." else "Anmeldung läuft...",
                         color = MaterialTheme.colorScheme.primary
                     )
+
                     is AuthState.Success -> Text(
                         text = "Willkommen ${state.response.name}!",
                         color = MaterialTheme.colorScheme.primary
                     )
+
                     is AuthState.Error -> Text(
                         text = "Fehler: ${state.message}",
                         color = MaterialTheme.colorScheme.error
                     )
+
                     AuthState.Idle -> Text(
                         text = "Bereit zur Anmeldung",
                         color = MaterialTheme.colorScheme.onSurface
