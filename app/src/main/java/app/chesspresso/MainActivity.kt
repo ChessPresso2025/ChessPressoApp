@@ -100,7 +100,8 @@ class MainActivity : ComponentActivity() {
             composable("main") {
                 MainScaffoldScreen(
                     authViewModel = authViewModel,
-                    webSocketViewModel = webSocketViewModel
+                    webSocketViewModel = webSocketViewModel,
+                    outerNavController = navController
                 ) //verwaltet eigene interne BottomNav
             }
         }

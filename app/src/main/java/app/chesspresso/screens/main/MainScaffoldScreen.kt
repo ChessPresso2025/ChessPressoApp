@@ -27,6 +27,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
@@ -42,7 +43,8 @@ import app.chesspresso.websocket.WebSocketViewModel
 @Composable
 fun MainScaffoldScreen(
     authViewModel: AuthViewModel,
-    webSocketViewModel: WebSocketViewModel
+    webSocketViewModel: WebSocketViewModel,
+    outerNavController: NavHostController
 ) {
     val innerNavController = rememberNavController()
     val currentRoute by innerNavController.currentBackStackEntryAsState()
@@ -174,9 +176,9 @@ fun MainScaffoldScreen(
                     onLogout = {
                         webSocketViewModel.disconnect()
                         authViewModel.logout()
-                        // Hier wäre Navigation zum welcome Screen nötig, aber innerNavController
-                        // kann nur innerhalb des MainScaffolds navigieren
-                        // Stattdessen sollte die App eine Callback-Funktion für Logout verwenden
+                        outerNavController.navigate("welcome") {
+                            popUpTo(0) // Löscht den Backstack
+                        }
                     }
                 )
             }
