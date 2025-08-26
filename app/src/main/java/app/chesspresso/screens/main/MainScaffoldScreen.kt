@@ -174,7 +174,6 @@ fun MainScaffoldScreen(
                 InfoScreen(
                     authViewModel = authViewModel,
                     onLogout = {
-                        webSocketViewModel.disconnect()
                         authViewModel.logout()
                         outerNavController.navigate("welcome") {
                             popUpTo(0) // Löscht den Backstack
