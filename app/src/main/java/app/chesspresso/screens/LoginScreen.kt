@@ -1,5 +1,6 @@
 package app.chesspresso.screens
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -30,9 +31,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import app.chesspresso.auth.presentation.AuthState
 import app.chesspresso.auth.presentation.AuthViewModel
 
@@ -97,8 +100,6 @@ fun LoginScreen(
                     color = MaterialTheme.colorScheme.primary
                 )
 
-                Spacer(modifier = Modifier.height(8.dp))
-
                 OutlinedTextField(
                     value = username,
                     onValueChange = { username = it },
@@ -158,12 +159,16 @@ fun LoginScreen(
                     Text(if (isRegistering) "Registrieren" else "Anmelden")
                 }
 
-                Row {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     Text(
                         text = if (isRegistering) "Bereits ein Konto?" else "Noch kein Konto?",
                         color = MaterialTheme.colorScheme.onSurface
                     )
+
                     TextButton(
+                        modifier = Modifier.padding(top = 8.dp),
                         onClick = {
                             isRegistering = !isRegistering
                             email = ""
