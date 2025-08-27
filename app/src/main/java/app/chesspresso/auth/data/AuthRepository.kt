@@ -255,7 +255,7 @@ class AuthRepository @Inject constructor(
         return getJwtToken() != null
     }
 
-    suspend fun logout() {
+    fun logout() {
         Log.d("AuthRepository", "Logging out user")
 
         // WebSocket-Verbindung trennen

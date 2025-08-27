@@ -80,17 +80,6 @@ class AuthViewModel @Inject constructor(
 
     fun logout() {
         viewModelScope.launch {
-            // Sende App-Closing-Nachricht vor dem Logout
-            try {
-                webSocketService.sendAppClosingMessageSync()
-                Log.d("AuthViewModel", "App closing message sent before logout")
-            } catch (e: Exception) {
-                Log.e(
-                    "AuthViewModel",
-                    "Failed to send app closing message before logout: ${e.message}"
-                )
-            }
-
             repository.logout() // Verwendet jetzt die neue logout() Methode die auch WebSocket trennt
             _authState.value = AuthState.Idle
             Log.d("AuthViewModel", "User logged out successfully")
