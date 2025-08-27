@@ -28,6 +28,15 @@ class PrivateLobbyViewModel @Inject constructor(
     val lobbyError = lobbyService.lobbyError
     val gameStarted = lobbyService.gameStarted
 
+    init {
+        viewModelScope.launch {
+            lobbyService.lobbyLeft.collect {
+                resetState()
+                _navigationEvent.value = "home"
+            }
+        }
+    }
+
     fun createPrivateLobby() {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)

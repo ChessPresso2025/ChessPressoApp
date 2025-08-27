@@ -42,6 +42,7 @@ import app.chesspresso.viewmodel.PrivateLobbyViewModel
 
 @Composable
 fun LobbyWaitingScreen(
+    isCreator: Boolean,
     lobbyCode: String,
     onBackClick: () -> Unit,
     onGameStart: (String) -> Unit,
@@ -57,8 +58,6 @@ fun LobbyWaitingScreen(
     var selectedWhitePlayer by remember { mutableStateOf("") }
     var randomColors by remember { mutableStateOf(true) }
 
-    // State für Ersteller-Status
-    var isCreator by remember { mutableStateOf(false) }
 
     // Navigation nach Home wenn Lobby verlassen wurde
     LaunchedEffect(navigationEvent) {
@@ -118,7 +117,7 @@ fun LobbyWaitingScreen(
         }
 
         // nur wenn nur ein Spieler in der Lobby ist
-        if (isCreator) {
+        if (currentLobby?.players?.size != 2) {
             Card(
                 modifier = Modifier.fillMaxWidth()
             ) {
@@ -171,7 +170,6 @@ fun LobbyWaitingScreen(
                     }
 
                     if (currentLobby?.players?.size != 2) {
-                        isCreator = true
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
@@ -363,7 +361,9 @@ fun LobbyWaitingScreen(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
-                        modifier = Modifier.padding(24.dp),
+                        modifier = Modifier
+                            .padding(24.dp)
+                            .fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
