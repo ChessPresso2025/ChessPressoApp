@@ -15,6 +15,7 @@ import app.chesspresso.model.lobby.LobbyWaitingMessage
 import app.chesspresso.model.lobby.QuickJoinRequest
 import app.chesspresso.websocket.StompWebSocketService
 import com.google.gson.Gson
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -41,6 +42,7 @@ class LobbyService @Inject constructor(
 
     private val _gameStarted = MutableStateFlow<GameStartMessage?>(null)
     val gameStarted: StateFlow<GameStartMessage?> = _gameStarted.asStateFlow()
+    val lobbyLeft = MutableSharedFlow<Unit>()
 
     init {
         webSocketService.setLobbyMessageHandler { message ->
@@ -129,6 +131,7 @@ class LobbyService @Inject constructor(
                 _currentLobby.value = null
                 _isWaitingForMatch.value = false
                 _lobbyMessages.value = emptyList()
+                lobbyLeft.emit(Unit)
 
                 Log.d("LobbyService", "Lobby verlassen: $lobbyId")
                 Result.success(Unit)

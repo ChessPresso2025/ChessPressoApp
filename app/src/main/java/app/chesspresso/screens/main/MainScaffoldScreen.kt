@@ -127,17 +127,20 @@ fun MainScaffoldScreen(
             composable(NavRoutes.PRIVATE_LOBBY) {
                 PrivateLobbyScreen(
                     onLobbyCreated = { lobbyCode ->
-                        innerNavController.navigate("lobby_waiting/$lobbyCode")
+                        innerNavController.navigate("lobby_waiting/$lobbyCode/true")
                     },
                     onLobbyJoined = { lobbyCode ->
-                        innerNavController.navigate("lobby_waiting/$lobbyCode")
+                        innerNavController.navigate("lobby_waiting/$lobbyCode/false")
                     }
                 )
             }
 
-            composable("lobby_waiting/{lobbyCode}") { backStackEntry ->
+            composable("lobby_waiting/{lobbyCode}/{isCreator}") { backStackEntry ->
                 val lobbyCode = backStackEntry.arguments?.getString("lobbyCode") ?: ""
+                val isCreator = backStackEntry.arguments?.getString("isCreator")
+                    ?.toBoolean() ?: false
                 LobbyWaitingScreen(
+                    isCreator = isCreator,
                     lobbyCode = lobbyCode,
                     onBackClick = {
                         // Explizit zum Home-Screen navigieren und alles andere löschen
