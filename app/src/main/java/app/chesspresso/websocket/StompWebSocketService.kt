@@ -339,6 +339,7 @@ class StompWebSocketService @Inject constructor(
     }
 
     private fun sendAppClosingMessage() {
+        leaveLobbyOnAppClosing()
         playerId?.let { id ->
             val appClosingFrame = buildString {
                 append("SEND\n")
@@ -362,11 +363,10 @@ class StompWebSocketService @Inject constructor(
         }
     }
 
-    fun sendAppClosingMessageWithReason(reason: String) {
+    fun leaveLobbyOnAppClosing() {
         if (lobbyListener == null) {
             Log.w(TAG, "LobbyListener is not set. Cannot leave lobby on app closing.")
         } else {
-            // Neue Methode mit spezifischem Grund
             CoroutineScope(Dispatchers.IO).launch {
                 val currentLobby = lobbyListener!!.currentLobby.value
                 Log.d("StompWebSocket", "checking if in a lobby: current Lobby: $currentLobby")
@@ -388,6 +388,10 @@ class StompWebSocketService @Inject constructor(
                 }
             }
         }
+    }
+
+    fun sendAppClosingMessageWithReason(reason: String) {
+        leaveLobbyOnAppClosing()
         playerId?.let { id ->
             val appClosingFrame = buildString {
                 append("SEND\n")

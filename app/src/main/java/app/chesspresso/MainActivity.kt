@@ -76,6 +76,12 @@ class MainActivity : ComponentActivity() {
         super.finish()
     }
 
+    override fun onPause() {
+        super.onPause()
+        Log.d(TAG, "MainActivity paused")
+        webSocketService.sendAppClosingMessageWithReason("activity-paused")
+    }
+
     @Composable
     fun AppNavigation(navController: NavHostController) {
         val authViewModel: AuthViewModel = hiltViewModel()
@@ -115,7 +121,7 @@ class MainActivity : ComponentActivity() {
                 is AuthState.Loading -> "Loading"
                 AuthState.Idle -> "Idle"
             }
-            android.util.Log.d("MainActivity", "AuthState changed: $stateDesc")
+            Log.d("MainActivity", "AuthState changed: $stateDesc")
 
             when (authState) {
                 is AuthState.Success -> {
