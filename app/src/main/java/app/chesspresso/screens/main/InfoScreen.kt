@@ -20,16 +20,21 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.hilt.navigation.compose.hiltViewModel
 import app.chesspresso.auth.presentation.AuthState
 import app.chesspresso.auth.presentation.AuthViewModel
 import app.chesspresso.ui.theme.Creme1
+import app.chesspresso.websocket.StompWebSocketService
 
 @Composable
 fun InfoScreen(
     authViewModel: AuthViewModel,
+    infoViewModel: InfoViewModel = hiltViewModel(),
     onLogout: () -> Unit
 ) {
     val authState by authViewModel.authState.collectAsState()
+    val serverStatus by infoViewModel.serverStatus.collectAsState()
+    val connectionState by infoViewModel.connectionState.collectAsState()
 
     Box(
         modifier = Modifier
@@ -89,14 +94,44 @@ fun InfoScreen(
                                 .align(Alignment.CenterHorizontally)
                         )
 
+                        val statusText = when {
+                            connectionState == StompWebSocketService.ConnectionState.DISCONNECTED -> "Verbindung getrennt"
+                            connectionState == StompWebSocketService.ConnectionState.CONNECTING -> "Verbindung wird hergestellt..."
+                            connectionState == StompWebSocketService.ConnectionState.RECONNECTING -> "Verbindung wird wiederhergestellt..."
+                            serverStatus == StompWebSocketService.ServerStatus.ONLINE -> "Server online ✓"
+                            serverStatus == StompWebSocketService.ServerStatus.OFFLINE -> "Server offline ✗"
+                            serverStatus == StompWebSocketService.ServerStatus.BUSY -> "Server beschäftigt ⚠️"
+                            serverStatus == StompWebSocketService.ServerStatus.MAINTENANCE -> "Server Wartung ⚙️"
+                            else -> "Status unbekannt"
+                        }
+
+                        val statusColor = when {
+                            connectionState != StompWebSocketService.ConnectionState.CONNECTED -> Color.Gray
+                            serverStatus == StompWebSocketService.ServerStatus.ONLINE -> Color.Green
+                            serverStatus == StompWebSocketService.ServerStatus.OFFLINE -> Color.Red
+                            serverStatus == StompWebSocketService.ServerStatus.BUSY -> Color(0xFFFFA500) // Orange
+                            serverStatus == StompWebSocketService.ServerStatus.MAINTENANCE -> Color.Blue
+                            else -> Color.Gray
+                        }
+
                         Text(
-                            text = "Verbunden mit Server ✓",
+                            text = statusText,
                             fontSize = 16.sp,
-                            color = Color.Green,
+                            color = statusColor,
                             modifier = Modifier
                                 .padding(16.dp)
                                 .align(Alignment.CenterHorizontally)
                         )
+
+                        // Manuelle Aktualisierung des Status (optional)
+                        Button(
+                            onClick = { infoViewModel.requestServerStatus() },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(16.dp)
+                        ) {
+                            Text("Status aktualisieren")
+                        }
                     }
 
 

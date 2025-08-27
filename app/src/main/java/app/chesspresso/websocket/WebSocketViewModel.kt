@@ -33,15 +33,6 @@ class WebSocketViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            webSocketService.onlinePlayers.collect { players ->
-                _uiState.value = _uiState.value.copy(
-                    onlinePlayers = players,
-                    onlinePlayerCount = players.size
-                )
-            }
-        }
-
-        viewModelScope.launch {
             webSocketService.connectionMessages.collect { messages ->
                 _uiState.value = _uiState.value.copy(
                     recentMessages = messages.takeLast(10) // Zeige nur die letzten 10 Nachrichten
