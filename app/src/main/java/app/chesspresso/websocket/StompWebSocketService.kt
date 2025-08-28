@@ -47,9 +47,6 @@ class StompWebSocketService @Inject constructor(
     private val _connectionState = MutableStateFlow(ConnectionState.DISCONNECTED)
     val connectionState: StateFlow<ConnectionState> = _connectionState.asStateFlow()
 
-    private val _onlinePlayers = MutableStateFlow<Set<String>>(emptySet())
-    val onlinePlayers: StateFlow<Set<String>> = _onlinePlayers.asStateFlow()
-
     private val _connectionMessages = MutableStateFlow<List<String>>(emptyList())
     val connectionMessages: StateFlow<List<String>> = _connectionMessages.asStateFlow()
 
@@ -71,9 +68,22 @@ class StompWebSocketService @Inject constructor(
         DISCONNECTED, CONNECTING, CONNECTED, RECONNECTING
     }
 
+    enum class ServerStatus {
+        OFFLINE, ONLINE, BUSY, MAINTENANCE, UNKNOWN
+    }
+
     fun setLobbyListener(listener: LobbyListener) {
         this.lobbyListener = listener
     }
+
+    private val _serverStatus = MutableStateFlow(ServerStatus.UNKNOWN)
+    val serverStatus: StateFlow<ServerStatus> = _serverStatus.asStateFlow()
+
+    private val _lastMessageTimestamp = MutableStateFlow(0L)
+    private var serverStatusCheckJob: Job? = null
+
+    // Timeout für Server-Status-Überprüfung (10 Sekunden)
+    private val SERVER_STATUS_TIMEOUT = 10_000L
 
     private val webSocketListener = object : WebSocketListener() {
         override fun onOpen(webSocket: WebSocket, response: Response) {
@@ -86,8 +96,10 @@ class StompWebSocketService @Inject constructor(
             // Starte Heartbeat
             startHeartbeat()
 
-            // Subscribe zu Topics
-            subscribeToTopics()
+            // Starte Server-Status-Überprüfung
+            startServerStatusCheck()
+
+            // Subscription zu Topics erfolgt erst nach CONNECTED-Antwort vom Server
         }
 
         override fun onMessage(webSocket: WebSocket, text: String) {
@@ -99,6 +111,8 @@ class StompWebSocketService @Inject constructor(
             Log.e(TAG, "WebSocket connection failed: ${t.message}")
             _connectionState.value = ConnectionState.DISCONNECTED
             stopHeartbeat()
+            stopServerStatusCheck()
+            _serverStatus.value = ServerStatus.OFFLINE
             scheduleReconnect()
         }
 
@@ -106,6 +120,8 @@ class StompWebSocketService @Inject constructor(
             Log.i(TAG, "WebSocket connection closed: $reason")
             _connectionState.value = ConnectionState.DISCONNECTED
             stopHeartbeat()
+            stopServerStatusCheck()
+            _serverStatus.value = ServerStatus.OFFLINE
         }
     }
 
@@ -159,18 +175,10 @@ class StompWebSocketService @Inject constructor(
     }
 
     private fun subscribeToTopics() {
+        Log.d(TAG, "Subscribing to topics")
         playerId?.let { id ->
             // Subscribe zu persönlichen Nachrichten
-            val subscribeFrame1 = buildString {
-                append("SUBSCRIBE\n")
-                append("id:sub-1\n")
-                append("destination:/user/$id/queue/status\n")
-                append("\n")
-                append(MESSAGE_END)
-            }
-            webSocket?.send(subscribeFrame1)
-
-            // Subscribe zu öffentlichen Player-Updates
+            // 200 ms warten
             val subscribeFrame2 = buildString {
                 append("SUBSCRIBE\n")
                 append("id:sub-2\n")
@@ -179,8 +187,19 @@ class StompWebSocketService @Inject constructor(
                 append(MESSAGE_END)
             }
             webSocket?.send(subscribeFrame2)
-
             Log.d(TAG, "Subscribed to topics")
+
+            CoroutineScope(Dispatchers.IO).launch {
+                delay(200)
+                val subscribeFrame1 = buildString {
+                    append("SUBSCRIBE\n")
+                    append("id:sub-1\n")
+                    append("destination:/user/queue/status\n")
+                    append("\n")
+                    append(MESSAGE_END)
+                }
+                webSocket?.send(subscribeFrame1)
+            }
         }
     }
 
@@ -212,6 +231,14 @@ class StompWebSocketService @Inject constructor(
 
     private fun handleStompMessage(message: String) {
         try {
+            // Auf CONNECTED Frame vom Server prüfen
+            if (message.startsWith("CONNECTED")) {
+                Log.d(TAG, "Received STOMP CONNECTED frame from server")
+                // Jetzt erst die Subscriptions starten, wenn der Server die Verbindung bestätigt hat
+                subscribeToTopics()
+                return
+            }
+
             if (message.startsWith("MESSAGE")) {
                 val lines = message.split("\n")
                 var body = ""
@@ -243,32 +270,12 @@ class StompWebSocketService @Inject constructor(
             val type = json.optString("type")
 
             when (type) {
-                "connection-status" -> {
-                    val onlinePlayersArray = json.optJSONArray("onlinePlayers")
-                    val players = mutableSetOf<String>()
+                "status-update" -> {
+                    val status = json.optString("status")
+                    Log.d(TAG, "Status update received: $status")
 
-                    onlinePlayersArray?.let { array ->
-                        for (i in 0 until array.length()) {
-                            players.add(array.getString(i))
-                        }
-                    }
-
-                    _onlinePlayers.value = players
-                    Log.d(TAG, "Updated online players: $players")
-                }
-
-                "players-update" -> {
-                    val onlinePlayersArray = json.optJSONArray("onlinePlayers")
-                    val players = mutableSetOf<String>()
-
-                    onlinePlayersArray?.let { array ->
-                        for (i in 0 until array.length()) {
-                            players.add(array.getString(i))
-                        }
-                    }
-
-                    _onlinePlayers.value = players
-                    Log.d(TAG, "Players update received: $players")
+                    // Server-Status verarbeiten
+                    updateServerStatus(status)
                 }
 
                 "lobby-message" -> {
@@ -305,9 +312,25 @@ class StompWebSocketService @Inject constructor(
             }
             _connectionMessages.value = currentMessages
 
+            // Aktualisiere den Zeitstempel der letzten Nachricht
+            _lastMessageTimestamp.value = System.currentTimeMillis()
+
         } catch (e: Exception) {
             Log.e(TAG, "Error parsing message body: ${e.message}")
         }
+    }
+
+    private fun updateServerStatus(status: String) {
+        val newStatus = when (status.lowercase()) {
+            "online" -> ServerStatus.ONLINE
+            "offline" -> ServerStatus.OFFLINE
+            "busy" -> ServerStatus.BUSY
+            "maintenance" -> ServerStatus.MAINTENANCE
+            else -> ServerStatus.UNKNOWN
+        }
+
+        _serverStatus.value = newStatus
+        Log.d(TAG, "Server status updated to: $newStatus")
     }
 
     private fun stopHeartbeat() {
@@ -354,7 +377,6 @@ class StompWebSocketService @Inject constructor(
         webSocket = null
 
         _connectionState.value = ConnectionState.DISCONNECTED
-        _onlinePlayers.value = emptySet()
     }
 
     private fun sendAppClosingMessage() {
@@ -480,7 +502,12 @@ class StompWebSocketService @Inject constructor(
 
             Log.d(
                 TAG,
-                "Sending STOMP unsubscribe frame: ${unsubscribeFrame.replace(MESSAGE_END, "[NULL]")}"
+                "Sending STOMP unsubscribe frame: ${
+                    unsubscribeFrame.replace(
+                        MESSAGE_END,
+                        "[NULL]"
+                    )
+                }"
             )
             webSocket?.send(unsubscribeFrame)
             Log.d(TAG, "Unsubscribed from lobby: $lobbyId")
@@ -564,5 +591,34 @@ class StompWebSocketService @Inject constructor(
             Log.d(TAG, "Unsubscribed from game updates for lobby: $lobbyId")
         }
         currentLobbyId = null
+    }
+
+    private fun startServerStatusCheck() {
+        serverStatusCheckJob?.cancel()
+        serverStatusCheckJob = CoroutineScope(Dispatchers.IO).launch {
+            while (isActive && _connectionState.value == ConnectionState.CONNECTED) {
+                // Prüfen, ob der letzte Nachrichtenzeitpunkt zu lange her ist
+                val currentTime = System.currentTimeMillis()
+                val lastMessageTime = _lastMessageTimestamp.value
+
+                if (lastMessageTime > 0 && (currentTime - lastMessageTime) > SERVER_STATUS_TIMEOUT) {
+                    // Wenn länger als 10 Sekunden keine Nachricht empfangen wurde, Status auf OFFLINE setzen
+                    _serverStatus.value = ServerStatus.OFFLINE
+                    Log.d(
+                        TAG,
+                        "Server status set to OFFLINE due to timeout (no message in ${SERVER_STATUS_TIMEOUT / 1000} seconds)"
+                    )
+                }
+
+                delay(1000) // Alle Sekunde prüfen
+            }
+        }
+        Log.d(TAG, "Server status check started")
+    }
+
+    private fun stopServerStatusCheck() {
+        serverStatusCheckJob?.cancel()
+        serverStatusCheckJob = null
+        Log.d(TAG, "Server status check stopped")
     }
 }

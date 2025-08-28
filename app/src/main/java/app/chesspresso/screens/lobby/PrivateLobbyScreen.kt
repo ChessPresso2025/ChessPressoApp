@@ -9,8 +9,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -33,6 +35,8 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.chesspresso.viewmodel.PrivateLobbyViewModel
+import app.chesspresso.ui.components.LobbyCreatorControls
+import app.chesspresso.ui.components.QRScannerButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -70,7 +74,8 @@ fun PrivateLobbyScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .padding(24.dp),
+            .padding(24.dp)
+            .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
 
@@ -108,6 +113,13 @@ fun PrivateLobbyScreen(
                     Text("Lobby erstellen")
                 }
             }
+        }
+
+        // QR-Code für erstellte Lobby anzeigen
+        uiState.createdLobbyCode?.let { lobbyCode ->
+            LobbyCreatorControls(
+                lobbyId = lobbyCode
+            )
         }
 
         // Trennlinie
@@ -196,6 +208,16 @@ fun PrivateLobbyScreen(
                 }
             }
         }
+
+        // QR-Code Scanner für Lobby beitreten
+        QRScannerButton(
+            onLobbyScanned = { lobbyId ->
+                // Setze den gescannten Lobby-Code und trete der Lobby bei
+                viewModel.updateJoinCode(lobbyId)
+                viewModel.joinPrivateLobby(lobbyId)
+            },
+            enabled = !uiState.isLoading
+        )
 
         // Fehleranzeige
         error?.let { errorMessage ->
