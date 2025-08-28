@@ -29,7 +29,7 @@ class StompWebSocketService @Inject constructor(
 ) {
     companion object {
         private const val TAG = "StompWebSocket"
-        private const val WS_URL = "ws://192.168.0.77:8080/ws"
+        private const val WS_URL = "ws://10.0.2.2:8080/ws"
         private const val HEARTBEAT_INTERVAL = 30000L // 30 Sekunden
         private const val RECONNECT_DELAY = 3000L // 3 Sekunden
     }
