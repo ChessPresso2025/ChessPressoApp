@@ -1,5 +1,6 @@
 package app.chesspresso.model.board
 
+import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -7,16 +8,22 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import app.chesspresso.model.PieceType
 import app.chesspresso.model.TeamColor
+import app.chesspresso.model.game.PieceInfo
+import app.chesspresso.model.game.PositionRequestMessage
 
 class Board {
     val board: List<Field> = boardInit().toMutableList()
 
     fun boardInit(): List<Field> {
         val list = mutableListOf<Field>()
-        val cols = 'A'..'H'
+        val cols = 'a'..'h'
         val rows = 1..8
 
         for (row in rows.reversed()) {
@@ -24,88 +31,10 @@ class Board {
                 val field = Field("$col$row")
                 // Setze die Farbe der Felder
                 field.isLightSquare = (row + col.code) % 2 == 0
-
-                // Platziere die Figuren
-                when (row) {
-                    8 -> { // Schwarze Hauptfiguren
-                        field.piece = when (col) {
-                            'A', 'H' -> Piece(PieceType.ROOK, TeamColor.BLACK)
-                            'B', 'G' -> Piece(PieceType.KNIGHT, TeamColor.BLACK)
-                            'C', 'F' -> Piece(PieceType.BISHOP, TeamColor.BLACK)
-                            'D' -> Piece(PieceType.QUEEN, TeamColor.BLACK)
-                            'E' -> Piece(PieceType.KING, TeamColor.BLACK)
-                            else -> null
-                        }
-                    }
-
-                    7 -> { // Schwarze Bauern
-                        field.piece = Piece(PieceType.PAWN, TeamColor.BLACK)
-                    }
-
-                    2 -> { // Weiße Bauern
-                        field.piece = Piece(PieceType.PAWN, TeamColor.WHITE)
-                    }
-
-                    1 -> { // Weiße Hauptfiguren
-                        field.piece = when (col) {
-                            'A', 'H' -> Piece(PieceType.ROOK, TeamColor.WHITE)
-                            'B', 'G' -> Piece(PieceType.KNIGHT, TeamColor.WHITE)
-                            'C', 'F' -> Piece(PieceType.BISHOP, TeamColor.WHITE)
-                            'D' -> Piece(PieceType.QUEEN, TeamColor.WHITE)
-                            'E' -> Piece(PieceType.KING, TeamColor.WHITE)
-                            else -> null
-                        }
-                    }
-                }
                 list.add(field)
             }
         }
         return list
-    }
-
-    init {
-        setStartPosition()
-    }
-
-    private fun setStartPosition() {
-        board.forEach { it.piece = null }
-        val startMap: Map<String, Piece> = buildMap {
-
-            //white back row
-            put("A1", Piece(PieceType.ROOK, TeamColor.WHITE))
-            put("B1", Piece(PieceType.KNIGHT, TeamColor.WHITE))
-            put("C1", Piece(PieceType.BISHOP, TeamColor.WHITE))
-            put("D1", Piece(PieceType.QUEEN, TeamColor.WHITE))
-            put("E1", Piece(PieceType.KING, TeamColor.WHITE))
-            put("F1", Piece(PieceType.BISHOP, TeamColor.WHITE))
-            put("G1", Piece(PieceType.KNIGHT, TeamColor.WHITE))
-            put("H1", Piece(PieceType.ROOK, TeamColor.WHITE))
-
-            // white pawns (2))
-            for (c in 'A'..'H') {
-                put("${c}2", Piece(PieceType.PAWN, TeamColor.WHITE))
-            }
-
-            // black pawns (7)
-            for (c in 'A'..'H') {
-                put("${c}7", Piece(PieceType.PAWN, TeamColor.BLACK))
-            }
-
-            // black back row
-            put("A8", Piece(PieceType.ROOK, TeamColor.BLACK))
-            put("B8", Piece(PieceType.KNIGHT, TeamColor.BLACK))
-            put("C8", Piece(PieceType.BISHOP, TeamColor.BLACK))
-            put("D8", Piece(PieceType.QUEEN, TeamColor.BLACK))
-            put("E8", Piece(PieceType.KING, TeamColor.BLACK))
-            put("F8", Piece(PieceType.BISHOP, TeamColor.BLACK))
-            put("G8", Piece(PieceType.KNIGHT, TeamColor.BLACK))
-            put("H8", Piece(PieceType.ROOK, TeamColor.BLACK))
-        }
-
-        for ((square, piece) in startMap) {
-            getField(square)?.piece = piece
-        }
-
     }
 
     fun getField(name: String): Field? {
@@ -114,8 +43,84 @@ class Board {
 
     @Composable
     fun BoardContent(
-        modifier: Modifier = Modifier
+        modifier: Modifier = Modifier,
+        nextPlayer: TeamColor = TeamColor.WHITE,
+        isCheck: String = "",
+        isCheckmate: String = "",
+        boardState: Map<String, PieceInfo?> = emptyMap(),
+        lobbyId: String = "",
+        onPositionRequest: (PositionRequestMessage) -> Unit = {}
     ) {
+        var selectedField by remember { mutableStateOf<String?>(null) }
+        var validMoves by remember { mutableStateOf<Set<String>>(emptySet()) }
+
+        var currentIndex : String? = boardState.keys.firstOrNull()
+        if(currentIndex.isNullOrEmpty()){
+            Log.d("BoardContent", "boardState is empty")
+        } else {
+            Log.d("BoardContent", "boardState has entries, first key: $currentIndex")
+        }
+
+        // Funktion zum Zurücksetzen der Auswahl
+        fun resetSelection() {
+            selectedField = null
+            validMoves = emptySet()
+            // Reset validMove states only (isSelected is now handled by Compose state)
+            board.forEach { field ->
+                field.isValidMove = false
+            }
+        }
+
+        // Funktion für Feldklicks
+        fun handleFieldClick(fieldName: String) {
+            val field = getField(fieldName) ?: return
+
+            when {
+                // Wenn bereits ein Feld ausgewählt ist und wir auf ein anderes klicken
+                selectedField != null && selectedField != fieldName -> {
+                    if (validMoves.contains(fieldName)) {
+                        // Zug ausführen - später implementiert
+                        Log.d("Board", "Zug von $selectedField nach $fieldName")
+                        // Hier könnte später eine GameMoveMessage erstellt werden
+                        resetSelection()
+                    } else {
+                        // Neue Auswahl oder Abwählen
+                        resetSelection()
+                        if (boardState[fieldName] != null) {
+                            // Neues Feld auswählen
+                            selectedField = fieldName
+
+                            // PositionRequestMessage erstellen und senden
+                            val positionRequest = PositionRequestMessage(
+                                lobbyId = lobbyId,
+                                position = fieldName
+                            )
+                            onPositionRequest(positionRequest)
+                            Log.d("Board", "PositionRequest gesendet: $positionRequest")
+                        }
+                    }
+                }
+                // Wenn das gleiche Feld nochmal geklickt wird
+                selectedField == fieldName -> {
+                    resetSelection()
+                }
+                // Wenn noch nichts ausgewählt ist
+                selectedField == null -> {
+                    if (boardState[fieldName] != null) {
+                        selectedField = fieldName
+
+                        // PositionRequestMessage erstellen und senden
+                        val positionRequest = PositionRequestMessage(
+                            lobbyId = lobbyId,
+                            position = fieldName
+                        )
+                        onPositionRequest(positionRequest)
+                        Log.d("Board", "PositionRequest gesendet: $positionRequest")
+                    }
+                }
+            }
+        }
+
         Column(
             modifier = modifier.aspectRatio(1f)
         ) {
@@ -140,12 +145,24 @@ class Board {
                                 .weight(1f)
                         ) {
                             field.FieldContent(
-                                modifier = Modifier.fillMaxSize()
+                                modifier = Modifier.fillMaxSize(),
+                                isCheck = isCheck == field.name,
+                                isCheckmate = isCheckmate == field.name,
+                                pieceInfo = boardState.getValue(field.name),
+                                isFieldSelected = selectedField == field.name, // Verwende Compose State
+                                onFieldClick = { handleFieldClick(field.name) }
                             )
                         }
                     }
                 }
             }
+        }
+    }
+
+    // Funktion zum Setzen der gültigen Züge (wird später vom Server Response aufgerufen)
+    fun setValidMoves(moves: Set<String>) {
+        board.forEach { field ->
+            field.isValidMove = moves.contains(field.name)
         }
     }
 }

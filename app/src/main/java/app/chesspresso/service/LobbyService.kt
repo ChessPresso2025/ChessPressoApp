@@ -2,7 +2,10 @@ package app.chesspresso.service
 
 import android.util.Log
 import app.chesspresso.api.LobbyApiService
-import app.chesspresso.model.lobby.GameStartMessage
+import app.chesspresso.model.lobby.ConfigureLobbyMessage
+import app.chesspresso.model.game.GameStartMessage
+import app.chesspresso.model.game.PieceInfo
+import app.chesspresso.model.lobby.GameStartResponse
 import app.chesspresso.model.lobby.GameTime
 import app.chesspresso.model.lobby.JoinPrivateLobbyRequest
 import app.chesspresso.model.lobby.LeaveLobbyRequest
@@ -21,6 +24,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.collections.emptyMap
 
 @Singleton
 class LobbyService @Inject constructor(
@@ -40,8 +44,8 @@ class LobbyService @Inject constructor(
     private val _isWaitingForMatch = MutableStateFlow(false)
     val isWaitingForMatch: StateFlow<Boolean> = _isWaitingForMatch.asStateFlow()
 
-    private val _gameStarted = MutableStateFlow<GameStartMessage?>(null)
-    val gameStarted: StateFlow<GameStartMessage?> = _gameStarted.asStateFlow()
+    private val _gameStarted = MutableStateFlow<GameStartResponse?>(null)
+    val gameStarted: StateFlow<GameStartResponse?> = _gameStarted.asStateFlow()
     val lobbyLeft = MutableSharedFlow<Unit>()
 
     init {
@@ -80,7 +84,7 @@ class LobbyService @Inject constructor(
         return try {
             val response = lobbyApiService.createPrivateLobby()
             if (response.isSuccessful && response.body()?.success == true) {
-                val lobbyCode = response.body()?.lobbyCode
+                val lobbyCode = response.body()?.lobbyId
                     ?: return Result.failure(Exception("Kein Lobby-Code erhalten"))
 
                 // Nach erfolgreichem REST-Call: WebSocket-Lobby beitreten für Real-time Updates
@@ -140,6 +144,17 @@ class LobbyService @Inject constructor(
             }
         } catch (e: Exception) {
             Log.e("LobbyService", "Fehler beim Verlassen der Lobby", e)
+            Result.failure(e)
+        }
+    }
+
+    fun startGame(gameStartMessage: GameStartMessage): Result<Unit> {
+        return try {
+            // Hier würde die Implementierung für das Starten des Spiels kommen
+            Log.d("LobbyService", "Spiel gestartet mit: $gameStartMessage")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e("LobbyService", "Fehler beim Starten des Spiels", e)
             Result.failure(e)
         }
     }
@@ -283,13 +298,17 @@ class LobbyService @Inject constructor(
                     val whitePlayer = jsonObject["whitePlayer"] as? String ?: ""
                     val blackPlayer = jsonObject["blackPlayer"] as? String ?: ""
                     val lobbyChannel = jsonObject["lobbyChannel"] as? String ?: ""
+                    val success = jsonObject["success"] as? Boolean ?: true
+                    val board = jsonObject["board"] as? Map<String, PieceInfo> ?: emptyMap()
 
-                    val gameStart = GameStartMessage(
+                    val gameStart = GameStartResponse(
                         lobbyId = lobbyId,
                         gameTime = gameTime,
                         whitePlayer = whitePlayer,
                         blackPlayer = blackPlayer,
-                        lobbyChannel = lobbyChannel
+                        lobbyChannel = lobbyChannel,
+                        success = success,
+                        board = board
                     )
 
                     _gameStarted.value = gameStart
@@ -309,33 +328,6 @@ class LobbyService @Inject constructor(
                     // Hier könntest du den Ready-Status in der UI anzeigen
                 }
 
-                "GAME_START" -> {
-                    // Alternative Behandlung für direktes GAME_START
-                    val players = jsonObject["players"] as? List<String> ?: emptyList()
-                    val whitePlayer = jsonObject["whitePlayer"] as? String ?: ""
-                    val blackPlayer = jsonObject["blackPlayer"] as? String ?: ""
-                    val gameTimeObj = jsonObject["gameTime"]
-
-                    // Extrahiere gameTime richtig
-                    val gameTime = when (gameTimeObj) {
-                        is String -> gameTimeObj
-                        is Map<*, *> -> gameTimeObj["name"] as? String ?: "MIDDLE"
-                        else -> "MIDDLE"
-                    }
-
-                    val gameStart = GameStartMessage(
-                        lobbyId = _currentLobby.value?.lobbyId ?: "",
-                        gameTime = gameTime,
-                        whitePlayer = whitePlayer,
-                        blackPlayer = blackPlayer,
-                        lobbyChannel = ""
-                    )
-
-                    _gameStarted.value = gameStart
-                    _isWaitingForMatch.value = false
-                    Log.d("LobbyService", "Direkter Spielstart erkannt")
-                }
-
                 else -> {
                     // Versuche Legacy-Format zu parsen
                     when {
@@ -348,12 +340,6 @@ class LobbyService @Inject constructor(
                         message.contains("\"lobbyId\"") && message.contains("\"message\"") -> {
                             val waitingMsg = gson.fromJson(message, LobbyWaitingMessage::class.java)
                             _isWaitingForMatch.value = true
-                        }
-
-                        message.contains("\"gameTime\"") && message.contains("\"whitePlayer\"") -> {
-                            val gameStart = gson.fromJson(message, GameStartMessage::class.java)
-                            _gameStarted.value = gameStart
-                            _isWaitingForMatch.value = false
                         }
 
                         else -> {

@@ -1,5 +1,7 @@
 package app.chesspresso.model.lobby
 
+import app.chesspresso.model.game.PieceInfo
+
 // WebSocket Message Models
 data class LobbyMessage(
     val content: String,
@@ -8,14 +10,7 @@ data class LobbyMessage(
     val messageType: String = "CHAT" // CHAT, SYSTEM, etc.
 )
 
-data class GameMoveMessage(
-    val from: String,
-    val to: String,
-    val piece: String,
-    val playerId: String? = null,
-    val timestamp: String? = null,
-    val moveNotation: String? = null
-)
+
 
 data class PlayerReadyMessage(
     val lobbyId: String,
@@ -52,10 +47,25 @@ data class LobbyUpdateMessage(
     val message: String
 )
 
-data class GameStartMessage(
+data class RemisAcceptRequest(
+    val lobbyId: String,
+    val player: String //der den Remis vorgeschlagen bekommt
+)
+
+data class GameEndResponse(
+    val lobbyId: String,
+    val result: String, // "1-0", "0-1", "1/2-1/2"
+    val reason: String, // "checkmate", "resignation", "draw", etc.
+    val finalBoard: Map<String, String> // e.g., {"e2": "wp", "e4": "bp", ...}
+)
+
+data class GameStartResponse(
+    val success: Boolean,
     val lobbyId: String,
     val gameTime: String,
     val whitePlayer: String,
     val blackPlayer: String,
-    val lobbyChannel: String
+    val lobbyChannel: String,
+    val board: Map<String, PieceInfo>, // e.g., {"e2": "wp", "e4": "bp", ...}
+    val error: String? = null
 )
