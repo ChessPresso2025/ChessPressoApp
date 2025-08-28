@@ -38,6 +38,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -46,6 +47,7 @@ import app.chesspresso.model.TeamColor
 import app.chesspresso.model.board.Board
 import app.chesspresso.model.game.PieceInfo
 import app.chesspresso.model.lobby.GameStartResponse
+import app.chesspresso.model.lobby.GameTime
 import app.chesspresso.viewmodel.ChessGameViewModel
 import kotlinx.coroutines.launch
 
@@ -65,6 +67,13 @@ fun ChessGameScreen(
     val currentGameState by viewModel.currentGameState.collectAsState()
     val whiteTime by viewModel.whiteTime.collectAsState()
     val blackTime by viewModel.blackTime.collectAsState()
+    val myColor by viewModel.myColor.collectAsState()
+
+    LaunchedEffect(myColor) {
+        if (myColor != null) {
+            Log.d("ChessGameScreen", "Meine Spielerfarbe laut ViewModel: $myColor")
+        }
+    }
 
     // Initialize game when component first loads
     LaunchedEffect(gameStartResponse) {
@@ -214,10 +223,9 @@ fun ChessGameScreen(
                     boardState = boardToDisplay,
                     lobbyId = gameStartResponse.lobbyId,
                     onPositionRequest = { positionRequest ->
-                        // Hier wird die PositionRequestMessage behandelt
-                        Log.d("ChessGameScreen", "Position angeklickt: ${positionRequest.position}")
-                        // TODO: An Server senden über ViewModel/Service
-                    }
+                        Log.d("ChessGameScreen", "Position angeklickt: \\${positionRequest.position}")
+                    },
+                    isFlipped = (myColor == TeamColor.BLACK)
                 )
             }
         }
@@ -293,7 +301,7 @@ fun ChessGameScreenPreview() {
     val sampleGameStartResponse = GameStartResponse(
         success = true,
         lobbyId = "LOBBY1",
-        gameTime = "10:00",
+        gameTime = GameTime.MIDDLE,
         whitePlayer = "Max Mustermann",
         blackPlayer = "Anna Schmidt",
         lobbyChannel = "game-channel-12345",

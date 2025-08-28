@@ -50,22 +50,30 @@ class Field(
             contentAlignment = Alignment.Center
         ) {
             pieceInfo?.let { piece ->
-                val resourceId = when (piece.type) {
-                    PieceType.PAWN -> if (piece.color == TeamColor.WHITE) R.drawable.pawn_white else R.drawable.pawn_black
-                    PieceType.ROOK -> if (piece.color == TeamColor.WHITE) R.drawable.rook_white else R.drawable.rook_black
-                    PieceType.KNIGHT -> if (piece.color == TeamColor.WHITE) R.drawable.knight_white else R.drawable.knight_black
-                    PieceType.BISHOP -> if (piece.color == TeamColor.WHITE) R.drawable.bishop_white else R.drawable.bishop_black
-                    PieceType.QUEEN -> if (piece.color == TeamColor.WHITE) R.drawable.queen_white else R.drawable.queen_black
-                    PieceType.KING -> if (piece.color == TeamColor.WHITE) R.drawable.king_white else R.drawable.king_black
-                }
+                var resourceId: Int? = null
+                 // Bestimme die Bildressource basierend auf dem PieceType und TeamColor
+                if (piece.type != PieceType.NULL && piece.color != TeamColor.NULL) {
+                     resourceId = when (piece.type) {
+                        PieceType.PAWN -> if (piece.color == TeamColor.WHITE) R.drawable.pawn_white else R.drawable.pawn_black
+                        PieceType.ROOK -> if (piece.color == TeamColor.WHITE) R.drawable.rook_white else R.drawable.rook_black
+                        PieceType.KNIGHT -> if (piece.color == TeamColor.WHITE) R.drawable.knight_white else R.drawable.knight_black
+                        PieceType.BISHOP -> if (piece.color == TeamColor.WHITE) R.drawable.bishop_white else R.drawable.bishop_black
+                        PieceType.QUEEN -> if (piece.color == TeamColor.WHITE) R.drawable.queen_white else R.drawable.queen_black
+                        PieceType.KING -> if (piece.color == TeamColor.WHITE) R.drawable.king_white else R.drawable.king_black
+                        PieceType.NULL -> null
+                    }
+                    if(resourceId != null){
+                        Image(
+                            painter = painterResource(id = resourceId),
+                            contentDescription = null, //"${piece.color.name.lowercase()} ${piece.type.name.lowercase()}",
+                            modifier = Modifier
+                                .fillMaxSize(0.8f)
+                                .aspectRatio(1f)
+                        )
+                    }
 
-                Image(
-                    painter = painterResource(id = resourceId),
-                    contentDescription = "${piece.color.name.lowercase()} ${piece.type.name.lowercase()}",
-                    modifier = Modifier
-                        .fillMaxSize(0.8f)
-                        .aspectRatio(1f)
-                )
+
+                }
             }
 
             // Marker für gültige Züge

@@ -62,10 +62,10 @@ data class GameEndResponse(
 data class GameStartResponse(
     val success: Boolean,
     val lobbyId: String,
-    val gameTime: String,
+    val gameTime: GameTime,
     val whitePlayer: String,
     val blackPlayer: String,
     val lobbyChannel: String,
-    val board: Map<String, PieceInfo>, // e.g., {"e2": "wp", "e4": "bp", ...}
+    val board: Map<String, PieceInfo>,
     val error: String? = null
 )

@@ -2,8 +2,11 @@ package app.chesspresso.model.game
 
 import app.chesspresso.model.PieceType
 import app.chesspresso.model.TeamColor
+import com.google.gson.annotations.SerializedName
+import kotlinx.serialization.Serializable
 
 //Messages
+@Serializable
 data class GameStartMessage(
     val lobbyId: String,
     val gameTime: String,
@@ -34,7 +37,7 @@ data class PawnPromotionMessage(
 
 //Responses
 
-//vorschlag
+
 data class GameMoveResponse(
     val success: Boolean,
     val nextPlayer: TeamColor,
@@ -48,6 +51,6 @@ data class GameMoveResponse(
 
 data class PieceInfo(
     val type: PieceType,
+    @SerializedName("colour")
     val color: TeamColor
 )
-

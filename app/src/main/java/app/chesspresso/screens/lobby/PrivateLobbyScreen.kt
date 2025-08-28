@@ -224,7 +224,8 @@ fun PrivateLobbyScreen(
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.errorContainer
-                )
+                ),
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
                     text = errorMessage,
@@ -239,7 +240,8 @@ fun PrivateLobbyScreen(
             Card(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.errorContainer
-                )
+                ),
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
                     text = errorMessage,

@@ -17,6 +17,7 @@ import app.chesspresso.model.lobby.LobbyType
 import app.chesspresso.model.lobby.LobbyWaitingMessage
 import app.chesspresso.model.lobby.QuickJoinRequest
 import app.chesspresso.websocket.StompWebSocketService
+import kotlinx.coroutines.flow.collectLatest
 import com.google.gson.Gson
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -25,6 +26,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlin.collections.emptyMap
+import kotlinx.coroutines.launch
 
 @Singleton
 class LobbyService @Inject constructor(
@@ -53,6 +55,15 @@ class LobbyService @Inject constructor(
             handleWebSocketMessage(message)
         }
         webSocketService.setLobbyListener(this)
+        // GameStarted-Event aus WebSocketService übernehmen
+        kotlinx.coroutines.GlobalScope.launch {
+            webSocketService.gameStartedEvent.collectLatest { response ->
+                if (response != null) {
+                    _gameStarted.value = response
+                    Log.d("LobbyService", "Game started Event empfangen: $response")
+                }
+            }
+        }
     }
 
     // Quick Match beitreten
@@ -84,7 +95,7 @@ class LobbyService @Inject constructor(
         return try {
             val response = lobbyApiService.createPrivateLobby()
             if (response.isSuccessful && response.body()?.success == true) {
-                val lobbyCode = response.body()?.lobbyId
+                val lobbyCode = response.body()?.lobbyCode
                     ?: return Result.failure(Exception("Kein Lobby-Code erhalten"))
 
                 // Nach erfolgreichem REST-Call: WebSocket-Lobby beitreten für Real-time Updates
@@ -150,7 +161,7 @@ class LobbyService @Inject constructor(
 
     fun startGame(gameStartMessage: GameStartMessage): Result<Unit> {
         return try {
-            // Hier würde die Implementierung für das Starten des Spiels kommen
+            webSocketService.sendStartGame(gameStartMessage)
             Log.d("LobbyService", "Spiel gestartet mit: $gameStartMessage")
             Result.success(Unit)
         } catch (e: Exception) {
@@ -290,30 +301,6 @@ class LobbyService @Inject constructor(
                     }
 
                     Log.d("LobbyService", "Lobby-Update: $updateMessage")
-                }
-
-                "game-start" -> {
-                    val lobbyId = jsonObject["lobbyId"] as? String ?: ""
-                    val gameTime = jsonObject["gameTime"] as? String ?: ""
-                    val whitePlayer = jsonObject["whitePlayer"] as? String ?: ""
-                    val blackPlayer = jsonObject["blackPlayer"] as? String ?: ""
-                    val lobbyChannel = jsonObject["lobbyChannel"] as? String ?: ""
-                    val success = jsonObject["success"] as? Boolean ?: true
-                    val board = jsonObject["board"] as? Map<String, PieceInfo> ?: emptyMap()
-
-                    val gameStart = GameStartResponse(
-                        lobbyId = lobbyId,
-                        gameTime = gameTime,
-                        whitePlayer = whitePlayer,
-                        blackPlayer = blackPlayer,
-                        lobbyChannel = lobbyChannel,
-                        success = success,
-                        board = board
-                    )
-
-                    _gameStarted.value = gameStart
-                    _isWaitingForMatch.value = false
-                    Log.d("LobbyService", "Spiel startet! Lobby: $lobbyId")
                 }
 
                 "lobby-created" -> {

@@ -6,7 +6,7 @@ data class QuickJoinRequest(
 )
 
 data class JoinPrivateLobbyRequest(
-    val lobbyId: String
+    val lobbyCode: String
 )
 
 data class LeaveLobbyRequest(
@@ -35,14 +35,14 @@ data class QuickJoinResponse(
 
 data class CreatePrivateLobbyResponse(
     val success: Boolean,
-    val lobbyId: String? = null,
+    val lobbyCode: String? = null,
     val message: String? = null,
     val error: String? = null
 )
 
 data class JoinPrivateLobbyResponse(
     val success: Boolean,
-    val lobbyId: String? = null,
+    val lobbyCode: String? = null,
     val message: String? = null,
     val error: String? = null
 )

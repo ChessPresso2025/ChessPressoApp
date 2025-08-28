@@ -1,7 +1,9 @@
 package app.chesspresso.screens.main
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -39,6 +41,11 @@ import app.chesspresso.screens.lobby.LobbyWaitingScreen
 import app.chesspresso.screens.lobby.PrivateLobbyScreen
 import app.chesspresso.screens.lobby.QuickMatchScreen
 import app.chesspresso.websocket.WebSocketViewModel
+import app.chesspresso.screens.game.ChessGameScreen
+import app.chesspresso.viewmodel.ChessGameViewModel
+import androidx.compose.runtime.collectAsState
+import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.compose.material3.CircularProgressIndicator
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -157,13 +164,6 @@ fun MainScaffoldScreen(
                 )
             }
 
-            // Placeholder für Spiel-Screen
-            composable("game/{lobbyId}") { backStackEntry ->
-                val lobbyId = backStackEntry.arguments?.getString("lobbyId") ?: ""
-                // TODO: GameScreen implementieren
-                Text("Spiel startet mit Lobby: $lobbyId")
-            }
-
             // Bestehende Screens
             composable(NavRoutes.STATS) {
                 StatsScreen()
@@ -184,6 +184,21 @@ fun MainScaffoldScreen(
                         }
                     }
                 )
+            }
+
+            // Spiel-Screen
+            composable("game/{lobbyId}") { backStackEntry ->
+                val lobbyId = backStackEntry.arguments?.getString("lobbyId") ?: ""
+                val chessGameViewModel: ChessGameViewModel = hiltViewModel()
+                val gameStartResponse by chessGameViewModel.initialGameData.collectAsState()
+                if (gameStartResponse != null) {
+                    ChessGameScreen(gameStartResponse = gameStartResponse!!, viewModel = chessGameViewModel)
+                } else {
+                    // Ladeanzeige oder Platzhalter, bis die Spieldaten geladen sind
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
             }
         }
     }

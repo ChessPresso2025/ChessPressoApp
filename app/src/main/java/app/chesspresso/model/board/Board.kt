@@ -13,7 +13,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import app.chesspresso.model.PieceType
 import app.chesspresso.model.TeamColor
 import app.chesspresso.model.game.PieceInfo
 import app.chesspresso.model.game.PositionRequestMessage
@@ -23,7 +22,7 @@ class Board {
 
     fun boardInit(): List<Field> {
         val list = mutableListOf<Field>()
-        val cols = 'a'..'h'
+        val cols = 'A'..'H'
         val rows = 1..8
 
         for (row in rows.reversed()) {
@@ -49,7 +48,8 @@ class Board {
         isCheckmate: String = "",
         boardState: Map<String, PieceInfo?> = emptyMap(),
         lobbyId: String = "",
-        onPositionRequest: (PositionRequestMessage) -> Unit = {}
+        onPositionRequest: (PositionRequestMessage) -> Unit = {},
+        isFlipped: Boolean = false
     ) {
         var selectedField by remember { mutableStateOf<String?>(null) }
         var validMoves by remember { mutableStateOf<Set<String>>(emptySet()) }
@@ -124,15 +124,15 @@ class Board {
         Column(
             modifier = modifier.aspectRatio(1f)
         ) {
-            // Das Brett wird in 8 Reihen aufgeteilt
-            for (row in 0..7) {
+            val rowRange = if (isFlipped) 7 downTo 0 else 0..7
+            val colRange = if (isFlipped) 7 downTo 0 else 0..7
+            for (row in rowRange) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
                 ) {
-                    // Jede Reihe hat 8 Felder
-                    for (col in 0..7) {
+                    for (col in colRange) {
                         val index = row * 8 + col
                         val field = board[index]
 

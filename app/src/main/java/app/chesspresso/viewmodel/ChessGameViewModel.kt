@@ -37,36 +37,69 @@ class ChessGameViewModel @Inject constructor(
     private val _blackTime = MutableStateFlow(0)
     val blackTime: StateFlow<Int> = _blackTime.asStateFlow()
 
+    private val _myColor = MutableStateFlow<TeamColor?>(null)
+    val myColor: StateFlow<TeamColor?> = _myColor.asStateFlow()
+
     private var timerJob: Job? = null
     private var lastActivePlayer: TeamColor? = null
 
-    fun initializeGame(gameStartResponse: GameStartResponse) {
-        _initialGameData.value = gameStartResponse
-        _currentBoard.value = gameStartResponse.board
-        _currentPlayer.value = TeamColor.WHITE // Weiß beginnt immer
-
-        // Zeit aus gameTime (Format "mm:ss" oder "mm")
-        val totalSeconds = parseTimeStringToSeconds(gameStartResponse.gameTime)
-        _whiteTime.value = totalSeconds
-        _blackTime.value = totalSeconds
-        lastActivePlayer = TeamColor.WHITE
-        startTimer(TeamColor.WHITE)
-
-        // Subscribe zu Spiel-Updates für diese Lobby
-        webSocketService.subscribeToGame(gameStartResponse.lobbyId)
-
-        // Lausche auf GameMoveResponse-Updates
+    init {
         viewModelScope.launch {
-            webSocketService.gameMoveUpdates.collect { gameMoveResponse ->
-                gameMoveResponse?.let { response ->
-                    _currentGameState.value = response
-                    _currentBoard.value = response.board
-                    // Wenn sich der Spieler ändert, Timer umschalten
-                    if (response.nextPlayer != lastActivePlayer) {
-                        startTimer(response.nextPlayer)
-                        lastActivePlayer = response.nextPlayer
+            webSocketService.gameStartedEvent.collect { event ->
+                event?.let { initializeGame(it) }
+            }
+        }
+    }
+
+    fun initializeGame(gameStartResponse: GameStartResponse) {
+        viewModelScope.launch {
+            // Warte, bis playerId gesetzt ist
+            var myId = webSocketService.playerId
+            var retry = 0
+            while (myId == null && retry < 50) { // max. 5 Sekunden warten
+                delay(100)
+                myId = webSocketService.playerId
+                retry++
+            }
+            if (myId == null) {
+                // Fehlerfall: ID konnte nicht ermittelt werden
+                android.util.Log.e("ChessGameViewModel", "playerId ist nach 5 Sekunden immer noch null!")
+            }
+            _currentGameState.value = null
+            _initialGameData.value = gameStartResponse
+            _currentBoard.value = gameStartResponse.board
+            _currentPlayer.value = TeamColor.WHITE // Weiß beginnt immer
+
+            // Eigene Farbe bestimmen
+            android.util.Log.d("ChessGameViewModel", "myId: $myId, whitePlayer: ${gameStartResponse.whitePlayer}, blackPlayer: ${gameStartResponse.blackPlayer}")
+            _myColor.value = when (myId) {
+                gameStartResponse.whitePlayer -> TeamColor.WHITE
+                gameStartResponse.blackPlayer -> TeamColor.BLACK
+                else -> null
+            }
+
+            // Zeit direkt aus gameTime (jetzt Int in Sekunden)
+            _whiteTime.value = gameStartResponse.gameTime.seconds
+            _blackTime.value = gameStartResponse.gameTime.seconds
+            lastActivePlayer = TeamColor.WHITE
+            startTimer(TeamColor.WHITE)
+
+            // Subscribe zu Spiel-Updates für diese Lobby
+            webSocketService.subscribeToGame(gameStartResponse.lobbyId)
+
+            // Lausche auf GameMoveResponse-Updates
+            viewModelScope.launch {
+                webSocketService.gameMoveUpdates.collect { gameMoveResponse ->
+                    gameMoveResponse?.let { response ->
+                        _currentGameState.value = response
+                        _currentBoard.value = response.board
+                        // Wenn sich der Spieler ändert, Timer umschalten
+                        if (response.nextPlayer != lastActivePlayer) {
+                            startTimer(response.nextPlayer)
+                            lastActivePlayer = response.nextPlayer
+                        }
+                        _currentPlayer.value = response.nextPlayer
                     }
-                    _currentPlayer.value = response.nextPlayer
                 }
             }
         }
@@ -83,17 +116,6 @@ class ChessGameViewModel @Inject constructor(
                     if (_blackTime.value > 0) _blackTime.value = _blackTime.value - 1
                 }
             }
-        }
-    }
-
-    private fun parseTimeStringToSeconds(time: String): Int {
-        val parts = time.split(":")
-        return if (parts.size == 2) {
-            val min = parts[0].toIntOrNull() ?: 0
-            val sec = parts[1].toIntOrNull() ?: 0
-            min * 60 + sec
-        } else {
-            (parts[0].toIntOrNull() ?: 0) * 60
         }
     }
 
