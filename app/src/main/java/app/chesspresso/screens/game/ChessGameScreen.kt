@@ -17,7 +17,6 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
-import androidx.compose.material3.Divider
 import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -32,25 +31,49 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import app.chesspresso.model.PieceType
 import app.chesspresso.model.TeamColor
 import app.chesspresso.model.board.Board
 import app.chesspresso.model.game.PieceInfo
 import app.chesspresso.model.lobby.GameStartResponse
+import app.chesspresso.viewmodel.ChessGameViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ChessGameScreen(gameStartResponse: GameStartResponse) {
+fun ChessGameScreen(
+    gameStartResponse: GameStartResponse,
+    viewModel: ChessGameViewModel = hiltViewModel()
+) {
     var drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
     val board = remember { Board() }
+
+    // Collect ViewModel states
+    val currentBoard by viewModel.currentBoard.collectAsState()
+    val currentPlayer by viewModel.currentPlayer.collectAsState()
+    val currentGameState by viewModel.currentGameState.collectAsState()
+    val whiteTime by viewModel.whiteTime.collectAsState()
+    val blackTime by viewModel.blackTime.collectAsState()
+
+    // Initialize game when component first loads
+    LaunchedEffect(gameStartResponse) {
+        viewModel.initializeGame(gameStartResponse)
+    }
+
+    // Determine which board state to use (current or initial)
+    val boardToDisplay = currentBoard.ifEmpty { gameStartResponse.board }
+    val activePlayer = currentPlayer ?: TeamColor.WHITE
 
     ModalNavigationDrawer(
         drawerState = drawerState,
@@ -64,6 +87,35 @@ fun ChessGameScreen(gameStartResponse: GameStartResponse) {
                         style = MaterialTheme.typography.titleLarge
                     )
                     Spacer(modifier = Modifier.height(16.dp))
+
+                    // Display game state information
+                    currentGameState?.let { gameState ->
+                        if (gameState.isCheck) {
+                            Text(
+                                "Schach!",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                        if (gameState.isCheckmate) {
+                            Text(
+                                "Schachmatt!",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.error
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                        if (gameState.isStalemate) {
+                            Text(
+                                "Patt!",
+                                style = MaterialTheme.typography.titleMedium,
+                                color = MaterialTheme.colorScheme.secondary
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
+
                     Button(
                         onClick = { /* Aufgeben Logik */ },
                         colors = ButtonDefaults.buttonColors(
@@ -121,51 +173,48 @@ fun ChessGameScreen(gameStartResponse: GameStartResponse) {
                         .height(IntrinsicSize.Min),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    // Spieler 1
+                    // Spieler 1 (Weiß)
                     Column(
                         modifier = Modifier.weight(1f),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         PlayerClock(
                             playerName = gameStartResponse.whitePlayer,
-                            remainingTime = "10:00",
-                            isActive = true
+                            remainingTime = formatSecondsToTimeString(whiteTime),
+                            isActive = activePlayer == TeamColor.WHITE
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        // Geschlagene Figuren von Spieler 1
                         CapturedPieces()
                     }
 
                     Spacer(modifier = Modifier.width(16.dp))
 
-                    // Spieler 2
+                    // Spieler 2 (Schwarz)
                     Column(
                         modifier = Modifier.weight(1f),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         PlayerClock(
                             playerName = gameStartResponse.blackPlayer,
-                            remainingTime = "10:00",
-                            isActive = false
+                            remainingTime = formatSecondsToTimeString(blackTime),
+                            isActive = activePlayer == TeamColor.BLACK
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        // Geschlagene Figuren von Spieler 2
                         CapturedPieces()
                     }
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // Schachbrett
+                // Schachbrett - verwende den aktuellen Spielbrett-Zustand
                 board.BoardContent(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 8.dp),
-                    boardState = gameStartResponse.board,
+                    boardState = boardToDisplay,
                     lobbyId = gameStartResponse.lobbyId,
                     onPositionRequest = { positionRequest ->
                         // Hier wird die PositionRequestMessage behandelt
-                        // Später kann diese an ein ViewModel oder Service weitergegeben werden
                         Log.d("ChessGameScreen", "Position angeklickt: ${positionRequest.position}")
                         // TODO: An Server senden über ViewModel/Service
                     }
@@ -229,6 +278,12 @@ fun CapturedPieces() {
             )
         }
     }
+}
+
+fun formatSecondsToTimeString(seconds: Int): String {
+    val min = seconds / 60
+    val sec = seconds % 60
+    return "%02d:%02d".format(min, sec)
 }
 
 @Preview(showBackground = true)

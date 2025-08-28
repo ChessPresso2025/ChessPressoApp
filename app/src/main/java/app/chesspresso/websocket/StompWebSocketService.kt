@@ -3,6 +3,7 @@ package app.chesspresso.websocket
 import android.util.Log
 import app.chesspresso.data.storage.TokenStorage
 import app.chesspresso.service.LobbyListener
+import app.chesspresso.model.game.GameMoveResponse
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -13,6 +14,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -55,9 +57,15 @@ class StompWebSocketService @Inject constructor(
     private val _lobbyMessages = MutableStateFlow<List<String>>(emptyList())
     val lobbyMessages: StateFlow<List<String>> = _lobbyMessages.asStateFlow()
 
+    // Spiel-spezifische Flows
+    private val _gameMoveUpdates = MutableStateFlow<GameMoveResponse?>(null)
+    val gameMoveUpdates: StateFlow<GameMoveResponse?> = _gameMoveUpdates.asStateFlow()
+
     // Callback für Lobby-Message-Handling
     private var lobbyMessageHandler: ((String) -> Unit)? = null
     val MESSAGE_END = "\u0000"
+
+    private val json = Json { ignoreUnknownKeys = true }
 
     enum class ConnectionState {
         DISCONNECTED, CONNECTING, CONNECTED, RECONNECTING
@@ -274,6 +282,17 @@ class StompWebSocketService @Inject constructor(
                         Log.d(TAG, "Lobby message received: $messageContent")
                         // Optional: Direktes Handling der Nachricht über den Handler
                         lobbyMessageHandler?.invoke(messageContent)
+                    }
+                }
+
+                "game-move" -> {
+                    // GameMoveResponse verarbeiten
+                    try {
+                        val gameMoveResponse = this.json.decodeFromString<GameMoveResponse>(body)
+                        _gameMoveUpdates.value = gameMoveResponse
+                        Log.d(TAG, "Received game move update: ${gameMoveResponse.nextPlayer}")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error parsing GameMoveResponse: ${e.message}")
                     }
                 }
             }
@@ -516,5 +535,34 @@ class StompWebSocketService @Inject constructor(
 
     fun sendLobbyMessage(message: String) {
         sendLobbyChat(message)
+    }
+
+    fun subscribeToGame(lobbyId: String) {
+        currentLobbyId = lobbyId
+
+        // Subscribe zu Spiel-Updates für diese Lobby
+        val subscribeFrame = buildString {
+            append("SUBSCRIBE\n")
+            append("id:game-$lobbyId\n")
+            append("destination:/topic/game/$lobbyId\n")
+            append("\n")
+            append(MESSAGE_END)
+        }
+        webSocket?.send(subscribeFrame)
+        Log.d(TAG, "Subscribed to game updates for lobby: $lobbyId")
+    }
+
+    fun unsubscribeFromGame() {
+        currentLobbyId?.let { lobbyId ->
+            val unsubscribeFrame = buildString {
+                append("UNSUBSCRIBE\n")
+                append("id:game-$lobbyId\n")
+                append("\n")
+                append(MESSAGE_END)
+            }
+            webSocket?.send(unsubscribeFrame)
+            Log.d(TAG, "Unsubscribed from game updates for lobby: $lobbyId")
+        }
+        currentLobbyId = null
     }
 }
