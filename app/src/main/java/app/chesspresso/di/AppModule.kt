@@ -59,7 +59,7 @@ object AppModule {
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:8080/") // Android Emulator localhost
+            .baseUrl("http://192.168.0.77:8080/") // Server IP für echtes Handy
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
