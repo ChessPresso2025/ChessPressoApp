@@ -39,6 +39,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.chesspresso.model.lobby.GameTime
 import app.chesspresso.viewmodel.PrivateLobbyViewModel
+import app.chesspresso.ui.components.LobbyCreatorControls
 
 @Composable
 fun LobbyWaitingScreen(
@@ -135,6 +136,12 @@ fun LobbyWaitingScreen(
             }
         }
 
+        // QR-Code für Lobby-Ersteller anzeigen (nur wenn noch Platz frei ist)
+        if (isCreator && currentLobby?.players?.size != 2) {
+            LobbyCreatorControls(
+                lobbyId = lobbyCode
+            )
+        }
 
         // Spieler-Status
         Card(

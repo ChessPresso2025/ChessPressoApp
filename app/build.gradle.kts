@@ -105,4 +105,16 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
 
+    // QR Code Scanner dependencies
+    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
+    implementation("com.google.zxing:core:3.5.2")
+    implementation("androidx.camera:camera-camera2:1.3.1")
+    implementation("androidx.camera:camera-lifecycle:1.3.1")
+    implementation("androidx.camera:camera-view:1.3.1")
+
+    // AppCompat für QRScannerActivity
+    implementation("androidx.appcompat:appcompat:1.6.1")
+
+    // ML Kit für QR-Code Erkennung
+    implementation("com.google.mlkit:barcode-scanning:17.2.0")
 }
