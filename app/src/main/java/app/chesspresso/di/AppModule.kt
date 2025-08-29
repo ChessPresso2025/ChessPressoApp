@@ -5,6 +5,7 @@ import app.chesspresso.api.LobbyApiService
 import app.chesspresso.auth.data.AuthApi
 import app.chesspresso.auth.data.AuthRepository
 import app.chesspresso.data.api.GameApi
+import app.chesspresso.data.api.StatsApi
 import app.chesspresso.data.network.AuthInterceptor
 import app.chesspresso.data.storage.TokenStorage
 import app.chesspresso.service.LobbyService
@@ -123,5 +124,17 @@ object AppModule {
         tokenStorage: TokenStorage
     ): StompWebSocketService {
         return StompWebSocketService(tokenStorage)
+    }
+
+    @Provides
+    @Singleton
+    fun provideStatsApi(retrofit: Retrofit): StatsApi {
+        return retrofit.create(StatsApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideStatsRepository(statsApi: StatsApi): app.chesspresso.data.repository.StatsRepository {
+        return app.chesspresso.data.repository.StatsRepository(statsApi)
     }
 }
