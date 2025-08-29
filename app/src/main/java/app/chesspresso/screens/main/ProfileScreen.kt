@@ -17,7 +17,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import app.chesspresso.auth.presentation.AuthViewModel
-import app.chesspresso.auth.presentation.AuthState
 import androidx.navigation.NavHostController
 
 @Composable
@@ -26,7 +25,6 @@ fun ProfileScreen(
     authViewModel: AuthViewModel,
     outerNavController: NavHostController
 ) {
-    val uiState by viewModel.statsState.collectAsState()
     val usernameChangeState by viewModel.usernameChangeState.collectAsState()
     val passwordChangeState by viewModel.passwordChangeState.collectAsState()
     val (newUsername, setNewUsername) = remember { mutableStateOf("") }
@@ -35,9 +33,8 @@ fun ProfileScreen(
     val showDialog = remember { mutableStateOf(false) }
     val showPasswordDialog = remember { mutableStateOf(false) }
 
-    // Stats beim ersten Anzeigen laden
+    // Profildaten beim ersten Anzeigen laden
     LaunchedEffect(Unit) {
-        viewModel.loadStats()
         viewModel.loadUserProfile()
     }
 
@@ -45,8 +42,6 @@ fun ProfileScreen(
     LaunchedEffect(usernameChangeState) {
         if (usernameChangeState is UsernameChangeState.Success) {
             setNewUsername("")
-            // Optional: Stats neu laden, falls Username angezeigt wird
-            // viewModel.loadStats()
         }
     }
 
@@ -54,7 +49,7 @@ fun ProfileScreen(
         viewModel.events.collect { event ->
             when (event) {
                 is ProfileEvent.LogoutAndNavigateToLogin -> {
-                    viewModel.resetStatsState()
+                    // resetStatsState entfernt, da Stats nicht mehr verwendet werden
                     authViewModel.logout()
                     outerNavController.navigate("login") {
                         popUpTo("login") { inclusive = true }
@@ -74,22 +69,14 @@ fun ProfileScreen(
             val userProfileState = viewModel.userProfileState.collectAsState().value
             when (userProfileState) {
                 is UserProfileUiState.Loading -> Text("Lade Profildaten...")
-                is UserProfileUiState.Error -> Text("Fehler: " + (userProfileState as UserProfileUiState.Error).message)
+                is UserProfileUiState.Error -> Text("Fehler: " + userProfileState.message)
                 is UserProfileUiState.Success -> {
-                    val profile = (userProfileState as UserProfileUiState.Success).profile
+                    val profile = userProfileState.profile
                     Text("Name: ${profile.username}")
                     Text("E-Mail: ${profile.email}")
                 }
             }
-            when (uiState) {
-                is StatsUiState.Loading -> Text("Lade Benutzerdaten...")
-                is StatsUiState.Error -> Text("Fehler: " + (uiState as StatsUiState.Error).message)
-                is StatsUiState.Success -> {
-                    val stats = (uiState as StatsUiState.Success).stats
-                    // Statistik-Anzeige entfernt, keine Anzeige von Name und E-Mail, da nicht vorhanden
-                }
-                is StatsUiState.Idle -> { /* nichts anzeigen */ }
-            }
+            // StatsUiState und uiState entfernt, da Stats nicht mehr verwendet werden
             // --- Username ändern UI ---
             OutlinedTextField(
                 value = newUsername,
