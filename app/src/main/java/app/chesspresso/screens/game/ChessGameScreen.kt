@@ -68,6 +68,7 @@ fun ChessGameScreen(
     val whiteTime by viewModel.whiteTime.collectAsState()
     val blackTime by viewModel.blackTime.collectAsState()
     val myColor by viewModel.myColor.collectAsState()
+    val possibleMoves by viewModel.possibleMoves.collectAsState()
 
     LaunchedEffect(myColor) {
         if (myColor != null) {
@@ -184,7 +185,9 @@ fun ChessGameScreen(
                 ) {
                     // Spieler 1 (Weiß)
                     Column(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth(),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         PlayerClock(
@@ -223,9 +226,10 @@ fun ChessGameScreen(
                     boardState = boardToDisplay,
                     lobbyId = gameStartResponse.lobbyId,
                     onPositionRequest = { positionRequest ->
-                        Log.d("ChessGameScreen", "Position angeklickt: \\${positionRequest.position}")
+                        viewModel.sendPositionRequest(gameStartResponse.lobbyId, positionRequest.position)
                     },
-                    isFlipped = (myColor == TeamColor.BLACK)
+                    isFlipped = (myColor == TeamColor.BLACK),
+                    possibleMoves = possibleMoves
                 )
             }
         }
@@ -244,7 +248,8 @@ fun PlayerClock(
     ) {
         Column(
             modifier = Modifier
-                .padding(16.dp),
+                .padding(16.dp)
+                .fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
@@ -292,98 +297,4 @@ fun formatSecondsToTimeString(seconds: Int): String {
     val min = seconds / 60
     val sec = seconds % 60
     return "%02d:%02d".format(min, sec)
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ChessGameScreenPreview() {
-    // Beispiel GameStartResponse mit initialem Schachbrett-Setup
-    val sampleGameStartResponse = GameStartResponse(
-        success = true,
-        lobbyId = "LOBBY1",
-        gameTime = GameTime.MIDDLE,
-        whitePlayer = "Max Mustermann",
-        blackPlayer = "Anna Schmidt",
-        lobbyChannel = "game-channel-12345",
-        board = mapOf(
-            // Weiße Figuren (untere Reihen)
-            "a1" to PieceInfo(PieceType.ROOK, TeamColor.WHITE),
-            "b1" to PieceInfo(PieceType.KNIGHT, TeamColor.WHITE),
-            "c1" to PieceInfo(PieceType.BISHOP, TeamColor.WHITE),
-            "d1" to PieceInfo(PieceType.QUEEN, TeamColor.WHITE),
-            "e1" to PieceInfo(PieceType.KING, TeamColor.WHITE),
-            "f1" to PieceInfo(PieceType.BISHOP, TeamColor.WHITE),
-            "g1" to PieceInfo(PieceType.KNIGHT, TeamColor.WHITE),
-            "h1" to PieceInfo(PieceType.ROOK, TeamColor.WHITE),
-            "a2" to PieceInfo(PieceType.PAWN, TeamColor.WHITE),
-            "b2" to PieceInfo(PieceType.PAWN, TeamColor.WHITE),
-            "c2" to PieceInfo(PieceType.PAWN, TeamColor.WHITE),
-            "d2" to PieceInfo(PieceType.PAWN, TeamColor.WHITE),
-            "e2" to PieceInfo(PieceType.PAWN, TeamColor.WHITE),
-            "f2" to PieceInfo(PieceType.PAWN, TeamColor.WHITE),
-            "g2" to PieceInfo(PieceType.PAWN, TeamColor.WHITE),
-            "h2" to PieceInfo(PieceType.PAWN, TeamColor.WHITE),
-
-            // Leere Felder (Reihe 3)
-            "a3" to null,
-            "b3" to null,
-            "c3" to null,
-            "d3" to null,
-            "e3" to null,
-            "f3" to null,
-            "g3" to null,
-            "h3" to null,
-
-            // Leere Felder (Reihe 4)
-            "a4" to null,
-            "b4" to null,
-            "c4" to null,
-            "d4" to null,
-            "e4" to null,
-            "f4" to null,
-            "g4" to null,
-            "h4" to null,
-
-            // Leere Felder (Reihe 5)
-            "a5" to null,
-            "b5" to null,
-            "c5" to null,
-            "d5" to null,
-            "e5" to null,
-            "f5" to null,
-            "g5" to null,
-            "h5" to null,
-
-            // Leere Felder (Reihe 6)
-            "a6" to null,
-            "b6" to null,
-            "c6" to null,
-            "d6" to null,
-            "e6" to null,
-            "f6" to null,
-            "g6" to null,
-            "h6" to null,
-
-            // Schwarze Figuren (obere Reihen)
-            "a7" to PieceInfo(PieceType.PAWN, TeamColor.BLACK),
-            "b7" to PieceInfo(PieceType.PAWN, TeamColor.BLACK),
-            "c7" to PieceInfo(PieceType.PAWN, TeamColor.BLACK),
-            "d7" to PieceInfo(PieceType.PAWN, TeamColor.BLACK),
-            "e7" to PieceInfo(PieceType.PAWN, TeamColor.BLACK),
-            "f7" to PieceInfo(PieceType.PAWN, TeamColor.BLACK),
-            "g7" to PieceInfo(PieceType.PAWN, TeamColor.BLACK),
-            "h7" to PieceInfo(PieceType.PAWN, TeamColor.BLACK),
-            "a8" to PieceInfo(PieceType.ROOK, TeamColor.BLACK),
-            "b8" to PieceInfo(PieceType.KNIGHT, TeamColor.BLACK),
-            "c8" to PieceInfo(PieceType.BISHOP, TeamColor.BLACK),
-            "d8" to PieceInfo(PieceType.QUEEN, TeamColor.BLACK),
-            "e8" to PieceInfo(PieceType.KING, TeamColor.BLACK),
-            "f8" to PieceInfo(PieceType.BISHOP, TeamColor.BLACK),
-            "g8" to PieceInfo(PieceType.KNIGHT, TeamColor.BLACK),
-            "h8" to PieceInfo(PieceType.ROOK, TeamColor.BLACK)
-        ) as Map<String, PieceInfo>,
-        error = null
-    )
-
-    ChessGameScreen(gameStartResponse = sampleGameStartResponse)
 }

@@ -23,6 +23,7 @@ data class GameMoveMessage(
     val moveNotation: String? = null
 )
 
+@Serializable
 data class PositionRequestMessage(
     val lobbyId: String,
     val position: String
@@ -53,4 +54,9 @@ data class PieceInfo(
     val type: PieceType,
     @SerializedName("colour")
     val color: TeamColor
+)
+
+data class PossibleMovesResponse(
+    @SerializedName("possible_moves")
+    val possibleMoves: List<String> // Liste der möglichen Zielfelder
 )

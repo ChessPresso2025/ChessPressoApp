@@ -33,13 +33,15 @@ class Field(
         isCheckmate: Boolean,
         pieceInfo: PieceInfo?,
         isFieldSelected: Boolean = false,
+        isValidMove: Boolean = false,
         onFieldClick: () -> Unit = {}
     ) {
         val backgroundColor = when {
             isCheckmate || isCheck -> Color.Red.copy(alpha = if (isCheckmate) 0.7f else 0.4f)
-            isFieldSelected -> Color.Yellow.copy(alpha = 0.5f) // Verwende den Parameter statt this.isSelected
-            isLightSquare -> Color(0xFFEEEED2) // Helles Feld
-            else -> Color(0xFF769656) // Dunkles Feld
+            isFieldSelected -> Color.Yellow.copy(alpha = 0.5f)
+            isValidMove -> Color.Cyan.copy(alpha = 0.3f) // NEU: optische Hervorhebung für mögliche Züge
+            isLightSquare -> Color(0xFFEEEED2)
+            else -> Color(0xFF769656)
         }
 
         Box(

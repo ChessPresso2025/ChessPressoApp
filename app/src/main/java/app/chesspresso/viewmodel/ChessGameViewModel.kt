@@ -40,6 +40,9 @@ class ChessGameViewModel @Inject constructor(
     private val _myColor = MutableStateFlow<TeamColor?>(null)
     val myColor: StateFlow<TeamColor?> = _myColor.asStateFlow()
 
+    private val _possibleMoves = MutableStateFlow<List<String>>(emptyList())
+    val possibleMoves: StateFlow<List<String>> = _possibleMoves.asStateFlow()
+
     private var timerJob: Job? = null
     private var lastActivePlayer: TeamColor? = null
 
@@ -47,6 +50,11 @@ class ChessGameViewModel @Inject constructor(
         viewModelScope.launch {
             webSocketService.gameStartedEvent.collect { event ->
                 event?.let { initializeGame(it) }
+            }
+        }
+        viewModelScope.launch {
+            webSocketService.possibleMoves.collect { moves ->
+                _possibleMoves.value = moves
             }
         }
     }
@@ -116,6 +124,13 @@ class ChessGameViewModel @Inject constructor(
                     if (_blackTime.value > 0) _blackTime.value = _blackTime.value - 1
                 }
             }
+        }
+    }
+
+    fun sendPositionRequest(lobbyId: String, position: String) {
+        viewModelScope.launch {
+            val message = app.chesspresso.model.game.PositionRequestMessage(lobbyId, position)
+            webSocketService.sendPositionRequest(message)
         }
     }
 

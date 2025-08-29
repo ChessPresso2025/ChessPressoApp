@@ -76,6 +76,8 @@ class StompWebSocketService @Inject constructor(
     private val gson = Gson()
     private val _gameStartedEvent = MutableStateFlow<GameStartResponse?>(null)
     val gameStartedEvent: StateFlow<GameStartResponse?> = _gameStartedEvent.asStateFlow()
+    private val _possibleMoves = MutableStateFlow<List<String>>(emptyList())
+    val possibleMoves: StateFlow<List<String>> = _possibleMoves.asStateFlow()
 
     enum class ConnectionState {
         DISCONNECTED, CONNECTING, CONNECTED, RECONNECTING
@@ -290,7 +292,6 @@ class StompWebSocketService @Inject constructor(
                     // Server-Status verarbeiten
                     updateServerStatus(status)
                 }
-
                 "lobby-message" -> {
                     // Lobby-spezifische Nachrichten verarbeiten
                     val lobbyId = json.optString("lobbyId")
@@ -302,17 +303,6 @@ class StompWebSocketService @Inject constructor(
                         Log.d(TAG, "Lobby message received: $messageContent")
                         // Optional: Direktes Handling der Nachricht über den Handler
                         lobbyMessageHandler?.invoke(messageContent)
-                    }
-                }
-
-                "game-move" -> {
-                    // GameMoveResponse verarbeiten
-                    try {
-                        val gameMoveResponse = this.json.decodeFromString<GameMoveResponse>(body)
-                        _gameMoveUpdates.value = gameMoveResponse
-                        Log.d(TAG, "Received game move update: ${gameMoveResponse.nextPlayer}")
-                    } catch (e: Exception) {
-                        Log.e(TAG, "Error parsing GameMoveResponse: ${e.message}")
                     }
                 }
 
@@ -361,6 +351,18 @@ class StompWebSocketService @Inject constructor(
                     } catch (e: Exception) {
                         Log.e(TAG, "Error parsing GameMoveResponse: ${e.message}")
                     }
+                }
+
+                "possible-moves" -> {
+                    val movesArray = json.optJSONArray("possibleMoves")
+                    val moves = mutableListOf<String>()
+                    if (movesArray != null) {
+                        for (i in 0 until movesArray.length()) {
+                            moves.add(movesArray.getString(i))
+                        }
+                    }
+                    _possibleMoves.value = moves
+                    Log.d(TAG, "Possible moves empfangen: $moves")
                 }
 
                 else -> {
@@ -641,6 +643,17 @@ class StompWebSocketService @Inject constructor(
         }
         webSocket?.send(subscribeFrame)
         Log.d(TAG, "Subscribed to game updates for lobby: $lobbyId")
+        currentLobbyId?.let { lobbyId ->
+            val subscribeFrameMoves = buildString {
+                append("SUBSCRIBE\n")
+                append("id:sub-3\n")
+                append("destination:/topic/game/$lobbyId/possible-moves\n")
+                append("\n")
+                append(MESSAGE_END)
+            }
+            webSocket?.send(subscribeFrameMoves)
+            Log.d(TAG, "Subscribed to possible-moves for lobby $lobbyId")
+        }
     }
 
     fun unsubscribeFromGame() {
@@ -654,6 +667,17 @@ class StompWebSocketService @Inject constructor(
             webSocket?.send(unsubscribeFrame)
             Log.d(TAG, "Unsubscribed from game updates for lobby: $lobbyId")
         }
+        currentLobbyId?.let { lobbyId ->
+            val subscribeFrameMoves = buildString {
+                append("UNSUBSCRIBE\n")
+                append("id:sub-3\n")
+                append("\n")
+                append(MESSAGE_END)
+            }
+            webSocket?.send(subscribeFrameMoves)
+            Log.d(TAG, "Unsubscribed from possible-moves for lobby $lobbyId")
+        }
+
         currentLobbyId = null
     }
 
@@ -730,7 +754,7 @@ class StompWebSocketService @Inject constructor(
                 val messageJson = json.encodeToString(positionRequestMessage)
                 val positionFrame = buildString {
                     append("SEND\n")
-                    append("destination:/app/game/position\n")
+                    append("destination:/app/game/position-request\n")
                     append("content-type:application/json\n")
                     append("\n")
                     append(messageJson)

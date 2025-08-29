@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,10 +50,11 @@ class Board {
         boardState: Map<String, PieceInfo?> = emptyMap(),
         lobbyId: String = "",
         onPositionRequest: (PositionRequestMessage) -> Unit = {},
-        isFlipped: Boolean = false
+        isFlipped: Boolean = false,
+        possibleMoves: List<String> = emptyList()
     ) {
         var selectedField by remember { mutableStateOf<String?>(null) }
-        var validMoves by remember { mutableStateOf<Set<String>>(emptySet()) }
+        var validMoves by remember { mutableStateOf<Set<String>>(possibleMoves.toSet()) }
 
         var currentIndex : String? = boardState.keys.firstOrNull()
         if(currentIndex.isNullOrEmpty()){
@@ -121,6 +123,11 @@ class Board {
             }
         }
 
+        // Synchronisiere validMoves mit possibleMoves
+        LaunchedEffect(possibleMoves) {
+            validMoves = possibleMoves.toSet()
+        }
+
         Column(
             modifier = modifier.aspectRatio(1f)
         ) {
@@ -150,6 +157,7 @@ class Board {
                                 isCheckmate = isCheckmate == field.name,
                                 pieceInfo = boardState.getValue(field.name),
                                 isFieldSelected = selectedField == field.name, // Verwende Compose State
+                                isValidMove = validMoves.contains(field.name), // NEU: Marker für mögliche Züge
                                 onFieldClick = { handleFieldClick(field.name) }
                             )
                         }

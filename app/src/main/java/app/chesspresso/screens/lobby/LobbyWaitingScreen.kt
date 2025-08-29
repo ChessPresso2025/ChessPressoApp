@@ -169,7 +169,7 @@ fun LobbyWaitingScreen(
                                 tint = MaterialTheme.colorScheme.primary
                             )
                             Text(
-                                text = "Spieler ${index + 1}${if (player == lobby.creator) " (Ersteller)" else ""}",
+                                text = "${player}${if (player == lobby.creator) " (Ersteller)" else ""}",
                                 modifier = Modifier.padding(start = 8.dp),
                                 style = MaterialTheme.typography.bodyLarge
                             )
@@ -324,7 +324,7 @@ fun LobbyWaitingScreen(
                                             onClick = { selectedWhitePlayer = player }
                                         )
                                         Text(
-                                            text = "Spieler ${index + 1}${if (player == lobby.creator) " (Ersteller)" else ""}",
+                                            text = "${player}${if (player == lobby.creator) " (Ersteller)" else ""}",
                                             modifier = Modifier.padding(start = 8.dp),
                                             style = MaterialTheme.typography.bodySmall
                                         )
