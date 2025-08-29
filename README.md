@@ -15,19 +15,24 @@ Das Frontend ist bewusst schlank gehalten und übernimmt primär die Darstellung
 ### ✅ Bereits implementiert:
 - **HomeScreen** mit Grunddesign im „Espresso“-Theme
 - Projektstruktur und Basis-Setup + Inkludieren von Jetpack Compose etc.
+- Anbindung der Domainklassen (Spieler, Zug, Partie etc.)
+- Navigation zwischen Bildschirmen
+- Verbindung zum STOMP/WebSocket Server bereits vollständig implementiert
 
 ### 🔧 In Arbeit:
-- Anbindung der Domainklassen (Spieler, Zug, Partie etc.)
-- Integration von Google (z. B. Google Sign-In oder Firebase)
-- Navigation zwischen Bildschirmen
-- Erste Verbindungspunkte zum Server (STOMP/WebSocket)
+- Spielbildschirm mit Schachbrett-UI
+- Grobes Redesign von ausgewählten Screens
+- Vorbereitung auf Anbindung zur Spiellogik
 
 ### 📋 Geplant:
-- Spielbildschirm mit Schachbrett-UI
+- erstes Theme dunkel & hell anwenden
 - Spielverlauf & Timeranzeige
-- Weitere Themes
-- Animierte Züge und visuelle Highlights
+- Weitere Themes (falls noch Zeit bleibt)
+- visuelle Highlights
 
+### Weggelassen:
+- Google Integration (stattdessen auf eigenes System umgestellt)
+- Animationen der Züge
 ---
 
 ## 🌈 Themes
@@ -62,10 +67,6 @@ chesspresso-frontend/
 ├── MainActivity.kt
 └── ...
 
-yaml
-Kopieren
-Bearbeiten
-
 ---
 
 ## 🤝 Mitarbeit & Konventionen
@@ -77,23 +78,10 @@ Bearbeiten
 
 ---
 
-## 📸 Vorschau
-
-| HomeScreen (Espresso Theme) |
-|-----------------------------|
-| *(Bild folgt nach Fertigstellung)* |
-
----
-
 ## 🔗 Backend & weitere Repositories
 
 > Das Backend ist separat entwickelt und enthält sämtliche Spiellogik.
 > Es handelt sich dabei um einen Java Springboot Server
-
----
-
-Du hast Ideen für weitere Themes oder UI-Komponenten?  
-Erstelle gerne ein Issue oder öffne einen Pull Request!
 
 ---
 
