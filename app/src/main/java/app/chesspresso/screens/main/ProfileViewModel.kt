@@ -29,6 +29,13 @@ sealed class UsernameChangeState {
     data class Error(val message: String) : UsernameChangeState()
 }
 
+sealed class PasswordChangeState {
+    object Idle : PasswordChangeState()
+    object Loading : PasswordChangeState()
+    object Success : PasswordChangeState()
+    data class Error(val message: String) : PasswordChangeState()
+}
+
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val statsRepository: StatsRepository,
@@ -39,6 +46,9 @@ class ProfileViewModel @Inject constructor(
 
     private val _usernameChangeState = MutableStateFlow<UsernameChangeState>(UsernameChangeState.Idle)
     val usernameChangeState: StateFlow<UsernameChangeState> = _usernameChangeState.asStateFlow()
+
+    private val _passwordChangeState = MutableStateFlow<PasswordChangeState>(PasswordChangeState.Idle)
+    val passwordChangeState: StateFlow<PasswordChangeState> = _passwordChangeState.asStateFlow()
 
     private val _eventChannel = Channel<ProfileEvent>(Channel.BUFFERED)
     val events = _eventChannel.receiveAsFlow()
@@ -73,8 +83,32 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    fun changePassword(oldPassword: String, newPassword: String) {
+        _passwordChangeState.value = PasswordChangeState.Loading
+        viewModelScope.launch {
+            try {
+                val response = userApi.changePassword(
+                    app.chesspresso.data.api.ChangePasswordRequest(oldPassword, newPassword)
+                )
+                if (response.isSuccessful) {
+                    _passwordChangeState.value = PasswordChangeState.Success
+                    _eventChannel.send(ProfileEvent.LogoutAndNavigateToLogin)
+                } else {
+                    val errorMsg = response.errorBody()?.string() ?: "Unbekannter Fehler"
+                    _passwordChangeState.value = PasswordChangeState.Error(errorMsg)
+                }
+            } catch (e: Exception) {
+                _passwordChangeState.value = PasswordChangeState.Error(e.localizedMessage ?: "Unbekannter Fehler")
+            }
+        }
+    }
+
     fun resetUsernameChangeState() {
         _usernameChangeState.value = UsernameChangeState.Idle
+    }
+
+    fun resetPasswordChangeState() {
+        _passwordChangeState.value = PasswordChangeState.Idle
     }
 
     fun resetStatsState() {

@@ -27,8 +27,12 @@ fun ProfileScreen(
 ) {
     val uiState by viewModel.statsState.collectAsState()
     val usernameChangeState by viewModel.usernameChangeState.collectAsState()
+    val passwordChangeState by viewModel.passwordChangeState.collectAsState()
     val (newUsername, setNewUsername) = remember { mutableStateOf("") }
+    val (oldPassword, setOldPassword) = remember { mutableStateOf("") }
+    val (newPassword, setNewPassword) = remember { mutableStateOf("") }
     val showDialog = remember { mutableStateOf(false) }
+    val showPasswordDialog = remember { mutableStateOf(false) }
 
     // Stats beim ersten Anzeigen laden
     LaunchedEffect(Unit) {
@@ -95,6 +99,36 @@ fun ProfileScreen(
                 is UsernameChangeState.Error -> Text((usernameChangeState as UsernameChangeState.Error).message, color = Color.Red)
                 else -> {}
             }
+            // --- Passwort ändern UI ---
+            OutlinedTextField(
+                value = oldPassword,
+                onValueChange = setOldPassword,
+                label = { Text("Altes Passwort") },
+                modifier = Modifier.padding(top = 32.dp),
+                singleLine = true
+            )
+            OutlinedTextField(
+                value = newPassword,
+                onValueChange = setNewPassword,
+                label = { Text("Neues Passwort") },
+                modifier = Modifier.padding(top = 8.dp),
+                singleLine = true
+            )
+            Button(
+                onClick = {
+                    showPasswordDialog.value = true
+                },
+                enabled = passwordChangeState !is PasswordChangeState.Loading && oldPassword.length >= 4 && newPassword.length in 4..64,
+                modifier = Modifier.padding(top = 8.dp)
+            ) {
+                Text("Passwort ändern")
+            }
+            when (passwordChangeState) {
+                is PasswordChangeState.Loading -> Text("Ändere Passwort...")
+                is PasswordChangeState.Success -> Text("Passwort erfolgreich geändert!", color = Color.Green)
+                is PasswordChangeState.Error -> Text((passwordChangeState as PasswordChangeState.Error).message, color = Color.Red)
+                else -> {}
+            }
         }
     }
 
@@ -111,6 +145,23 @@ fun ProfileScreen(
             },
             dismissButton = {
                 Button(onClick = { showDialog.value = false }) { Text("Abbrechen") }
+            }
+        )
+    }
+
+    if (showPasswordDialog.value) {
+        AlertDialog(
+            onDismissRequest = { showPasswordDialog.value = false },
+            title = { Text("Achtung") },
+            text = { Text("Um das Passwort zu ändern, musst du dich neu anmelden. Fortfahren?") },
+            confirmButton = {
+                Button(onClick = {
+                    showPasswordDialog.value = false
+                    viewModel.changePassword(oldPassword, newPassword)
+                }) { Text("Ja") }
+            },
+            dismissButton = {
+                Button(onClick = { showPasswordDialog.value = false }) { Text("Abbrechen") }
             }
         )
     }
