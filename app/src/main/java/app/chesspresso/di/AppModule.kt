@@ -6,6 +6,7 @@ import app.chesspresso.auth.data.AuthApi
 import app.chesspresso.auth.data.AuthRepository
 import app.chesspresso.data.api.GameApi
 import app.chesspresso.data.api.StatsApi
+import app.chesspresso.data.api.UserApi
 import app.chesspresso.data.network.AuthInterceptor
 import app.chesspresso.data.storage.TokenStorage
 import app.chesspresso.service.LobbyService
@@ -136,5 +137,11 @@ object AppModule {
     @Singleton
     fun provideStatsRepository(statsApi: StatsApi): app.chesspresso.data.repository.StatsRepository {
         return app.chesspresso.data.repository.StatsRepository(statsApi)
+    }
+
+    @Provides
+    @Singleton
+    fun provideUserApi(retrofit: Retrofit): UserApi {
+        return retrofit.create(UserApi::class.java)
     }
 }
