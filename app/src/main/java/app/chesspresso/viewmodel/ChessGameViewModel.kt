@@ -134,6 +134,15 @@ class ChessGameViewModel @Inject constructor(
         }
     }
 
+    fun sendGameMoveMessage(lobbyId: String, from: String, to: String, teamColor: TeamColor) {
+        val message = app.chesspresso.model.game.GameMoveMessage(
+            from = from,
+            to = to,
+            teamColor = teamColor
+        )
+        webSocketService.sendGameMoveMessage(message)
+    }
+
     override fun onCleared() {
         super.onCleared()
         timerJob?.cancel()

@@ -15,6 +15,7 @@ data class GameStartMessage(
     val randomPlayers: Boolean
 )
 
+@Serializable
 data class GameMoveMessage(
     val from: String,
     val to: String,

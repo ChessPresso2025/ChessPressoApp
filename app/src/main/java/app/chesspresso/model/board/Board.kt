@@ -45,13 +45,15 @@ class Board {
     fun BoardContent(
         modifier: Modifier = Modifier,
         nextPlayer: TeamColor = TeamColor.WHITE,
+        myColor: TeamColor? = null,
         isCheck: String = "",
         isCheckmate: String = "",
         boardState: Map<String, PieceInfo?> = emptyMap(),
         lobbyId: String = "",
         onPositionRequest: (PositionRequestMessage) -> Unit = {},
         isFlipped: Boolean = false,
-        possibleMoves: List<String> = emptyList()
+        possibleMoves: List<String> = emptyList(),
+        onGameMove: (from: String, to: String) -> Unit = { _, _ -> } // NEU: Callback für Züge
     ) {
         var selectedField by remember { mutableStateOf<String?>(null) }
         var validMoves by remember { mutableStateOf<Set<String>>(possibleMoves.toSet()) }
@@ -75,15 +77,21 @@ class Board {
 
         // Funktion für Feldklicks
         fun handleFieldClick(fieldName: String) {
+            //Nur erlauben, wenn der Spieler am Zug ist
+            if (myColor == null || myColor != nextPlayer) {
+                Log.d("BoardContent", "Nicht am Zug: myColor=$myColor, nextPlayer=$nextPlayer")
+                return
+            }
+
             val field = getField(fieldName) ?: return
 
             when {
                 // Wenn bereits ein Feld ausgewählt ist und wir auf ein anderes klicken
                 selectedField != null && selectedField != fieldName -> {
                     if (validMoves.contains(fieldName)) {
-                        // Zug ausführen - später implementiert
+                        // Zug ausführen
                         Log.d("Board", "Zug von $selectedField nach $fieldName")
-                        // Hier könnte später eine GameMoveMessage erstellt werden
+                        onGameMove(selectedField!!, fieldName) // NEU: Callback aufrufen
                         resetSelection()
                     } else {
                         // Neue Auswahl oder Abwählen

@@ -729,7 +729,7 @@ class StompWebSocketService @Inject constructor(
         }
     }
 
-    fun sendMove(gameMoveMessage: GameMoveMessage) {
+    fun sendGameMoveMessage(gameMoveMessage: GameMoveMessage) {
         currentLobbyId?.let { lobbyId ->
             _playerId?.let { id ->
                 val messageJson = json.encodeToString(gameMoveMessage)

@@ -229,7 +229,15 @@ fun ChessGameScreen(
                         viewModel.sendPositionRequest(gameStartResponse.lobbyId, positionRequest.position)
                     },
                     isFlipped = (myColor == TeamColor.BLACK),
-                    possibleMoves = possibleMoves
+                    possibleMoves = if (myColor == currentPlayer) possibleMoves else emptyList(), // Nur eigene möglichen Züge anzeigen
+                    nextPlayer = currentPlayer ?: TeamColor.WHITE, // nextPlayer übergeben
+                    myColor = myColor, // eigene Spielerfarbe übergeben
+                    onGameMove = { from, to ->
+                        val color = myColor
+                        if (color != null) {
+                            viewModel.sendGameMoveMessage(gameStartResponse.lobbyId, from, to, color)
+                        }
+                    }
                 )
             }
         }
