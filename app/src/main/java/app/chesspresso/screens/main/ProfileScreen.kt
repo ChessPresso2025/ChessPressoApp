@@ -17,6 +17,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import app.chesspresso.auth.presentation.AuthViewModel
+import app.chesspresso.auth.presentation.AuthState
 import androidx.navigation.NavHostController
 
 @Composable
@@ -37,6 +38,7 @@ fun ProfileScreen(
     // Stats beim ersten Anzeigen laden
     LaunchedEffect(Unit) {
         viewModel.loadStats()
+        viewModel.loadUserProfile()
     }
 
     // Nach erfolgreicher Änderung Eingabefeld leeren und Status zurücksetzen
@@ -68,12 +70,23 @@ fun ProfileScreen(
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            // Name und E-Mail aus UserProfileState anzeigen
+            val userProfileState = viewModel.userProfileState.collectAsState().value
+            when (userProfileState) {
+                is UserProfileUiState.Loading -> Text("Lade Profildaten...")
+                is UserProfileUiState.Error -> Text("Fehler: " + (userProfileState as UserProfileUiState.Error).message)
+                is UserProfileUiState.Success -> {
+                    val profile = (userProfileState as UserProfileUiState.Success).profile
+                    Text("Name: ${profile.username}")
+                    Text("E-Mail: ${profile.email}")
+                }
+            }
             when (uiState) {
-                is StatsUiState.Loading -> Text("Lade Statistiken...")
+                is StatsUiState.Loading -> Text("Lade Benutzerdaten...")
                 is StatsUiState.Error -> Text("Fehler: " + (uiState as StatsUiState.Error).message)
                 is StatsUiState.Success -> {
                     val stats = (uiState as StatsUiState.Success).stats
-                    Text("Siege: ${stats.wins}\nNiederlagen: ${stats.losses}\nRemis: ${stats.draws}\nGesamt: ${stats.wins + stats.losses + stats.draws}")
+                    // Statistik-Anzeige entfernt, keine Anzeige von Name und E-Mail, da nicht vorhanden
                 }
                 is StatsUiState.Idle -> { /* nichts anzeigen */ }
             }

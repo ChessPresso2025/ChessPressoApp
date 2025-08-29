@@ -50,6 +50,10 @@ class ProfileViewModel @Inject constructor(
     private val _passwordChangeState = MutableStateFlow<PasswordChangeState>(PasswordChangeState.Idle)
     val passwordChangeState: StateFlow<PasswordChangeState> = _passwordChangeState.asStateFlow()
 
+    // --- UserProfile State ---
+    private val _userProfileState = MutableStateFlow<UserProfileUiState>(UserProfileUiState.Loading)
+    val userProfileState: StateFlow<UserProfileUiState> = _userProfileState.asStateFlow()
+
     private val _eventChannel = Channel<ProfileEvent>(Channel.BUFFERED)
     val events = _eventChannel.receiveAsFlow()
 
@@ -103,6 +107,18 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    fun loadUserProfile() {
+        viewModelScope.launch {
+            _userProfileState.value = UserProfileUiState.Loading
+            try {
+                val profile = userApi.getProfile()
+                _userProfileState.value = UserProfileUiState.Success(profile)
+            } catch (e: Exception) {
+                _userProfileState.value = UserProfileUiState.Error(e.localizedMessage ?: "Unbekannter Fehler")
+            }
+        }
+    }
+
     fun resetUsernameChangeState() {
         _usernameChangeState.value = UsernameChangeState.Idle
     }
@@ -118,4 +134,10 @@ class ProfileViewModel @Inject constructor(
 
 sealed class ProfileEvent {
     object LogoutAndNavigateToLogin : ProfileEvent()
+}
+
+sealed class UserProfileUiState {
+    object Loading : UserProfileUiState()
+    data class Success(val profile: app.chesspresso.data.api.UserProfileResponse) : UserProfileUiState()
+    data class Error(val message: String) : UserProfileUiState()
 }
