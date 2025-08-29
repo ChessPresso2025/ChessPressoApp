@@ -168,7 +168,10 @@ fun MainScaffoldScreen(
                 StatsScreen()
             }
             composable(NavRoutes.PROFILE) {
-                ProfileScreen()
+                ProfileScreen(
+                    authViewModel = authViewModel,
+                    outerNavController = outerNavController
+                )
             }
             composable(NavRoutes.SETTINGS) {
                 SettingsScreen()
