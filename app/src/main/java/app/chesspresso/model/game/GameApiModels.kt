@@ -4,8 +4,8 @@ import app.chesspresso.model.PieceType
 import app.chesspresso.model.SpecialMove
 import app.chesspresso.model.TeamColor
 import com.google.gson.annotations.SerializedName
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerialName
+import kotlinx.serialization.Serializable
 
 //Messages
 @Serializable

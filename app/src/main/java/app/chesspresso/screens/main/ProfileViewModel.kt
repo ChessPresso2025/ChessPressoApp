@@ -2,8 +2,8 @@ package app.chesspresso.screens.main
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import app.chesspresso.data.api.UserApi
 import app.chesspresso.data.api.ChangeUsernameRequest
+import app.chesspresso.data.api.UserApi
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow

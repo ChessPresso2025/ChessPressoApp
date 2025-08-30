@@ -9,6 +9,8 @@ import app.chesspresso.model.game.PawnPromotionMessage
 import app.chesspresso.model.game.PieceInfo
 import app.chesspresso.model.game.PositionRequestMessage
 import app.chesspresso.model.lobby.GameStartResponse
+import app.chesspresso.model.lobby.GameEndMessage
+import app.chesspresso.model.lobby.GameEndResponse
 import app.chesspresso.service.LobbyListener
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -83,6 +85,10 @@ class StompWebSocketService @Inject constructor(
     // Promotion-Flow
     private val _promotionRequest = MutableStateFlow<app.chesspresso.model.game.PromotionRequest?>(null)
     val promotionRequest: StateFlow<app.chesspresso.model.game.PromotionRequest?> = _promotionRequest.asStateFlow()
+
+    // Game End Flow
+    private val _gameEndEvent = MutableStateFlow<GameEndResponse?>(null)
+    val gameEndEvent: StateFlow<GameEndResponse?> = _gameEndEvent
 
     enum class ConnectionState {
         DISCONNECTED, CONNECTING, CONNECTED, RECONNECTING
@@ -379,6 +385,18 @@ class StompWebSocketService @Inject constructor(
                     } catch (e: Exception) {
                         Log.e(TAG, "Error parsing PromotionRequest: ${e.message}")
                     }
+                }
+
+                "game-end" -> {
+                    // Parse GameEndResponse
+                    val winner = json.optString("winner")
+                    val loser = json.optString("loser")
+                    val draw = json.optBoolean("draw")
+                    val lobbyId = json.optString("lobbyId")
+                    val typeStr = json.optString("type")
+                    val event = GameEndResponse(winner, loser, draw, lobbyId, typeStr)
+                    _gameEndEvent.value = event
+                    Log.d(TAG, "Received game-end event: $event")
                 }
 
                 else -> {
@@ -840,4 +858,17 @@ class StompWebSocketService @Inject constructor(
         }
     }
 
+    fun sendEndGameMessage(gameEndMessage: GameEndMessage) {
+        val messageJson = json.encodeToString(GameEndMessage.serializer(), gameEndMessage)
+        val resignFrame = buildString {
+            append("SEND\n")
+            append("destination:/app/game/end\n")
+            append("content-type:application/json\n")
+            append("\n")
+            append(messageJson)
+            append(MESSAGE_END)
+        }
+        webSocket?.send(resignFrame)
+        Log.d(TAG, "Sent end message: $messageJson")
+    }
 }

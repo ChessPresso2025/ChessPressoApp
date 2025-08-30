@@ -2,11 +2,13 @@ package app.chesspresso.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.chesspresso.model.EndType
 import app.chesspresso.model.PieceType
 import app.chesspresso.model.TeamColor
 import app.chesspresso.model.game.GameMoveResponse
-import app.chesspresso.model.game.PawnPromotionMessage
 import app.chesspresso.model.lobby.GameStartResponse
+import app.chesspresso.model.lobby.GameEndMessage
+import app.chesspresso.model.lobby.GameEndResponse
 import app.chesspresso.websocket.StompWebSocketService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -19,7 +21,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class ChessGameViewModel @Inject constructor(
-    private val webSocketService: StompWebSocketService
+    val webSocketService: StompWebSocketService
 ) : ViewModel() {
 
     private val _currentGameState = MutableStateFlow<GameMoveResponse?>(null)
@@ -51,6 +53,9 @@ class ChessGameViewModel @Inject constructor(
     val capturedBlackPieces: StateFlow<List<app.chesspresso.model.game.PieceInfo>> = _capturedBlackPieces.asStateFlow()
     private val _promotionRequest = MutableStateFlow<app.chesspresso.model.game.PromotionRequest?>(null)
     val promotionRequest: StateFlow<app.chesspresso.model.game.PromotionRequest?> = _promotionRequest.asStateFlow()
+
+    private val _gameEndEvent = MutableStateFlow<GameEndResponse?>(null)
+    val gameEndEvent: StateFlow<GameEndResponse?> = _gameEndEvent
 
     private var timerJob: Job? = null
     private var lastActivePlayer: TeamColor? = null
@@ -99,6 +104,11 @@ class ChessGameViewModel @Inject constructor(
         viewModelScope.launch {
             webSocketService.promotionRequest.collect { request ->
                 _promotionRequest.value = request
+            }
+        }
+        viewModelScope.launch {
+            webSocketService.gameEndEvent.collect { event ->
+                _gameEndEvent.value = event
             }
         }
     }
@@ -171,6 +181,15 @@ class ChessGameViewModel @Inject constructor(
             promotedPiece = promotedPiece
         )
         webSocketService.sendGameMoveMessage(message)
+    }
+
+    fun resignGame(teamColor: TeamColor, lobbyId: String) {
+        val gameEndMessage = GameEndMessage(
+            lobbyId = lobbyId,
+            player = teamColor.name,
+            endType = EndType.RESIGNATION
+        )
+        webSocketService.sendEndGameMessage(gameEndMessage)
     }
 
     override fun onCleared() {

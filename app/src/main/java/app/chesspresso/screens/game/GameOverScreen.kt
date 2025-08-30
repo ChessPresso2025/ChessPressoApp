@@ -16,32 +16,31 @@ import androidx.compose.ui.unit.dp
 import app.chesspresso.model.lobby.GameEndResponse
 
 @Composable
-fun GameOverScreen(gameEndResponse: GameEndResponse) {
+fun GameOverScreen(gameEndResponse: GameEndResponse, playerId: String) {
+    val ergebnisText = when {
+        gameEndResponse.draw == true -> "Unentschieden"
+        playerId == gameEndResponse.winner -> "Gewonnen"
+        playerId == gameEndResponse.loser -> "Verloren"
+        else -> "Unbekannt"
+    }
     Column(
         modifier = Modifier
             .fillMaxSize()
             .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
     ) {
         Text("Spiel beendet", style = MaterialTheme.typography.headlineMedium)
         Text("Lobby-ID: ${gameEndResponse.lobbyId}")
-        Text("Ergebnis: ${gameEndResponse.result}")
-        Text("Grund: ${gameEndResponse.reason}")
+        Text("Ergebnis: $ergebnisText")
         Text("Endstellung:")
 
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .weight(1f)
-        ) {
 
-            //durch  Chessboard(board = gameEndResponse.finalBoard) ersetzen wenn Chessboard Composable fertig ist
-            items(gameEndResponse.finalBoard.entries.toList()) { entry ->
-                Text("${entry.key}: ${entry.value}")
-            }
-        }
         Button(onClick = { /* Zurück zum Hauptmenü */ }) {
             Text("Zurück")
+        }
+        Button(onClick = { /* TODO: Rematch-Logik */ }) {
+            Text("Rematch")
         }
     }
 }
