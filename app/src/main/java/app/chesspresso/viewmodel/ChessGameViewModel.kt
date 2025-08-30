@@ -91,6 +91,8 @@ class ChessGameViewModel @Inject constructor(
                         lastActivePlayer = response.nextPlayer
                     }
                     _currentPlayer.value = response.nextPlayer
+                    // Promotion-UI ausblenden, sobald ein Zug vom Server kommt
+                    _promotionRequest.value = null
                 }
             }
         }
@@ -160,21 +162,15 @@ class ChessGameViewModel @Inject constructor(
         }
     }
 
-    fun sendGameMoveMessage(lobbyId: String, from: String, to: String, teamColor: TeamColor) {
+    fun sendGameMoveMessage(lobbyId: String, from: String, to: String, teamColor: TeamColor, promotedPiece: PieceType? = null) {
         val message = app.chesspresso.model.game.GameMoveMessage(
             lobbyId = lobbyId,
             from = from,
             to = to,
-            teamColor = teamColor
+            teamColor = teamColor,
+            promotedPiece = promotedPiece
         )
         webSocketService.sendGameMoveMessage(message)
-    }
-
-    fun sendPawnPromotion(position: String, newPiece: PieceType) {
-        val message = PawnPromotionMessage(position, newPiece)
-        webSocketService.sendPawnPromotionMessage(message)
-        // Nach dem Senden die PromotionRequest zurücksetzen, damit die Auswahl verschwindet
-        _promotionRequest.value = null
     }
 
     override fun onCleared() {

@@ -1,6 +1,8 @@
 package app.chesspresso.screens.game
 
 import android.util.Log
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -11,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
@@ -29,7 +32,6 @@ import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -40,6 +42,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -139,21 +142,7 @@ fun ChessGameScreen(
         }
     ) {
         Scaffold(
-            topBar = {
-                TopAppBar(
-                    title = { Text("Schachpartie") },
-                    modifier = Modifier.padding(top = 0.dp),
-                    navigationIcon = {
-                        IconButton(onClick = {
-                            scope.launch {
-                                drawerState.open()
-                            }
-                        }) {
-                            Icon(Icons.Default.Menu, contentDescription = "Menü")
-                        }
-                    }
-                )
-            },
+            // TopAppBar entfernt, damit sie nur noch im MainScaffoldScreen angezeigt wird
             content = { paddingValues ->
                 Column(
                     modifier = Modifier
@@ -274,6 +263,7 @@ fun ChessGameScreen(
                     // --- Promotion Auswahl unter dem Brett ---
                     if (promotionRequest != null && promotionRequest!!.activeTeam == myColor) {
                         val promotionPosition = promotionRequest!!.position
+                        val promotionFrom = promotionRequest!!.from
                         val promotionOptions = listOf(
                             app.chesspresso.model.PieceType.QUEEN,
                             app.chesspresso.model.PieceType.ROOK,
@@ -291,8 +281,6 @@ fun ChessGameScreen(
                                 modifier = Modifier.padding(12.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                // Debug-Info anzeigen
-                                Log.d("ChessGameScreen", "DEBUG: Position: $promotionPosition, Optionen: ${promotionOptions.size}, Team: ${promotionRequest!!.activeTeam}, MyColor: $myColor")
                                 Text("Wähle die Figur für die Umwandlung:", style = MaterialTheme.typography.titleMedium)
                                 Spacer(modifier = Modifier.height(4.dp))
                                 Row(
@@ -302,24 +290,30 @@ fun ChessGameScreen(
                                         .heightIn(min = 48.dp)
                                 ) {
                                     promotionOptions.forEach { pieceType ->
-                                        Button(
-                                            onClick = {
-                                                viewModel.sendPawnPromotion(
-                                                    promotionPosition,
-                                                    pieceType
-                                                )
-                                            },
-                                            modifier = Modifier.padding(horizontal = 6.dp)
-                                        ) {
-                                            // Testweise Unicode und Klartext anzeigen
-                                            Text(
-                                                text = when (pieceType) {
-                                                    app.chesspresso.model.PieceType.QUEEN -> "\u265B Dame"
-                                                    app.chesspresso.model.PieceType.ROOK -> "\u265C Turm"
-                                                    app.chesspresso.model.PieceType.BISHOP -> "\u265D Läufer"
-                                                    app.chesspresso.model.PieceType.KNIGHT -> "\u265E Springer"
-                                                    else -> "?"
-                                                }, fontSize = 22.sp
+                                        val drawableRes = when (pieceType) {
+                                            app.chesspresso.model.PieceType.QUEEN -> if (myColor == TeamColor.WHITE) app.chesspresso.R.drawable.queen_white else app.chesspresso.R.drawable.queen_black
+                                            app.chesspresso.model.PieceType.ROOK -> if (myColor == TeamColor.WHITE) app.chesspresso.R.drawable.rook_white else app.chesspresso.R.drawable.rook_black
+                                            app.chesspresso.model.PieceType.BISHOP -> if (myColor == TeamColor.WHITE) app.chesspresso.R.drawable.bishop_white else app.chesspresso.R.drawable.bishop_black
+                                            app.chesspresso.model.PieceType.KNIGHT -> if (myColor == TeamColor.WHITE) app.chesspresso.R.drawable.knight_white else app.chesspresso.R.drawable.knight_black
+                                            else -> 0
+                                        }
+                                        if (drawableRes != 0) {
+                                            Image(
+                                                painter = painterResource(id = drawableRes),
+                                                contentDescription = pieceType.name,
+                                                modifier = Modifier
+                                                    .size(48.dp)
+                                                    .padding(horizontal = 6.dp)
+                                                    .clickable {
+                                                        // Sende jetzt eine MoveMessage mit promotedPiece
+                                                        viewModel.sendGameMoveMessage(
+                                                            gameStartResponse.lobbyId,
+                                                            promotionFrom,
+                                                            promotionPosition,
+                                                            myColor!!,
+                                                            pieceType
+                                                        )
+                                                    }
                                             )
                                         }
                                     }

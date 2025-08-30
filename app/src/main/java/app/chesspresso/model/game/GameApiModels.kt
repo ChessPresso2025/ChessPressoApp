@@ -22,7 +22,8 @@ data class GameMoveMessage(
     val from: String,
     val to: String,
     val teamColor: TeamColor,
-    val lobbyId: String
+    val lobbyId: String,
+    val promotedPiece: PieceType? = null // Optionales Feld für Umwandlung
 )
 
 @Serializable
@@ -32,6 +33,7 @@ data class PositionRequestMessage(
 )
 
 data class PawnPromotionMessage(
+    val lobbyId: String,
     val position: String,
     val newPiece: PieceType
 )
@@ -61,6 +63,7 @@ data class MoveInfo(
 @Serializable
 data class PromotionRequest(
     val position: String,
+    val from: String,
     val activeTeam: TeamColor
 )
 @Serializable
