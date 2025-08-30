@@ -4,16 +4,22 @@ import android.util.Log
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import app.chesspresso.model.TeamColor
 import app.chesspresso.model.game.PieceInfo
 import app.chesspresso.model.game.PositionRequestMessage
@@ -91,6 +97,7 @@ class Board {
                         Log.d("Board", "Zug von $selectedField nach $fieldName")
                         onGameMove(selectedField!!, fieldName) // NEU: Callback aufrufen
                         resetSelection()
+                        selectedField = null // Auswahl nach Zug zurücksetzen
                     } else {
                         // Neue Auswahl oder Abwählen
                         resetSelection()
@@ -112,6 +119,7 @@ class Board {
                 selectedField == fieldName -> {
                     resetSelection()
                     selectedField = null
+                    validMoves = emptySet() // possibleMoves zurücksetzen
                 }
                 // Wenn noch nichts ausgewählt ist
                 selectedField == null -> {
@@ -135,41 +143,85 @@ class Board {
             validMoves = possibleMoves.toSet()
         }
 
+        // Labels und Reihenfolge je nach Drehung
+        val columnLabels = if (isFlipped) listOf("H", "G", "F", "E", "D", "C", "B", "A") else listOf("A", "B", "C", "D", "E", "F", "G", "H")
+        val rowLabels = if (isFlipped) (1..8).toList() else (8 downTo 1).toList()
+        val numberFontSize = 14.sp
+        val rowRange = if (isFlipped) 7 downTo 0 else 0..7
+        val colRange = if (isFlipped) 7 downTo 0 else 0..7
+
         Column(
             modifier = modifier.aspectRatio(1f)
         ) {
-            val rowRange = if (isFlipped) 7 downTo 0 else 0..7
-            val colRange = if (isFlipped) 7 downTo 0 else 0..7
-            for (row in rowRange) {
+            // Obere Buchstaben-Beschriftung
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Spacer(modifier = Modifier.weight(0.2f))
+                for (label in columnLabels) {
+                    Box(
+                        modifier = Modifier.weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = label, fontSize = 14.sp)
+                    }
+                }
+                Spacer(modifier = Modifier.weight(0.2f))
+            }
+            // Das Brett mit Zahlen-Beschriftung links und rechts
+            for ((rowIdx, row) in rowRange.withIndex()) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .weight(1f)
+                        .weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
+                    // Linke Zahlen-Beschriftung mit Abstand zum Brett
+                    Box(
+                        modifier = Modifier.weight(0.2f).padding(end = 4.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = rowLabels[rowIdx].toString(), fontSize = numberFontSize)
+                    }
+                    // Schachbrettfelder
                     for (col in colRange) {
                         val index = row * 8 + col
                         val field = board[index]
-
-                        // Bestimme die Farbe des Feldes (hell/dunkel)
                         val isLightSquare = (row + col) % 2 == 0
                         field.isLightSquare = isLightSquare
-
                         Box(
-                            modifier = Modifier
-                                .weight(1f)
+                            modifier = Modifier.weight(1f)
                         ) {
                             field.FieldContent(
                                 modifier = Modifier.fillMaxSize(),
                                 isCheck = isCheck == field.name,
                                 isCheckmate = isCheckmate == field.name,
                                 pieceInfo = boardState.getValue(field.name),
-                                isFieldSelected = selectedField == field.name, // Verwende Compose State
-                                isValidMove = validMoves.contains(field.name), // NEU: Marker für mögliche Züge
+                                isFieldSelected = selectedField == field.name,
+                                isValidMove = validMoves.contains(field.name),
                                 onFieldClick = { handleFieldClick(field.name) }
                             )
                         }
                     }
+                    // Rechte Zahlen-Beschriftung mit Abstand zum Brett
+                    Box(
+                        modifier = Modifier.weight(0.2f).padding(start = 4.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = rowLabels[rowIdx].toString(), fontSize = numberFontSize)
+                    }
                 }
+            }
+            // Untere Buchstaben-Beschriftung
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Spacer(modifier = Modifier.weight(0.2f))
+                for (label in columnLabels) {
+                    Box(
+                        modifier = Modifier.weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = label, fontSize = 14.sp)
+                    }
+                }
+                Spacer(modifier = Modifier.weight(0.2f))
             }
         }
     }

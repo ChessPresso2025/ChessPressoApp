@@ -1,5 +1,8 @@
 package app.chesspresso.model.lobby
 
+import kotlinx.serialization.Serializable
+import app.chesspresso.model.EndType
+
 // Request Models
 data class QuickJoinRequest(
     val gameTime: GameTime
@@ -19,9 +22,11 @@ data class RemisMessage(
     val accept: Boolean
 )
 
-data class ResignMessage(
+@Serializable
+data class GameEndMessage(
     val lobbyId: String,
-    val player: String
+    val player: String,
+    val endType: EndType
 )
 
 // Response Models

@@ -1,9 +1,14 @@
 package app.chesspresso.screens.main
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
@@ -14,18 +19,28 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.DividerDefaults
+import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -41,17 +56,14 @@ import androidx.navigation.compose.rememberNavController
 import app.chesspresso.R
 import app.chesspresso.auth.presentation.AuthState
 import app.chesspresso.auth.presentation.AuthViewModel
+import app.chesspresso.model.game.GameMoveResponse
 import app.chesspresso.screens.game.ChessGameScreen
+import app.chesspresso.screens.game.GameOverScreen
 import app.chesspresso.screens.lobby.LobbyWaitingScreen
 import app.chesspresso.screens.lobby.PrivateLobbyScreen
 import app.chesspresso.screens.lobby.QuickMatchScreen
 import app.chesspresso.viewmodel.ChessGameViewModel
 import app.chesspresso.websocket.WebSocketViewModel
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.ModalDrawerSheet
-import androidx.compose.material3.ModalNavigationDrawer
-import androidx.compose.material3.rememberDrawerState
-import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -79,10 +91,49 @@ fun MainScaffoldScreen(
 
     ModalNavigationDrawer(
         drawerState = drawerState,
+        scrimColor = MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f), // Optional: Abdunklung beim Öffnen
         drawerContent = {
-            ModalDrawerSheet {
-                // Hier kann später das Menü für den Spiel-Screen rein
-                Text("Spiel-Menü", modifier = Modifier.padding(16.dp))
+            if (isGameScreen) {
+                val chessGameViewModel: ChessGameViewModel = hiltViewModel()
+                val currentGameState by chessGameViewModel.currentGameState.collectAsState()
+                val myColor by chessGameViewModel.myColor.collectAsState()
+                val initialGameData by chessGameViewModel.initialGameData.collectAsState()
+                val lobbyId = initialGameData?.lobbyId
+                ModalDrawerSheet(
+                    modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.surface)
+                            .padding(16.dp)
+                    ) {
+                        Spacer(modifier = Modifier.height(32.dp))
+                        GameDrawerContent(
+                            currentGameState = currentGameState,
+                            onResign = {
+                                if (myColor != null && lobbyId != null) {
+                                    chessGameViewModel.resignGame(myColor!!, lobbyId)
+                                }
+                            },
+                            onOfferDraw = { /* TODO: Remis-Logik */ }
+                        )
+                    }
+                }
+            } else {
+                ModalDrawerSheet(
+                    modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(MaterialTheme.colorScheme.surface)
+                            .padding(16.dp)
+                    ) {
+                        Spacer(modifier = Modifier.height(32.dp))
+                        Text("Menü", modifier = Modifier)
+                    }
+                }
             }
         }
     ) {
@@ -244,8 +295,22 @@ fun MainScaffoldScreen(
                     val lobbyId = backStackEntry.arguments?.getString("lobbyId") ?: ""
                     val chessGameViewModel: ChessGameViewModel = hiltViewModel()
                     val gameStartResponse by chessGameViewModel.initialGameData.collectAsState()
+                    val playerId = chessGameViewModel.webSocketService.playerId ?: ""
                     if (gameStartResponse != null) {
-                        ChessGameScreen(gameStartResponse = gameStartResponse!!, viewModel = chessGameViewModel)
+                        ChessGameScreen(
+                            gameStartResponse = gameStartResponse!!,
+                            viewModel = chessGameViewModel,
+                            playerId = playerId,
+                            onGameEnd = { gameEndResponse, playerId ->
+                                scope.launch {
+                                    drawerState.close()
+                                    val gameEndJson = com.google.gson.Gson().toJson(gameEndResponse)
+                                    innerNavController.navigate("gameOverScreen/${gameEndJson}/$playerId") {
+                                        popUpTo("chessGameScreen") { inclusive = true }
+                                    }
+                                }
+                            }
+                        )
                     } else {
                         // Ladeanzeige oder Platzhalter, bis die Spieldaten geladen sind
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -253,8 +318,81 @@ fun MainScaffoldScreen(
                         }
                     }
                 }
+
+                // GameOverScreen mit Übergabe des GameEndResponse als JSON-String und playerId
+                composable("gameOverScreen/{gameEndJson}/{playerId}") { backStackEntry ->
+                    val gameEndJson = backStackEntry.arguments?.getString("gameEndJson") ?: ""
+                    val playerId = backStackEntry.arguments?.getString("playerId") ?: ""
+                    val gameEndResponse = try {
+                        com.google.gson.Gson().fromJson(gameEndJson, app.chesspresso.model.lobby.GameEndResponse::class.java)
+                    } catch (e: Exception) { null }
+                    if (gameEndResponse != null) {
+                        GameOverScreen(gameEndResponse, playerId)
+                    } else {
+                        // Fehleranzeige, falls Deserialisierung fehlschlägt
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Text("Fehler beim Laden des Spielergebnisses.")
+                        }
+                    }
+                }
             }
         }
+    }
+}
+
+@Composable
+fun GameDrawerContent(
+    currentGameState: GameMoveResponse?,
+    onResign: () -> Unit = {},
+    onOfferDraw: () -> Unit = {}
+) {
+    Column(
+        modifier = Modifier
+            .padding(16.dp)
+            .fillMaxSize(),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text(
+            "Spielverlauf",
+            style = MaterialTheme.typography.titleLarge
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Display game state information
+        currentGameState?.let { gameState ->
+            if (gameState.isCheck != "") {
+                Text(
+                    "Schach!",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.error
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
+
+        Button(
+            onClick = onResign,
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.error
+            ),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Aufgeben")
+        }
+        Spacer(modifier = Modifier.height(8.dp))
+        Button(
+            onClick = onOfferDraw,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text("Remis anbieten")
+        }
+        HorizontalDivider(
+            modifier = Modifier.padding(vertical = 16.dp),
+            thickness = DividerDefaults.Thickness,
+            color = DividerDefaults.color
+        )
+        // Hier später die Liste der Züge
+        Text("Hier werden die Züge angezeigt...")
     }
 }
 
