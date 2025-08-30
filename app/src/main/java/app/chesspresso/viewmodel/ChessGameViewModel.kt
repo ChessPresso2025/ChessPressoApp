@@ -2,17 +2,17 @@ package app.chesspresso.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.chesspresso.model.TeamColor
 import app.chesspresso.model.game.GameMoveResponse
 import app.chesspresso.model.lobby.GameStartResponse
 import app.chesspresso.websocket.StompWebSocketService
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.delay
-import app.chesspresso.model.TeamColor
 import javax.inject.Inject
 
 @HiltViewModel
@@ -136,6 +136,7 @@ class ChessGameViewModel @Inject constructor(
 
     fun sendGameMoveMessage(lobbyId: String, from: String, to: String, teamColor: TeamColor) {
         val message = app.chesspresso.model.game.GameMoveMessage(
+            lobbyId = lobbyId,
             from = from,
             to = to,
             teamColor = teamColor

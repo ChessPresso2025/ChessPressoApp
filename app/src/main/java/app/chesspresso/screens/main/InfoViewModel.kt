@@ -3,7 +3,6 @@ package app.chesspresso.screens.main
 import androidx.lifecycle.ViewModel
 import app.chesspresso.websocket.StompWebSocketService
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
 
 @HiltViewModel

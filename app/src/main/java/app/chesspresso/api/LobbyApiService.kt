@@ -1,8 +1,8 @@
 package app.chesspresso.api
 
-import app.chesspresso.model.lobby.GameStartResponse
-import app.chesspresso.model.lobby.CreatePrivateLobbyResponse
 import app.chesspresso.model.game.GameStartMessage
+import app.chesspresso.model.lobby.CreatePrivateLobbyResponse
+import app.chesspresso.model.lobby.GameStartResponse
 import app.chesspresso.model.lobby.JoinPrivateLobbyRequest
 import app.chesspresso.model.lobby.JoinPrivateLobbyResponse
 import app.chesspresso.model.lobby.LeaveLobbyRequest

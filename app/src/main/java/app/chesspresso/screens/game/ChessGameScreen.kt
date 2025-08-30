@@ -38,16 +38,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import app.chesspresso.model.PieceType
 import app.chesspresso.model.TeamColor
 import app.chesspresso.model.board.Board
-import app.chesspresso.model.game.PieceInfo
 import app.chesspresso.model.lobby.GameStartResponse
-import app.chesspresso.model.lobby.GameTime
 import app.chesspresso.viewmodel.ChessGameViewModel
 import kotlinx.coroutines.launch
 
@@ -100,27 +96,11 @@ fun ChessGameScreen(
 
                     // Display game state information
                     currentGameState?.let { gameState ->
-                        if (gameState.isCheck) {
+                        if (gameState.isCheck != "") {
                             Text(
                                 "Schach!",
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.error
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                        }
-                        if (gameState.isCheckmate) {
-                            Text(
-                                "Schachmatt!",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.error
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                        }
-                        if (gameState.isStalemate) {
-                            Text(
-                                "Patt!",
-                                style = MaterialTheme.typography.titleMedium,
-                                color = MaterialTheme.colorScheme.secondary
                             )
                             Spacer(modifier = Modifier.height(8.dp))
                         }
@@ -187,7 +167,8 @@ fun ChessGameScreen(
                     Column(
                         modifier = Modifier
                             .weight(1f)
-                            .fillMaxWidth(),
+                            .fillMaxWidth()
+                            .alpha(if (activePlayer == TeamColor.WHITE) 1f else 0.4f),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         PlayerClock(
@@ -203,7 +184,8 @@ fun ChessGameScreen(
 
                     // Spieler 2 (Schwarz)
                     Column(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(1f)
+                            .alpha(if (activePlayer == TeamColor.BLACK) 1f else 0.4f),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         PlayerClock(

@@ -2,9 +2,7 @@ package app.chesspresso.service
 
 import android.util.Log
 import app.chesspresso.api.LobbyApiService
-import app.chesspresso.model.lobby.ConfigureLobbyMessage
 import app.chesspresso.model.game.GameStartMessage
-import app.chesspresso.model.game.PieceInfo
 import app.chesspresso.model.lobby.GameStartResponse
 import app.chesspresso.model.lobby.GameTime
 import app.chesspresso.model.lobby.JoinPrivateLobbyRequest
@@ -17,16 +15,15 @@ import app.chesspresso.model.lobby.LobbyType
 import app.chesspresso.model.lobby.LobbyWaitingMessage
 import app.chesspresso.model.lobby.QuickJoinRequest
 import app.chesspresso.websocket.StompWebSocketService
-import kotlinx.coroutines.flow.collectLatest
 import com.google.gson.Gson
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
-import kotlin.collections.emptyMap
-import kotlinx.coroutines.launch
 
 @Singleton
 class LobbyService @Inject constructor(

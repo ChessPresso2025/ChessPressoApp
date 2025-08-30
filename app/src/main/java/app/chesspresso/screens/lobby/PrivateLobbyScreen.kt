@@ -34,9 +34,9 @@ import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import app.chesspresso.viewmodel.PrivateLobbyViewModel
 import app.chesspresso.ui.components.LobbyCreatorControls
 import app.chesspresso.ui.components.QRScannerButton
+import app.chesspresso.viewmodel.PrivateLobbyViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

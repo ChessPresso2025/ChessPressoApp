@@ -3,12 +3,12 @@ package app.chesspresso.websocket
 import android.util.Log
 import app.chesspresso.data.storage.TokenStorage
 import app.chesspresso.model.game.GameMoveMessage
-import app.chesspresso.service.LobbyListener
 import app.chesspresso.model.game.GameMoveResponse
 import app.chesspresso.model.game.GameStartMessage
 import app.chesspresso.model.game.PieceInfo
 import app.chesspresso.model.game.PositionRequestMessage
 import app.chesspresso.model.lobby.GameStartResponse
+import app.chesspresso.service.LobbyListener
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.CoroutineScope
@@ -342,7 +342,7 @@ class StompWebSocketService @Inject constructor(
                     Log.d(TAG, "Game started event empfangen: $response")
                 }
 
-                "moveResponse" -> {
+                "move" -> {
                     // GameMoveResponse verarbeiten
                     try {
                         val gameMoveResponse = this.json.decodeFromString<GameMoveResponse>(body)
@@ -654,6 +654,19 @@ class StompWebSocketService @Inject constructor(
             webSocket?.send(subscribeFrameMoves)
             Log.d(TAG, "Subscribed to possible-moves for lobby $lobbyId")
         }
+
+        currentLobbyId?.let { lobbyId ->
+            val subscribeFrameMoves = buildString {
+                append("SUBSCRIBE\n")
+                append("id:sub-4\n")
+                append("destination:/topic/game/$lobbyId/move\n")
+                append("\n")
+                append(MESSAGE_END)
+            }
+            webSocket?.send(subscribeFrameMoves)
+            Log.d(TAG, "Subscribed to possible-moves for lobby $lobbyId")
+        }
+
     }
 
     fun unsubscribeFromGame() {
@@ -676,6 +689,16 @@ class StompWebSocketService @Inject constructor(
             }
             webSocket?.send(subscribeFrameMoves)
             Log.d(TAG, "Unsubscribed from possible-moves for lobby $lobbyId")
+        }
+        currentLobbyId?.let { lobbyId ->
+            val subscribeFrameMoves = buildString {
+                append("UNSUBSCRIBE\n")
+                append("id:sub-4\n")
+                append("\n")
+                append(MESSAGE_END)
+            }
+            webSocket?.send(subscribeFrameMoves)
+            Log.d(TAG, "Subscribed to possible-moves for lobby $lobbyId")
         }
 
         currentLobbyId = null
