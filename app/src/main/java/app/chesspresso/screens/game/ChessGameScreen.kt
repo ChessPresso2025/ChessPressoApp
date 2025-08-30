@@ -2,7 +2,6 @@ package app.chesspresso.screens.game
 
 import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
@@ -10,6 +9,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -66,6 +67,7 @@ fun ChessGameScreen(
     val blackTime by viewModel.blackTime.collectAsState()
     val myColor by viewModel.myColor.collectAsState()
     val possibleMoves by viewModel.possibleMoves.collectAsState()
+    val promotionRequest by viewModel.promotionRequest.collectAsState()
 
     // Determine which board state to use (current or initial)
     val boardToDisplay = currentBoard.ifEmpty { gameStartResponse.board }
@@ -140,6 +142,7 @@ fun ChessGameScreen(
             topBar = {
                 TopAppBar(
                     title = { Text("Schachpartie") },
+                    modifier = Modifier.padding(top = 0.dp),
                     navigationIcon = {
                         IconButton(onClick = {
                             scope.launch {
@@ -150,115 +153,182 @@ fun ChessGameScreen(
                         }
                     }
                 )
-            }
-        ) { paddingValues ->
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
-                // Spieler und Uhren
-                Row(
+            },
+            content = { paddingValues ->
+                Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(IntrinsicSize.Min),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                        .fillMaxSize()
+                        .padding(paddingValues)
+                        .padding(horizontal = 8.dp, vertical = 4.dp), // Weniger vertikaler Abstand
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    if (myColor == TeamColor.WHITE) {
-                        // Eigener Spieler (Weiß) links
-                        Column(
+                    // Spieler und Uhren
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(IntrinsicSize.Min),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        if (myColor == TeamColor.WHITE) {
+                            // Eigener Spieler (Weiß) links
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth()
+                                    .alpha(if (activePlayer == TeamColor.WHITE) 1f else 0.4f),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                PlayerClock(
+                                    playerName = gameStartResponse.whitePlayer,
+                                    remainingTime = formatSecondsToTimeString(whiteTime),
+                                    isActive = activePlayer == TeamColor.WHITE
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                CapturedPieces(captured = viewModel.capturedBlackPieces.collectAsState().value)
+                            }
+                            Spacer(modifier = Modifier.width(16.dp))
+                            // Gegner (Schwarz) rechts
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .alpha(if (activePlayer == TeamColor.BLACK) 1f else 0.4f),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                PlayerClock(
+                                    playerName = gameStartResponse.blackPlayer,
+                                    remainingTime = formatSecondsToTimeString(blackTime),
+                                    isActive = activePlayer == TeamColor.BLACK
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                CapturedPieces(captured = viewModel.capturedWhitePieces.collectAsState().value)
+                            }
+                        } else if (myColor == TeamColor.BLACK) {
+                            // Eigener Spieler (Schwarz) links
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .alpha(if (activePlayer == TeamColor.BLACK) 1f else 0.4f),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                PlayerClock(
+                                    playerName = gameStartResponse.blackPlayer,
+                                    remainingTime = formatSecondsToTimeString(blackTime),
+                                    isActive = activePlayer == TeamColor.BLACK
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                CapturedPieces(captured = viewModel.capturedWhitePieces.collectAsState().value)
+                            }
+                            Spacer(modifier = Modifier.width(16.dp))
+                            // Gegner (Weiß) rechts
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxWidth()
+                                    .alpha(if (activePlayer == TeamColor.WHITE) 1f else 0.4f),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                PlayerClock(
+                                    playerName = gameStartResponse.whitePlayer,
+                                    remainingTime = formatSecondsToTimeString(whiteTime),
+                                    isActive = activePlayer == TeamColor.WHITE
+                                )
+                                Spacer(modifier = Modifier.height(8.dp))
+                                CapturedPieces(captured = viewModel.capturedBlackPieces.collectAsState().value)
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    // Schachbrett - verwende den aktuellen Spielbrett-Zustand
+                    board.BoardContent(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 8.dp),
+                        boardState = boardToDisplay,
+                        lobbyId = gameStartResponse.lobbyId,
+                        onPositionRequest = { positionRequest ->
+                            viewModel.sendPositionRequest(
+                                gameStartResponse.lobbyId,
+                                positionRequest.position
+                            )
+                        },
+                        isFlipped = (myColor == TeamColor.BLACK),
+                        possibleMoves = if (myColor == currentPlayer) possibleMoves else emptyList(),
+                        nextPlayer = currentPlayer ?: TeamColor.WHITE,
+                        myColor = myColor,
+                        isCheck = currentGameState?.isCheck ?: "",
+                        onGameMove = { from, to ->
+                            val color = myColor
+                            if (color != null) {
+                                viewModel.sendGameMoveMessage(
+                                    gameStartResponse.lobbyId,
+                                    from,
+                                    to,
+                                    color
+                                )
+                            }
+                        }
+                    )
+
+                    // --- Promotion Auswahl unter dem Brett ---
+                    if (promotionRequest != null && promotionRequest!!.activeTeam == myColor) {
+                        val promotionPosition = promotionRequest!!.position
+                        val promotionOptions = listOf(
+                            app.chesspresso.model.PieceType.QUEEN,
+                            app.chesspresso.model.PieceType.ROOK,
+                            app.chesspresso.model.PieceType.BISHOP,
+                            app.chesspresso.model.PieceType.KNIGHT
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Card(
                             modifier = Modifier
-                                .weight(1f)
                                 .fillMaxWidth()
-                                .alpha(if (activePlayer == TeamColor.WHITE) 1f else 0.4f),
-                            horizontalAlignment = Alignment.CenterHorizontally
+                                .padding(horizontal = 8.dp),
+                            elevation = CardDefaults.cardElevation(4.dp)
                         ) {
-                            PlayerClock(
-                                playerName = gameStartResponse.whitePlayer,
-                                remainingTime = formatSecondsToTimeString(whiteTime),
-                                isActive = activePlayer == TeamColor.WHITE
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            CapturedPieces(captured = viewModel.capturedBlackPieces.collectAsState().value)
-                        }
-                        Spacer(modifier = Modifier.width(16.dp))
-                        // Gegner (Schwarz) rechts
-                        Column(
-                            modifier = Modifier.weight(1f)
-                                .alpha(if (activePlayer == TeamColor.BLACK) 1f else 0.4f),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            PlayerClock(
-                                playerName = gameStartResponse.blackPlayer,
-                                remainingTime = formatSecondsToTimeString(blackTime),
-                                isActive = activePlayer == TeamColor.BLACK
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            CapturedPieces(captured = viewModel.capturedWhitePieces.collectAsState().value)
-                        }
-                    } else if (myColor == TeamColor.BLACK) {
-                        // Eigener Spieler (Schwarz) links
-                        Column(
-                            modifier = Modifier.weight(1f)
-                                .alpha(if (activePlayer == TeamColor.BLACK) 1f else 0.4f),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            PlayerClock(
-                                playerName = gameStartResponse.blackPlayer,
-                                remainingTime = formatSecondsToTimeString(blackTime),
-                                isActive = activePlayer == TeamColor.BLACK
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            CapturedPieces(captured = viewModel.capturedWhitePieces.collectAsState().value)
-                        }
-                        Spacer(modifier = Modifier.width(16.dp))
-                        // Gegner (Weiß) rechts
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxWidth()
-                                .alpha(if (activePlayer == TeamColor.WHITE) 1f else 0.4f),
-                            horizontalAlignment = Alignment.CenterHorizontally
-                        ) {
-                            PlayerClock(
-                                playerName = gameStartResponse.whitePlayer,
-                                remainingTime = formatSecondsToTimeString(whiteTime),
-                                isActive = activePlayer == TeamColor.WHITE
-                            )
-                            Spacer(modifier = Modifier.height(8.dp))
-                            CapturedPieces(captured = viewModel.capturedBlackPieces.collectAsState().value)
+                            Column(
+                                modifier = Modifier.padding(12.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                // Debug-Info anzeigen
+                                Log.d("ChessGameScreen", "DEBUG: Position: $promotionPosition, Optionen: ${promotionOptions.size}, Team: ${promotionRequest!!.activeTeam}, MyColor: $myColor")
+                                Text("Wähle die Figur für die Umwandlung:", style = MaterialTheme.typography.titleMedium)
+                                Spacer(modifier = Modifier.height(4.dp))
+                                Row(
+                                    horizontalArrangement = Arrangement.Center,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .heightIn(min = 48.dp)
+                                ) {
+                                    promotionOptions.forEach { pieceType ->
+                                        Button(
+                                            onClick = {
+                                                viewModel.sendPawnPromotion(
+                                                    promotionPosition,
+                                                    pieceType
+                                                )
+                                            },
+                                            modifier = Modifier.padding(horizontal = 6.dp)
+                                        ) {
+                                            // Testweise Unicode und Klartext anzeigen
+                                            Text(
+                                                text = when (pieceType) {
+                                                    app.chesspresso.model.PieceType.QUEEN -> "\u265B Dame"
+                                                    app.chesspresso.model.PieceType.ROOK -> "\u265C Turm"
+                                                    app.chesspresso.model.PieceType.BISHOP -> "\u265D Läufer"
+                                                    app.chesspresso.model.PieceType.KNIGHT -> "\u265E Springer"
+                                                    else -> "?"
+                                                }, fontSize = 22.sp
+                                            )
+                                        }
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Schachbrett - verwende den aktuellen Spielbrett-Zustand
-                board.BoardContent(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 8.dp),
-                    boardState = boardToDisplay,
-                    lobbyId = gameStartResponse.lobbyId,
-                    onPositionRequest = { positionRequest ->
-                        viewModel.sendPositionRequest(gameStartResponse.lobbyId, positionRequest.position)
-                    },
-                    isFlipped = (myColor == TeamColor.BLACK),
-                    possibleMoves = if (myColor == currentPlayer) possibleMoves else emptyList(), // Nur eigene möglichen Züge anzeigen
-                    nextPlayer = currentPlayer ?: TeamColor.WHITE, // nextPlayer übergeben
-                    myColor = myColor, // eigene Spielerfarbe übergeben
-                    isCheck = currentGameState?.isCheck ?: "",
-                    onGameMove = { from, to ->
-                        val color = myColor
-                        if (color != null) {
-                            viewModel.sendGameMoveMessage(gameStartResponse.lobbyId, from, to, color)
-                        }
-                    }
-                )
-            }
-        }
+            })
     }
 }
 

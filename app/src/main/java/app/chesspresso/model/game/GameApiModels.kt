@@ -59,6 +59,11 @@ data class MoveInfo(
     val captured: CapturedInfo? = null
 )
 @Serializable
+data class PromotionRequest(
+    val position: String,
+    val activeTeam: TeamColor
+)
+@Serializable
 data class CapturedInfo(
     val type: PieceType?,
     @SerialName("colour")

@@ -5,6 +5,7 @@ import app.chesspresso.data.storage.TokenStorage
 import app.chesspresso.model.game.GameMoveMessage
 import app.chesspresso.model.game.GameMoveResponse
 import app.chesspresso.model.game.GameStartMessage
+import app.chesspresso.model.game.PawnPromotionMessage
 import app.chesspresso.model.game.PieceInfo
 import app.chesspresso.model.game.PositionRequestMessage
 import app.chesspresso.model.lobby.GameStartResponse
@@ -78,6 +79,10 @@ class StompWebSocketService @Inject constructor(
     val gameStartedEvent: StateFlow<GameStartResponse?> = _gameStartedEvent.asStateFlow()
     private val _possibleMoves = MutableStateFlow<List<String>>(emptyList())
     val possibleMoves: StateFlow<List<String>> = _possibleMoves.asStateFlow()
+
+    // Promotion-Flow
+    private val _promotionRequest = MutableStateFlow<app.chesspresso.model.game.PromotionRequest?>(null)
+    val promotionRequest: StateFlow<app.chesspresso.model.game.PromotionRequest?> = _promotionRequest.asStateFlow()
 
     enum class ConnectionState {
         DISCONNECTED, CONNECTING, CONNECTED, RECONNECTING
@@ -363,6 +368,17 @@ class StompWebSocketService @Inject constructor(
                     }
                     _possibleMoves.value = moves
                     Log.d(TAG, "Possible moves empfangen: $moves")
+                }
+
+                "promotion" -> {
+                    // PromotionRequest verarbeiten
+                    try {
+                        val promotionRequest = gson.fromJson(body, app.chesspresso.model.game.PromotionRequest::class.java)
+                        _promotionRequest.value = promotionRequest
+                        Log.d(TAG, "Received promotion request: $promotionRequest")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error parsing PromotionRequest: ${e.message}")
+                    }
                 }
 
                 else -> {
@@ -667,6 +683,16 @@ class StompWebSocketService @Inject constructor(
             Log.d(TAG, "Subscribed to possible-moves for lobby $lobbyId")
         }
 
+        // Subscription für Promotion-Topic
+        val subscribePromotion = buildString {
+            append("SUBSCRIBE\n")
+            append("id:sub-promotion\n")
+            append("destination:/topic/game/$lobbyId/move/promotion\n")
+            append("\n")
+            append(MESSAGE_END)
+        }
+        webSocket?.send(subscribePromotion)
+        Log.d(TAG, "Subscribed to promotion topic for lobby $lobbyId")
     }
 
     fun unsubscribeFromGame() {
@@ -700,6 +726,14 @@ class StompWebSocketService @Inject constructor(
             webSocket?.send(subscribeFrameMoves)
             Log.d(TAG, "Subscribed to possible-moves for lobby $lobbyId")
         }
+
+        val unsubscribePromotion = buildString {
+            append("UNSUBSCRIBE\n")
+            append("id:sub-promotion\n")
+            append("\n")
+            append(MESSAGE_END)
+        }
+        webSocket?.send(unsubscribePromotion)
 
         currentLobbyId = null
     }
@@ -787,6 +821,22 @@ class StompWebSocketService @Inject constructor(
                 webSocket?.send(positionFrame)
                 Log.d(TAG, "Sent position request message: $messageJson")
             }
+        }
+    }
+
+    fun sendPawnPromotionMessage(message: PawnPromotionMessage) {
+        currentLobbyId?.let { lobbyId ->
+            val messageJson = gson.toJson(message)
+            val promotionFrame = buildString {
+                append("SEND\n")
+                append("destination:/app/game/promotion\n")
+                append("content-type:application/json\n")
+                append("\n")
+                append(messageJson)
+                append(MESSAGE_END)
+            }
+            webSocket?.send(promotionFrame)
+            Log.d(TAG, "Sent pawn promotion message: $messageJson")
         }
     }
 

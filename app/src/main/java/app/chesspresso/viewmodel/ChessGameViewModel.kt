@@ -2,8 +2,10 @@ package app.chesspresso.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import app.chesspresso.model.PieceType
 import app.chesspresso.model.TeamColor
 import app.chesspresso.model.game.GameMoveResponse
+import app.chesspresso.model.game.PawnPromotionMessage
 import app.chesspresso.model.lobby.GameStartResponse
 import app.chesspresso.websocket.StompWebSocketService
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -47,6 +49,8 @@ class ChessGameViewModel @Inject constructor(
     val capturedWhitePieces: StateFlow<List<app.chesspresso.model.game.PieceInfo>> = _capturedWhitePieces.asStateFlow()
     private val _capturedBlackPieces = MutableStateFlow<List<app.chesspresso.model.game.PieceInfo>>(emptyList())
     val capturedBlackPieces: StateFlow<List<app.chesspresso.model.game.PieceInfo>> = _capturedBlackPieces.asStateFlow()
+    private val _promotionRequest = MutableStateFlow<app.chesspresso.model.game.PromotionRequest?>(null)
+    val promotionRequest: StateFlow<app.chesspresso.model.game.PromotionRequest?> = _promotionRequest.asStateFlow()
 
     private var timerJob: Job? = null
     private var lastActivePlayer: TeamColor? = null
@@ -88,6 +92,11 @@ class ChessGameViewModel @Inject constructor(
                     }
                     _currentPlayer.value = response.nextPlayer
                 }
+            }
+        }
+        viewModelScope.launch {
+            webSocketService.promotionRequest.collect { request ->
+                _promotionRequest.value = request
             }
         }
     }
@@ -159,6 +168,13 @@ class ChessGameViewModel @Inject constructor(
             teamColor = teamColor
         )
         webSocketService.sendGameMoveMessage(message)
+    }
+
+    fun sendPawnPromotion(position: String, newPiece: PieceType) {
+        val message = PawnPromotionMessage(position, newPiece)
+        webSocketService.sendPawnPromotionMessage(message)
+        // Nach dem Senden die PromotionRequest zurücksetzen, damit die Auswahl verschwindet
+        _promotionRequest.value = null
     }
 
     override fun onCleared() {
