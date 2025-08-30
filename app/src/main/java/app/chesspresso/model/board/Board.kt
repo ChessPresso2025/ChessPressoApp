@@ -67,8 +67,6 @@ class Board {
 
         // Funktion zum Zurücksetzen der Auswahl
         fun resetSelection() {
-            selectedField = null
-            validMoves = emptySet()
             // Reset validMove states only (isSelected is now handled by Compose state)
             board.forEach { field ->
                 field.isValidMove = false
@@ -113,6 +111,7 @@ class Board {
                 // Wenn das gleiche Feld nochmal geklickt wird
                 selectedField == fieldName -> {
                     resetSelection()
+                    selectedField = null
                 }
                 // Wenn noch nichts ausgewählt ist
                 selectedField == null -> {

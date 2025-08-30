@@ -43,6 +43,11 @@ class ChessGameViewModel @Inject constructor(
     private val _possibleMoves = MutableStateFlow<List<String>>(emptyList())
     val possibleMoves: StateFlow<List<String>> = _possibleMoves.asStateFlow()
 
+    private val _capturedWhitePieces = MutableStateFlow<List<app.chesspresso.model.game.PieceInfo>>(emptyList())
+    val capturedWhitePieces: StateFlow<List<app.chesspresso.model.game.PieceInfo>> = _capturedWhitePieces.asStateFlow()
+    private val _capturedBlackPieces = MutableStateFlow<List<app.chesspresso.model.game.PieceInfo>>(emptyList())
+    val capturedBlackPieces: StateFlow<List<app.chesspresso.model.game.PieceInfo>> = _capturedBlackPieces.asStateFlow()
+
     private var timerJob: Job? = null
     private var lastActivePlayer: TeamColor? = null
 
@@ -55,6 +60,34 @@ class ChessGameViewModel @Inject constructor(
         viewModelScope.launch {
             webSocketService.possibleMoves.collect { moves ->
                 _possibleMoves.value = moves
+            }
+        }
+        // GameMoveResponse-Listener nur einmalig im init-Block registrieren!
+        viewModelScope.launch {
+            webSocketService.gameMoveUpdates.collect { gameMoveResponse ->
+                gameMoveResponse?.let { response ->
+                    val captured = response.move.captured
+                    if (captured != null && captured.type != null && captured.color != null) {
+                        val capturedPiece = app.chesspresso.model.game.PieceInfo(
+                            type = captured.type,
+                            color = captured.color
+                        )
+                        when (captured.color) {
+                            TeamColor.WHITE -> _capturedWhitePieces.value = _capturedWhitePieces.value + capturedPiece
+                            TeamColor.BLACK -> _capturedBlackPieces.value = _capturedBlackPieces.value + capturedPiece
+                            else -> {}
+                        }
+                    }
+                    val newBoard = response.board
+                    _currentGameState.value = response
+                    _currentBoard.value = newBoard
+                    _possibleMoves.value = emptyList()
+                    if (response.nextPlayer != lastActivePlayer) {
+                        startTimer(response.nextPlayer)
+                        lastActivePlayer = response.nextPlayer
+                    }
+                    _currentPlayer.value = response.nextPlayer
+                }
             }
         }
     }
@@ -94,22 +127,6 @@ class ChessGameViewModel @Inject constructor(
 
             // Subscribe zu Spiel-Updates für diese Lobby
             webSocketService.subscribeToGame(gameStartResponse.lobbyId)
-
-            // Lausche auf GameMoveResponse-Updates
-            viewModelScope.launch {
-                webSocketService.gameMoveUpdates.collect { gameMoveResponse ->
-                    gameMoveResponse?.let { response ->
-                        _currentGameState.value = response
-                        _currentBoard.value = response.board
-                        // Wenn sich der Spieler ändert, Timer umschalten
-                        if (response.nextPlayer != lastActivePlayer) {
-                            startTimer(response.nextPlayer)
-                            lastActivePlayer = response.nextPlayer
-                        }
-                        _currentPlayer.value = response.nextPlayer
-                    }
-                }
-            }
         }
     }
 

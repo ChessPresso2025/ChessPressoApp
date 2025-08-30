@@ -5,6 +5,7 @@ import app.chesspresso.model.SpecialMove
 import app.chesspresso.model.TeamColor
 import com.google.gson.annotations.SerializedName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.SerialName
 
 //Messages
 @Serializable
@@ -42,6 +43,7 @@ data class PawnPromotionMessage(
 @Serializable
 data class GameMoveResponse(
     val lobbyId: String,
+    @SerialName("activeTeam")
     val nextPlayer: TeamColor,
     val board: Map<String, PieceInfo>,
     val isCheck: String,
@@ -52,12 +54,14 @@ data class MoveInfo(
     val start: String,
     val end: String,
     val piece: PieceType,
-    val specialMove: SpecialMove?,
-    val captured: CapturedInfo?
+    @SerialName("spezialMove")
+    val specialMove: SpecialMove? = null,
+    val captured: CapturedInfo? = null
 )
 @Serializable
 data class CapturedInfo(
     val type: PieceType?,
+    @SerialName("colour")
     val color: TeamColor?,
     val position: String?
 )
