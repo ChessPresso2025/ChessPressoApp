@@ -39,6 +39,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import app.chesspresso.R
+import app.chesspresso.auth.presentation.AuthState
 import app.chesspresso.auth.presentation.AuthViewModel
 import app.chesspresso.screens.game.ChessGameScreen
 import app.chesspresso.screens.lobby.LobbyWaitingScreen
@@ -63,6 +64,8 @@ fun MainScaffoldScreen(
     val innerNavController = rememberNavController()
     val currentRoute by innerNavController.currentBackStackEntryAsState()
     val selectedRoute = currentRoute?.destination?.route ?: "home"
+    val authState by authViewModel.authState.collectAsState()
+    val userId = (authState as? AuthState.Success)?.response?.playerId
 
     // Drawer-Logik hinzufügen
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -128,11 +131,19 @@ fun MainScaffoldScreen(
                             icon = { Icon(item.icon, contentDescription = item.label) },
                             label = { Text(item.label) },
                             selected = item.route == selectedRoute,
+                            enabled = if (item.route == NavRoutes.STATS) userId != null else true,
                             onClick = {
                                 if (selectedRoute != item.route) {
-                                    innerNavController.navigate(item.route) {
-                                        popUpTo("home") { inclusive = false }
-                                        launchSingleTop = true
+                                    if (item.route == NavRoutes.STATS && userId != null) {
+                                        innerNavController.navigate("stats/$userId") {
+                                            popUpTo("home") { inclusive = false }
+                                            launchSingleTop = true
+                                        }
+                                    } else {
+                                        innerNavController.navigate(item.route) {
+                                            popUpTo("home") { inclusive = false }
+                                            launchSingleTop = true
+                                        }
                                     }
                                 }
                             }
@@ -196,8 +207,17 @@ fun MainScaffoldScreen(
                 }
 
                 // Bestehende Screens
-                composable(NavRoutes.STATS) {
-                    StatsScreen()
+                composable(NavRoutes.STATS + "/{userId}") { backStackEntry ->
+                    val userId = backStackEntry.arguments?.getString("userId") ?: ""
+                    StatsScreen(navController = innerNavController, userId = userId)
+                }
+                composable("game_history/{userId}") { backStackEntry ->
+                    val userId = backStackEntry.arguments?.getString("userId") ?: ""
+                    GameHistoryScreen(navController = innerNavController, userId = userId)
+                }
+                composable("game_detail/{gameId}") { backStackEntry ->
+                    val gameId = backStackEntry.arguments?.getString("gameId") ?: ""
+                    GameDetailScreen(navController = innerNavController, gameId = gameId)
                 }
                 composable(NavRoutes.PROFILE) {
                     ProfileScreen(
