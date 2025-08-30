@@ -327,7 +327,7 @@ fun MainScaffoldScreen(
                         com.google.gson.Gson().fromJson(gameEndJson, app.chesspresso.model.lobby.GameEndResponse::class.java)
                     } catch (e: Exception) { null }
                     if (gameEndResponse != null) {
-                        GameOverScreen(gameEndResponse, playerId)
+                        GameOverScreen(gameEndResponse, playerId, innerNavController)
                     } else {
                         // Fehleranzeige, falls Deserialisierung fehlschlägt
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
