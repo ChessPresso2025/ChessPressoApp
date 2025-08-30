@@ -53,10 +53,11 @@ data class RemisAcceptRequest(
 )
 
 data class GameEndResponse(
+    val winner: String,
+    val loser: String,
+    val draw: Boolean,
     val lobbyId: String,
-    val result: String, // "1-0", "0-1", "1/2-1/2"
-    val reason: String, // "checkmate", "resignation", "draw", etc.
-    val finalBoard: Map<String, String> // e.g., {"e2": "wp", "e4": "bp", ...}
+    val type: String = "game-end"
 )
 
 data class GameStartResponse(
