@@ -1,6 +1,8 @@
 package app.chesspresso.api
 
+import app.chesspresso.model.game.GameStartMessage
 import app.chesspresso.model.lobby.CreatePrivateLobbyResponse
+import app.chesspresso.model.lobby.GameStartResponse
 import app.chesspresso.model.lobby.JoinPrivateLobbyRequest
 import app.chesspresso.model.lobby.JoinPrivateLobbyResponse
 import app.chesspresso.model.lobby.LeaveLobbyRequest
@@ -26,6 +28,9 @@ interface LobbyApiService {
 
     @POST("lobby/leave")
     suspend fun leaveLobby(@Body request: LeaveLobbyRequest): Response<Map<String, Any>>
+
+    @POST("lobby/{lobbyid}/start")
+    suspend fun startGame(@Path("lobbyid") request: GameStartMessage): Response<GameStartResponse>
 
     @GET("lobby/{lobbyId}")
     suspend fun getLobbyInfo(@Path("lobbyId") lobbyId: String): Response<LobbyInfoResponse>

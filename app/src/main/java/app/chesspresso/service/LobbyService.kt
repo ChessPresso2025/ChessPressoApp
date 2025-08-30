@@ -2,7 +2,8 @@ package app.chesspresso.service
 
 import android.util.Log
 import app.chesspresso.api.LobbyApiService
-import app.chesspresso.model.lobby.GameStartMessage
+import app.chesspresso.model.game.GameStartMessage
+import app.chesspresso.model.lobby.GameStartResponse
 import app.chesspresso.model.lobby.GameTime
 import app.chesspresso.model.lobby.JoinPrivateLobbyRequest
 import app.chesspresso.model.lobby.LeaveLobbyRequest
@@ -19,6 +20,8 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -40,8 +43,8 @@ class LobbyService @Inject constructor(
     private val _isWaitingForMatch = MutableStateFlow(false)
     val isWaitingForMatch: StateFlow<Boolean> = _isWaitingForMatch.asStateFlow()
 
-    private val _gameStarted = MutableStateFlow<GameStartMessage?>(null)
-    val gameStarted: StateFlow<GameStartMessage?> = _gameStarted.asStateFlow()
+    private val _gameStarted = MutableStateFlow<GameStartResponse?>(null)
+    val gameStarted: StateFlow<GameStartResponse?> = _gameStarted.asStateFlow()
     val lobbyLeft = MutableSharedFlow<Unit>()
 
     init {
@@ -49,6 +52,15 @@ class LobbyService @Inject constructor(
             handleWebSocketMessage(message)
         }
         webSocketService.setLobbyListener(this)
+        // GameStarted-Event aus WebSocketService übernehmen
+        kotlinx.coroutines.GlobalScope.launch {
+            webSocketService.gameStartedEvent.collectLatest { response ->
+                if (response != null) {
+                    _gameStarted.value = response
+                    Log.d("LobbyService", "Game started Event empfangen: $response")
+                }
+            }
+        }
     }
 
     // Quick Match beitreten
@@ -140,6 +152,17 @@ class LobbyService @Inject constructor(
             }
         } catch (e: Exception) {
             Log.e("LobbyService", "Fehler beim Verlassen der Lobby", e)
+            Result.failure(e)
+        }
+    }
+
+    fun startGame(gameStartMessage: GameStartMessage): Result<Unit> {
+        return try {
+            webSocketService.sendStartGame(gameStartMessage)
+            Log.d("LobbyService", "Spiel gestartet mit: $gameStartMessage")
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Log.e("LobbyService", "Fehler beim Starten des Spiels", e)
             Result.failure(e)
         }
     }
@@ -277,26 +300,6 @@ class LobbyService @Inject constructor(
                     Log.d("LobbyService", "Lobby-Update: $updateMessage")
                 }
 
-                "game-start" -> {
-                    val lobbyId = jsonObject["lobbyId"] as? String ?: ""
-                    val gameTime = jsonObject["gameTime"] as? String ?: ""
-                    val whitePlayer = jsonObject["whitePlayer"] as? String ?: ""
-                    val blackPlayer = jsonObject["blackPlayer"] as? String ?: ""
-                    val lobbyChannel = jsonObject["lobbyChannel"] as? String ?: ""
-
-                    val gameStart = GameStartMessage(
-                        lobbyId = lobbyId,
-                        gameTime = gameTime,
-                        whitePlayer = whitePlayer,
-                        blackPlayer = blackPlayer,
-                        lobbyChannel = lobbyChannel
-                    )
-
-                    _gameStarted.value = gameStart
-                    _isWaitingForMatch.value = false
-                    Log.d("LobbyService", "Spiel startet! Lobby: $lobbyId")
-                }
-
                 "lobby-created" -> {
                     val lobbyCode = jsonObject["lobbyCode"] as? String
                     val message = jsonObject["message"] as? String
@@ -307,33 +310,6 @@ class LobbyService @Inject constructor(
                     val playerId = jsonObject["playerId"] as? String
                     Log.d("LobbyService", "Spieler bereit: $playerId")
                     // Hier könntest du den Ready-Status in der UI anzeigen
-                }
-
-                "GAME_START" -> {
-                    // Alternative Behandlung für direktes GAME_START
-                    val players = jsonObject["players"] as? List<String> ?: emptyList()
-                    val whitePlayer = jsonObject["whitePlayer"] as? String ?: ""
-                    val blackPlayer = jsonObject["blackPlayer"] as? String ?: ""
-                    val gameTimeObj = jsonObject["gameTime"]
-
-                    // Extrahiere gameTime richtig
-                    val gameTime = when (gameTimeObj) {
-                        is String -> gameTimeObj
-                        is Map<*, *> -> gameTimeObj["name"] as? String ?: "MIDDLE"
-                        else -> "MIDDLE"
-                    }
-
-                    val gameStart = GameStartMessage(
-                        lobbyId = _currentLobby.value?.lobbyId ?: "",
-                        gameTime = gameTime,
-                        whitePlayer = whitePlayer,
-                        blackPlayer = blackPlayer,
-                        lobbyChannel = ""
-                    )
-
-                    _gameStarted.value = gameStart
-                    _isWaitingForMatch.value = false
-                    Log.d("LobbyService", "Direkter Spielstart erkannt")
                 }
 
                 else -> {
@@ -348,12 +324,6 @@ class LobbyService @Inject constructor(
                         message.contains("\"lobbyId\"") && message.contains("\"message\"") -> {
                             val waitingMsg = gson.fromJson(message, LobbyWaitingMessage::class.java)
                             _isWaitingForMatch.value = true
-                        }
-
-                        message.contains("\"gameTime\"") && message.contains("\"whitePlayer\"") -> {
-                            val gameStart = gson.fromJson(message, GameStartMessage::class.java)
-                            _gameStarted.value = gameStart
-                            _isWaitingForMatch.value = false
                         }
 
                         else -> {

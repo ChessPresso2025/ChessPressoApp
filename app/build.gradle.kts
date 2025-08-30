@@ -3,6 +3,7 @@ plugins {
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.hilt.android)
+    alias(libs.plugins.kotlin.serialization)
     kotlin("kapt")
 }
 
@@ -117,4 +118,7 @@ dependencies {
 
     // ML Kit für QR-Code Erkennung
     implementation("com.google.mlkit:barcode-scanning:17.2.0")
+
+    // Json
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
 }

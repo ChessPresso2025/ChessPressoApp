@@ -3,7 +3,7 @@ package app.chesspresso.viewmodel
 import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import app.chesspresso.model.lobby.ConfigureLobbyMessage
+import app.chesspresso.model.game.GameStartMessage
 import app.chesspresso.model.lobby.GameTime
 import app.chesspresso.service.LobbyService
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -119,24 +119,32 @@ class PrivateLobbyViewModel @Inject constructor(
     fun configureAndStartGame(
         lobbyCode: String,
         gameTime: GameTime,
-        whitePlayer: String? = null,
-        blackPlayer: String? = null,
-        randomColors: Boolean = false
+        whitePlayer: String?,
+        blackPlayer: String?,
+        randomColors: Boolean
     ) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
 
-
-            val configMessage = ConfigureLobbyMessage(
-                lobbyCode = lobbyCode,
-                gameTime = gameTime,
+            val gameStartMessage = GameStartMessage(
+                lobbyId = lobbyCode,
+                gameTime = gameTime.toString(), // GameTime enum zu String konvertieren
                 whitePlayer = whitePlayer,
                 blackPlayer = blackPlayer,
-                randomColors = randomColors
+                randomPlayers = randomColors
             )
 
+            lobbyService.startGame(gameStartMessage)
+                .onFailure { exception ->
+                    _uiState.value = _uiState.value.copy(
+                        isLoading = false,
+                        error = exception.message
+                    )
+                    return@launch
+                }
+
             // Für jetzt loggen wir die Konfiguration
-            Log.d("PrivateLobbyViewModel", "Konfiguriere Spiel: $configMessage")
+            Log.d("PrivateLobbyViewModel", "Starte Spiel: $gameStartMessage")
 
             _uiState.value = _uiState.value.copy(isLoading = false)
         }

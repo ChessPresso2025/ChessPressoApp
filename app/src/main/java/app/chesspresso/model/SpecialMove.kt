@@ -1,5 +1,5 @@
 package app.chesspresso.model
 
 enum class SpecialMove {
-    ROCHADE, PROMOTION, ENPASSANT
+    CASTLING, PAWN_PROMOTION, EN_PASSANT
 }

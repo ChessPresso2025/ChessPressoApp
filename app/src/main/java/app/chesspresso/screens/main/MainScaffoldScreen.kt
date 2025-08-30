@@ -1,16 +1,20 @@
 package app.chesspresso.screens.main
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -20,6 +24,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -27,6 +32,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -34,10 +40,18 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import app.chesspresso.R
 import app.chesspresso.auth.presentation.AuthViewModel
+import app.chesspresso.screens.game.ChessGameScreen
 import app.chesspresso.screens.lobby.LobbyWaitingScreen
 import app.chesspresso.screens.lobby.PrivateLobbyScreen
 import app.chesspresso.screens.lobby.QuickMatchScreen
+import app.chesspresso.viewmodel.ChessGameViewModel
 import app.chesspresso.websocket.WebSocketViewModel
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.rememberDrawerState
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,142 +64,175 @@ fun MainScaffoldScreen(
     val currentRoute by innerNavController.currentBackStackEntryAsState()
     val selectedRoute = currentRoute?.destination?.route ?: "home"
 
+    // Drawer-Logik hinzufügen
+    val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
+    val scope = rememberCoroutineScope()
+
     // Prüfe, ob wir uns in einem Lobby-Screen befinden
     val isLobbyScreen =
         selectedRoute == NavRoutes.QUICK_MATCH || selectedRoute == NavRoutes.PRIVATE_LOBBY
+    // Prüfe, ob wir im Spiel-Screen sind
+    val isGameScreen = selectedRoute.startsWith("game/")
 
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                navigationIcon = {
-                    if (isLobbyScreen) {
-                        IconButton(onClick = { innerNavController.navigateUp() }) {
-                            Icon(
-                                imageVector = Icons.Default.ArrowBack,
-                                contentDescription = "Zurück"
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        drawerContent = {
+            ModalDrawerSheet {
+                // Hier kann später das Menü für den Spiel-Screen rein
+                Text("Spiel-Menü", modifier = Modifier.padding(16.dp))
+            }
+        }
+    ) {
+        Scaffold(
+            topBar = {
+                TopAppBar(
+                    navigationIcon = {
+                        when {
+                            isGameScreen -> {
+                                IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                                    Icon(
+                                        imageVector = Icons.Default.Menu,
+                                        contentDescription = "Menü"
+                                    )
+                                }
+                            }
+                            isLobbyScreen -> {
+                                IconButton(onClick = { innerNavController.navigateUp() }) {
+                                    Icon(
+                                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                        contentDescription = "Zurück"
+                                    )
+                                }
+                            }
+                        }
+                    },
+                    title = {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Image(
+                                painter = painterResource(id = R.drawable.watermark_chess),
+                                contentDescription = "App-Logo",
+                                modifier = Modifier
+                                    .size(32.dp)
+                                    .padding(end = 8.dp),
+                                contentScale = ContentScale.Fit
                             )
+                            Text("ChessPresso")
                         }
                     }
-                },
-                title = {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Image(
-                            painter = painterResource(id = R.drawable.watermark_chess),
-                            contentDescription = "App-Logo",
-                            modifier = Modifier
-                                .size(32.dp)
-                                .padding(end = 8.dp),
-                            contentScale = ContentScale.Fit
+                )
+            },
+            bottomBar = {
+                NavigationBar {
+                    NavigationItem.entries.forEach { item ->
+                        NavigationBarItem(
+                            icon = { Icon(item.icon, contentDescription = item.label) },
+                            label = { Text(item.label) },
+                            selected = item.route == selectedRoute,
+                            onClick = {
+                                if (selectedRoute != item.route) {
+                                    innerNavController.navigate(item.route) {
+                                        popUpTo("home") { inclusive = false }
+                                        launchSingleTop = true
+                                    }
+                                }
+                            }
                         )
-                        Text("ChessPresso")
                     }
                 }
-            )
-        },
-        bottomBar = {
-            NavigationBar {
-                NavigationItem.entries.forEach { item ->
-                    NavigationBarItem(
-                        icon = { Icon(item.icon, contentDescription = item.label) },
-                        label = { Text(item.label) },
-                        selected = item.route == selectedRoute,
-                        onClick = {
-                            if (selectedRoute != item.route) {
-                                innerNavController.navigate(item.route) {
-                                    popUpTo("home") { inclusive = false }
-                                    launchSingleTop = true
-                                }
+            }
+        ) { padding ->
+            NavHost(
+                navController = innerNavController,
+                startDestination = NavRoutes.HOME,
+                modifier = Modifier.padding(padding)
+            ) {
+                composable(NavRoutes.HOME) {
+                    HomeScreen(
+                        onPrivateGameClick = { innerNavController.navigate(NavRoutes.PRIVATE_LOBBY) },
+                        onPublicGameClick = { innerNavController.navigate(NavRoutes.QUICK_MATCH) }
+                    )
+                }
+
+                // Neue Lobby-Screens
+                composable(NavRoutes.QUICK_MATCH) {
+                    QuickMatchScreen(
+                        onGameStart = { lobbyId ->
+                            // TODO: Navigation zum Spiel-Screen
+                            innerNavController.navigate("game/$lobbyId")
+                        }
+                    )
+                }
+
+                composable(NavRoutes.PRIVATE_LOBBY) {
+                    PrivateLobbyScreen(
+                        onLobbyCreated = { lobbyCode ->
+                            innerNavController.navigate("lobby_waiting/$lobbyCode/true")
+                        },
+                        onLobbyJoined = { lobbyCode ->
+                            innerNavController.navigate("lobby_waiting/$lobbyCode/false")
+                        }
+                    )
+                }
+
+                composable("lobby_waiting/{lobbyCode}/{isCreator}") { backStackEntry ->
+                    val lobbyCode = backStackEntry.arguments?.getString("lobbyCode") ?: ""
+                    val isCreator = backStackEntry.arguments?.getString("isCreator")
+                        ?.toBoolean() ?: false
+                    LobbyWaitingScreen(
+                        isCreator = isCreator,
+                        lobbyCode = lobbyCode,
+                        onBackClick = {
+                            // Explizit zum Home-Screen navigieren und alles andere löschen
+                            innerNavController.navigate(NavRoutes.HOME) {
+                                popUpTo(NavRoutes.HOME) { inclusive = false }
+                                launchSingleTop = true
+                            }
+                        },
+                        onGameStart = { lobbyId ->
+                            // TODO: Navigation zum Spiel-Screen
+                            innerNavController.navigate("game/$lobbyId")
+                        }
+                    )
+                }
+
+                // Bestehende Screens
+                composable(NavRoutes.STATS) {
+                    StatsScreen()
+                }
+                composable(NavRoutes.PROFILE) {
+                    ProfileScreen(
+                        authViewModel = authViewModel,
+                        outerNavController = outerNavController)
+                }
+                composable(NavRoutes.SETTINGS) {
+                    SettingsScreen()
+                }
+                composable(NavRoutes.INFO) {
+                    InfoScreen(
+                        authViewModel = authViewModel,
+                        onLogout = {
+                            authViewModel.logout()
+                            outerNavController.navigate("welcome") {
+                                popUpTo(0) // Löscht den Backstack
                             }
                         }
                     )
                 }
-            }
-        }
-    ) { padding ->
-        NavHost(
-            navController = innerNavController,
-            startDestination = NavRoutes.HOME,
-            modifier = Modifier.padding(padding)
-        ) {
-            composable(NavRoutes.HOME) {
-                HomeScreen(
-                    onPrivateGameClick = { innerNavController.navigate(NavRoutes.PRIVATE_LOBBY) },
-                    onPublicGameClick = { innerNavController.navigate(NavRoutes.QUICK_MATCH) }
-                )
-            }
 
-            // Neue Lobby-Screens
-            composable(NavRoutes.QUICK_MATCH) {
-                QuickMatchScreen(
-                    onGameStart = { lobbyId ->
-                        // TODO: Navigation zum Spiel-Screen
-                        innerNavController.navigate("game/$lobbyId")
-                    }
-                )
-            }
-
-            composable(NavRoutes.PRIVATE_LOBBY) {
-                PrivateLobbyScreen(
-                    onLobbyCreated = { lobbyCode ->
-                        innerNavController.navigate("lobby_waiting/$lobbyCode/true")
-                    },
-                    onLobbyJoined = { lobbyCode ->
-                        innerNavController.navigate("lobby_waiting/$lobbyCode/false")
-                    }
-                )
-            }
-
-            composable("lobby_waiting/{lobbyCode}/{isCreator}") { backStackEntry ->
-                val lobbyCode = backStackEntry.arguments?.getString("lobbyCode") ?: ""
-                val isCreator = backStackEntry.arguments?.getString("isCreator")
-                    ?.toBoolean() ?: false
-                LobbyWaitingScreen(
-                    isCreator = isCreator,
-                    lobbyCode = lobbyCode,
-                    onBackClick = {
-                        // Explizit zum Home-Screen navigieren und alles andere löschen
-                        innerNavController.navigate(NavRoutes.HOME) {
-                            popUpTo(NavRoutes.HOME) { inclusive = false }
-                            launchSingleTop = true
-                        }
-                    },
-                    onGameStart = { lobbyId ->
-                        // TODO: Navigation zum Spiel-Screen
-                        innerNavController.navigate("game/$lobbyId")
-                    }
-                )
-            }
-
-            // Placeholder für Spiel-Screen
-            composable("game/{lobbyId}") { backStackEntry ->
-                val lobbyId = backStackEntry.arguments?.getString("lobbyId") ?: ""
-                // TODO: GameScreen implementieren
-                Text("Spiel startet mit Lobby: $lobbyId")
-            }
-
-            // Bestehende Screens
-            composable(NavRoutes.STATS) {
-                StatsScreen()
-            }
-            composable(NavRoutes.PROFILE) {
-                ProfileScreen(
-                    authViewModel = authViewModel,
-                    outerNavController = outerNavController
-                )
-            }
-            composable(NavRoutes.SETTINGS) {
-                SettingsScreen()
-            }
-            composable(NavRoutes.INFO) {
-                InfoScreen(
-                    authViewModel = authViewModel,
-                    onLogout = {
-                        authViewModel.logout()
-                        outerNavController.navigate("welcome") {
-                            popUpTo(0) // Löscht den Backstack
+                // Spiel-Screen
+                composable("game/{lobbyId}") { backStackEntry ->
+                    val lobbyId = backStackEntry.arguments?.getString("lobbyId") ?: ""
+                    val chessGameViewModel: ChessGameViewModel = hiltViewModel()
+                    val gameStartResponse by chessGameViewModel.initialGameData.collectAsState()
+                    if (gameStartResponse != null) {
+                        ChessGameScreen(gameStartResponse = gameStartResponse!!, viewModel = chessGameViewModel)
+                    } else {
+                        // Ladeanzeige oder Platzhalter, bis die Spieldaten geladen sind
+                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
                         }
                     }
-                )
+                }
             }
         }
     }

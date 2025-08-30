@@ -2,7 +2,16 @@ package app.chesspresso.websocket
 
 import android.util.Log
 import app.chesspresso.data.storage.TokenStorage
+import app.chesspresso.model.game.GameMoveMessage
+import app.chesspresso.model.game.GameMoveResponse
+import app.chesspresso.model.game.GameStartMessage
+import app.chesspresso.model.game.PawnPromotionMessage
+import app.chesspresso.model.game.PieceInfo
+import app.chesspresso.model.game.PositionRequestMessage
+import app.chesspresso.model.lobby.GameStartResponse
 import app.chesspresso.service.LobbyListener
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -13,6 +22,8 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
@@ -37,7 +48,9 @@ class StompWebSocketService @Inject constructor(
     private var webSocket: WebSocket? = null
     private var heartbeatJob: Job? = null
     private var reconnectJob: Job? = null
-    private var playerId: String? = null
+    private var _playerId: String? = null
+    val playerId: String?
+        get() = _playerId
     private var currentLobbyId: String? = null
 
     private var lobbyListener: LobbyListener? = null
@@ -52,9 +65,24 @@ class StompWebSocketService @Inject constructor(
     private val _lobbyMessages = MutableStateFlow<List<String>>(emptyList())
     val lobbyMessages: StateFlow<List<String>> = _lobbyMessages.asStateFlow()
 
+    // Spiel-spezifische Flows
+    private val _gameMoveUpdates = MutableStateFlow<GameMoveResponse?>(null)
+    val gameMoveUpdates: StateFlow<GameMoveResponse?> = _gameMoveUpdates.asStateFlow()
+
     // Callback für Lobby-Message-Handling
     private var lobbyMessageHandler: ((String) -> Unit)? = null
     val MESSAGE_END = "\u0000"
+
+    private val json = Json { ignoreUnknownKeys = true }
+    private val gson = Gson()
+    private val _gameStartedEvent = MutableStateFlow<GameStartResponse?>(null)
+    val gameStartedEvent: StateFlow<GameStartResponse?> = _gameStartedEvent.asStateFlow()
+    private val _possibleMoves = MutableStateFlow<List<String>>(emptyList())
+    val possibleMoves: StateFlow<List<String>> = _possibleMoves.asStateFlow()
+
+    // Promotion-Flow
+    private val _promotionRequest = MutableStateFlow<app.chesspresso.model.game.PromotionRequest?>(null)
+    val promotionRequest: StateFlow<app.chesspresso.model.game.PromotionRequest?> = _promotionRequest.asStateFlow()
 
     enum class ConnectionState {
         DISCONNECTED, CONNECTING, CONNECTED, RECONNECTING
@@ -123,7 +151,7 @@ class StompWebSocketService @Inject constructor(
             return
         }
 
-        playerId = username
+        _playerId = username
         _connectionState.value = ConnectionState.CONNECTING
 
         try {
@@ -157,7 +185,7 @@ class StompWebSocketService @Inject constructor(
             append("CONNECT\n")
             append("accept-version:1.0,1.1,2.0\n")
             append("heart-beat:5000,5000\n")
-            playerId?.let { append("login:$it\n") }
+            _playerId?.let { append("login:$it\n") }
             append("\n")
             append(MESSAGE_END)
         }
@@ -168,7 +196,7 @@ class StompWebSocketService @Inject constructor(
 
     private fun subscribeToTopics() {
         Log.d(TAG, "Subscribing to topics")
-        playerId?.let { id ->
+        _playerId?.let { id ->
             // Subscribe zu persönlichen Nachrichten
             // 200 ms warten
             val subscribeFrame2 = buildString {
@@ -206,7 +234,7 @@ class StompWebSocketService @Inject constructor(
     }
 
     private fun sendHeartbeat() {
-        playerId?.let { id ->
+        _playerId?.let { id ->
             val heartbeatFrame = buildString {
                 append("SEND\n")
                 append("destination:/app/heartbeat\n")
@@ -269,7 +297,6 @@ class StompWebSocketService @Inject constructor(
                     // Server-Status verarbeiten
                     updateServerStatus(status)
                 }
-
                 "lobby-message" -> {
                     // Lobby-spezifische Nachrichten verarbeiten
                     val lobbyId = json.optString("lobbyId")
@@ -282,6 +309,80 @@ class StompWebSocketService @Inject constructor(
                         // Optional: Direktes Handling der Nachricht über den Handler
                         lobbyMessageHandler?.invoke(messageContent)
                     }
+                }
+
+                "gameStarted" -> {
+                    val boardMap: Map<String, PieceInfo>? = if (json.isNull("board")) {
+                        null
+                    } else {
+                        val boardJson = json.getJSONObject("board").toString()
+                        val boardType = object : TypeToken<Map<String, PieceInfo>>() {}.type
+                        gson.fromJson<Map<String, PieceInfo>>(boardJson, boardType)
+                    }
+                    val rawSuccess = json.opt("success")
+                    Log.d(TAG, "[DEBUG] gameStarted: rawSuccess=$rawSuccess, type=${rawSuccess?.javaClass?.name}")
+                    val success = when (rawSuccess) {
+                        is Boolean -> rawSuccess
+                        is String -> rawSuccess.equals("true", ignoreCase = true)
+                        is Number -> rawSuccess.toInt() != 0
+                        else -> false
+                    }
+                    // GameTime als Enum direkt aus JSON parsen
+                    val gameTimeEnum = try {
+                        gson.fromJson(json.get("gameTime").toString(), app.chesspresso.model.lobby.GameTime::class.java)
+                    } catch (e: Exception) {
+                        app.chesspresso.model.lobby.GameTime.SHORT // Fallback auf 5 Minuten
+                    }
+                    val response = GameStartResponse(
+                        lobbyId = json.optString("lobbyId"),
+                        gameTime = gameTimeEnum,
+                        whitePlayer = json.optString("whitePlayer"),
+                        blackPlayer = json.optString("blackPlayer"),
+                        board = boardMap ?: emptyMap(),
+                        success = success,
+                        lobbyChannel = json.optString("lobbyChannel"),
+                        error = if (json.has("error")) json.optString("error") else null
+                    )
+                    _gameStartedEvent.value = response
+                    Log.d(TAG, "Game started event empfangen: $response")
+                }
+
+                "move" -> {
+                    // GameMoveResponse verarbeiten
+                    try {
+                        val gameMoveResponse = this.json.decodeFromString<GameMoveResponse>(body)
+                        _gameMoveUpdates.value = gameMoveResponse
+                        Log.d(TAG, "Received move response update: $gameMoveResponse")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error parsing GameMoveResponse: ${e.message}")
+                    }
+                }
+
+                "possible-moves" -> {
+                    val movesArray = json.optJSONArray("possibleMoves")
+                    val moves = mutableListOf<String>()
+                    if (movesArray != null) {
+                        for (i in 0 until movesArray.length()) {
+                            moves.add(movesArray.getString(i))
+                        }
+                    }
+                    _possibleMoves.value = moves
+                    Log.d(TAG, "Possible moves empfangen: $moves")
+                }
+
+                "promotion" -> {
+                    // PromotionRequest verarbeiten
+                    try {
+                        val promotionRequest = gson.fromJson(body, app.chesspresso.model.game.PromotionRequest::class.java)
+                        _promotionRequest.value = promotionRequest
+                        Log.d(TAG, "Received promotion request: $promotionRequest")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error parsing PromotionRequest: ${e.message}")
+                    }
+                }
+
+                else -> {
+                    Log.w(TAG, "Unknown message type received: $type")
                 }
             }
 
@@ -301,9 +402,6 @@ class StompWebSocketService @Inject constructor(
         }
     }
 
-    /**
-     * Aktualisiert den Server-Status basierend auf dem erhaltenen Status-String
-     */
     private fun updateServerStatus(status: String) {
         val newStatus = when (status.lowercase()) {
             "online" -> ServerStatus.ONLINE
@@ -328,7 +426,7 @@ class StompWebSocketService @Inject constructor(
 
         reconnectJob = CoroutineScope(Dispatchers.IO).launch {
             delay(RECONNECT_DELAY)
-            playerId?.let { id ->
+            _playerId?.let { id ->
                 if (_connectionState.value == ConnectionState.DISCONNECTED) {
                     Log.d(TAG, "Attempting to reconnect...")
                     _connectionState.value = ConnectionState.RECONNECTING
@@ -365,7 +463,7 @@ class StompWebSocketService @Inject constructor(
 
     private fun sendAppClosingMessage() {
         leaveLobbyOnAppClosing()
-        playerId?.let { id ->
+        _playerId?.let { id ->
             val appClosingFrame = buildString {
                 append("SEND\n")
                 append("destination:/app/disconnect\n")
@@ -417,7 +515,7 @@ class StompWebSocketService @Inject constructor(
 
     fun sendAppClosingMessageWithReason(reason: String) {
         leaveLobbyOnAppClosing()
-        playerId?.let { id ->
+        _playerId?.let { id ->
             val appClosingFrame = buildString {
                 append("SEND\n")
                 append("destination:/app/disconnect\n")
@@ -436,7 +534,7 @@ class StompWebSocketService @Inject constructor(
     }
 
     fun requestOnlinePlayers() {
-        playerId?.let { id ->
+        _playerId?.let { id ->
             val requestFrame = buildString {
                 append("SEND\n")
                 append("destination:/app/players\n")
@@ -501,7 +599,7 @@ class StompWebSocketService @Inject constructor(
 
     fun sendLobbyChat(message: String) {
         currentLobbyId?.let { lobbyId ->
-            playerId?.let { id ->
+            _playerId?.let { id ->
                 val chatFrame = buildString {
                     append("SEND\n")
                     append("destination:/app/lobby/chat\n")
@@ -519,7 +617,7 @@ class StompWebSocketService @Inject constructor(
 
     fun sendPlayerReady(ready: Boolean) {
         currentLobbyId?.let { lobbyId ->
-            playerId?.let { id ->
+            _playerId?.let { id ->
                 val readyFrame = buildString {
                     append("SEND\n")
                     append("destination:/app/lobby/ready\n")
@@ -546,6 +644,98 @@ class StompWebSocketService @Inject constructor(
 
     fun sendLobbyMessage(message: String) {
         sendLobbyChat(message)
+    }
+
+    fun subscribeToGame(lobbyId: String) {
+        currentLobbyId = lobbyId
+
+        // Subscribe zu Spiel-Updates für diese Lobby
+        val subscribeFrame = buildString {
+            append("SUBSCRIBE\n")
+            append("id:game-$lobbyId\n")
+            append("destination:/topic/game/$lobbyId\n")
+            append("\n")
+            append(MESSAGE_END)
+        }
+        webSocket?.send(subscribeFrame)
+        Log.d(TAG, "Subscribed to game updates for lobby: $lobbyId")
+        currentLobbyId?.let { lobbyId ->
+            val subscribeFrameMoves = buildString {
+                append("SUBSCRIBE\n")
+                append("id:sub-3\n")
+                append("destination:/topic/game/$lobbyId/possible-moves\n")
+                append("\n")
+                append(MESSAGE_END)
+            }
+            webSocket?.send(subscribeFrameMoves)
+            Log.d(TAG, "Subscribed to possible-moves for lobby $lobbyId")
+        }
+
+        currentLobbyId?.let { lobbyId ->
+            val subscribeFrameMoves = buildString {
+                append("SUBSCRIBE\n")
+                append("id:sub-4\n")
+                append("destination:/topic/game/$lobbyId/move\n")
+                append("\n")
+                append(MESSAGE_END)
+            }
+            webSocket?.send(subscribeFrameMoves)
+            Log.d(TAG, "Subscribed to possible-moves for lobby $lobbyId")
+        }
+
+        // Subscription für Promotion-Topic
+        val subscribePromotion = buildString {
+            append("SUBSCRIBE\n")
+            append("id:sub-promotion\n")
+            append("destination:/topic/game/$lobbyId/move/promotion\n")
+            append("\n")
+            append(MESSAGE_END)
+        }
+        webSocket?.send(subscribePromotion)
+        Log.d(TAG, "Subscribed to promotion topic for lobby $lobbyId")
+    }
+
+    fun unsubscribeFromGame() {
+        currentLobbyId?.let { lobbyId ->
+            val unsubscribeFrame = buildString {
+                append("UNSUBSCRIBE\n")
+                append("id:game-$lobbyId\n")
+                append("\n")
+                append(MESSAGE_END)
+            }
+            webSocket?.send(unsubscribeFrame)
+            Log.d(TAG, "Unsubscribed from game updates for lobby: $lobbyId")
+        }
+        currentLobbyId?.let { lobbyId ->
+            val subscribeFrameMoves = buildString {
+                append("UNSUBSCRIBE\n")
+                append("id:sub-3\n")
+                append("\n")
+                append(MESSAGE_END)
+            }
+            webSocket?.send(subscribeFrameMoves)
+            Log.d(TAG, "Unsubscribed from possible-moves for lobby $lobbyId")
+        }
+        currentLobbyId?.let { lobbyId ->
+            val subscribeFrameMoves = buildString {
+                append("UNSUBSCRIBE\n")
+                append("id:sub-4\n")
+                append("\n")
+                append(MESSAGE_END)
+            }
+            webSocket?.send(subscribeFrameMoves)
+            Log.d(TAG, "Subscribed to possible-moves for lobby $lobbyId")
+        }
+
+        val unsubscribePromotion = buildString {
+            append("UNSUBSCRIBE\n")
+            append("id:sub-promotion\n")
+            append("\n")
+            append(MESSAGE_END)
+        }
+        webSocket?.send(unsubscribePromotion)
+
+        currentLobbyId = null
     }
 
     private fun startServerStatusCheck() {
@@ -576,4 +766,78 @@ class StompWebSocketService @Inject constructor(
         serverStatusCheckJob = null
         Log.d(TAG, "Server status check stopped")
     }
+
+    fun sendStartGame(gameStartMessage: GameStartMessage) {
+        currentLobbyId?.let { lobbyId ->
+            _playerId?.let { id ->
+                val messageJson = json.encodeToString(gameStartMessage)
+                val startGameFrame = buildString {
+                    append("SEND\n")
+                    append("destination:/app/game/start\n")
+                    append("content-type:application/json\n")
+                    append("\n")
+                    append(messageJson)
+                    append(MESSAGE_END)
+                }
+
+                webSocket?.send(startGameFrame)
+                Log.d(TAG, "Sent start game message: $messageJson")
+            }
+        }
+    }
+
+    fun sendGameMoveMessage(gameMoveMessage: GameMoveMessage) {
+        currentLobbyId?.let { lobbyId ->
+            _playerId?.let { id ->
+                val messageJson = json.encodeToString(gameMoveMessage)
+                val moveFrame = buildString {
+                    append("SEND\n")
+                    append("destination:/app/game/move\n")
+                    append("content-type:application/json\n")
+                    append("\n")
+                    append(messageJson)
+                    append(MESSAGE_END)
+                }
+
+                webSocket?.send(moveFrame)
+                Log.d(TAG, "Sent game move message: $messageJson")
+            }
+        }
+    }
+
+    fun sendPositionRequest(positionRequestMessage: PositionRequestMessage) {
+        currentLobbyId?.let { lobbyId ->
+            _playerId?.let { id ->
+                val messageJson = json.encodeToString(positionRequestMessage)
+                val positionFrame = buildString {
+                    append("SEND\n")
+                    append("destination:/app/game/position-request\n")
+                    append("content-type:application/json\n")
+                    append("\n")
+                    append(messageJson)
+                    append(MESSAGE_END)
+                }
+
+                webSocket?.send(positionFrame)
+                Log.d(TAG, "Sent position request message: $messageJson")
+            }
+        }
+    }
+
+    fun sendPawnPromotionMessage(message: PawnPromotionMessage) {
+        currentLobbyId?.let { lobbyId ->
+            val messageJson = gson.toJson(message)
+            val promotionFrame = buildString {
+                append("SEND\n")
+                append("destination:/app/game/promotion\n")
+                append("content-type:application/json\n")
+                append("\n")
+                append(messageJson)
+                append(MESSAGE_END)
+            }
+            webSocket?.send(promotionFrame)
+            Log.d(TAG, "Sent pawn promotion message: $messageJson")
+        }
+    }
+
 }

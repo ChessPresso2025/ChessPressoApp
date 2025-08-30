@@ -5,6 +5,4 @@ data class Move(
     val destination: String,
     val piece: PieceType,
     val specialMove: SpecialMove
-) {
-
-}
+)

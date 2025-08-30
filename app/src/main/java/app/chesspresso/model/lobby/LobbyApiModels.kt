@@ -13,12 +13,15 @@ data class LeaveLobbyRequest(
     val lobbyId: String
 )
 
-data class ConfigureLobbyRequest(
-    val lobbyCode: String,
-    val gameTime: GameTime,
-    val whitePlayer: String? = null,
-    val blackPlayer: String? = null,
-    val randomColors: Boolean = false
+data class RemisMessage(
+    val lobbyId: String,
+    val player: String,
+    val accept: Boolean
+)
+
+data class ResignMessage(
+    val lobbyId: String,
+    val player: String
 )
 
 // Response Models
