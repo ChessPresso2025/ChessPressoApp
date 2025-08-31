@@ -1,5 +1,6 @@
 package app.chesspresso.screens.main
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -9,7 +10,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -30,6 +32,8 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import app.chesspresso.viewmodel.GameViewModel
 import androidx.navigation.NavController
+import java.text.SimpleDateFormat
+import java.util.Locale
 
 @Composable
 fun StatsScreen(
@@ -39,9 +43,10 @@ fun StatsScreen(
     val uiState by gameViewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Stats beim Start laden
+    // Stats und GameHistory beim Start laden
     LaunchedEffect(Unit) {
         gameViewModel.loadStats()
+        gameViewModel.loadGameHistory()
     }
 
     // Snackbar für Nachrichten
@@ -59,23 +64,31 @@ fun StatsScreen(
         }
     }
 
+    // Fehler aus GameHistory anzeigen
+    LaunchedEffect(uiState.historyErrorMessage) {
+        uiState.historyErrorMessage?.let { message ->
+            snackbarHostState.showSnackbar(message)
+            gameViewModel.clearHistoryMessages()
+        }
+    }
+
     Box(
         modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Text(
-                text = "Statistiken & API Test",
+                text = "Statistiken",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
 
             // Stats Karte
             Card(
@@ -112,96 +125,68 @@ fun StatsScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
-
                     Spacer(modifier = Modifier.height(16.dp))
-
-                    Button(
-                        onClick = { gameViewModel.loadStats() },
-                        enabled = !uiState.isLoading
-                    ) {
-                        Text("Stats aktualisieren")
-                    }
                 }
             }
 
-            // Test Events Karte
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "Event Testing",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium
-                    )
+            Spacer(modifier = Modifier.height(16.dp))
 
-                    Spacer(modifier = Modifier.height(16.dp))
+            // Game History Titel
+            Text(
+                text = "Letzte Spiele",
+                fontSize = 20.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.padding(bottom = 8.dp)
+            )
 
-                    Button(
-                        onClick = { gameViewModel.sendTestEvent() },
-                        enabled = !uiState.isLoading,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Send Test Event")
+            // Game History Liste
+            when {
+                uiState.isHistoryLoading -> {
+                    Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
                     }
                 }
-            }
-
-            // Stats Reporting Karte
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        text = "Ergebnis Reporten",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium
-                    )
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceEvenly
+                uiState.gameHistory.isNullOrEmpty() -> {
+                     Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
+                        Text(
+                            text = "Keine Spiele gefunden.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+                else -> {
+                    LazyColumn(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .weight(1f), // Nimmt den restlichen verfügbaren Platz ein
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Button(
-                            onClick = { gameViewModel.reportWin() },
-                            enabled = !uiState.isLoading
-                        ) {
-                            Text("WIN")
-                        }
-
-                        Button(
-                            onClick = { gameViewModel.reportDraw() },
-                            enabled = !uiState.isLoading
-                        ) {
-                            Text("DRAW")
-                        }
-
-                        Button(
-                            onClick = { gameViewModel.reportLoss() },
-                            enabled = !uiState.isLoading
-                        ) {
-                            Text("LOSS")
+                        items(uiState.gameHistory!!) { game ->
+                            Card(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .clickable { navController.navigate("game_detail/${game.id}") },
+                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                            ) {
+                                Column(modifier = Modifier.padding(12.dp)) {
+                                    Text(
+                                        text = "Datum: " + (game.startedAt.takeIf { it.isNotBlank() }?.let { formatDate(it) } ?: "Unbekannt"),
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                    Text(
+                                        text = "Ergebnis: ${game.result ?: "Unbekannt"}",
+                                        style = MaterialTheme.typography.bodyMedium
+                                    )
+                                    Text(
+                                        text = "Züge: ${game.moves.size}",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                }
+                            }
                         }
                     }
                 }
-            }
-
-            // Button um letzte Spiele anzuzeigen
-            Button(
-                onClick = { navController.navigate("game_history") },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Letzte Spiele anzeigen")
             }
         }
 
@@ -230,3 +215,16 @@ private fun StatItem(label: String, value: String) {
         )
     }
 }
+
+// formatDate Funktion aus GameHistoryScreen.kt hierher kopiert
+private fun formatDate(dateString: String): String {
+    return try {
+        val inputFormat = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSXXX", Locale.getDefault())
+        val outputFormat = SimpleDateFormat("dd.MM.yyyy HH:mm", Locale.getDefault())
+        val date = inputFormat.parse(dateString)
+        if (date != null) outputFormat.format(date) else dateString
+    } catch (_: Exception) {
+        dateString
+    }
+}
+
