@@ -52,6 +52,8 @@ class LobbyService @Inject constructor(
             handleWebSocketMessage(message)
         }
         webSocketService.setLobbyListener(this)
+        // Subscription auf /user/queue/lobby-update für QuickMatch und PrivateLobby
+        subscribeToLobbyUpdate()
         // GameStarted-Event aus WebSocketService übernehmen
         kotlinx.coroutines.GlobalScope.launch {
             webSocketService.gameStartedEvent.collectLatest { response ->
@@ -60,6 +62,26 @@ class LobbyService @Inject constructor(
                     Log.d("LobbyService", "Game started Event empfangen: $response")
                 }
             }
+        }
+    }
+
+    private fun subscribeToLobbyUpdate() {
+        webSocketService.subscribeToTopic("/user/queue/lobby-update", "lobby-update")
+        webSocketService.setLobbyMessageHandler { message ->
+            // Prüfe, ob es sich um eine LOBBY_UPDATE-Nachricht handelt
+            try {
+                val json = gson.fromJson(message, Map::class.java)
+                if (json["type"] == "LOBBY_UPDATE" && json["lobbyId"] is String) {
+                    val lobbyId = json["lobbyId"] as String
+                    // Jetzt auf das Lobby-Topic subscriben
+                    webSocketService.subscribeToLobby(lobbyId)
+                    Log.d("LobbyService", "Auf Lobby-Topic subscribed: $lobbyId nach LOBBY_UPDATE")
+                }
+            } catch (e: Exception) {
+                Log.e("LobbyService", "Fehler beim Parsen der LOBBY_UPDATE-Nachricht", e)
+            }
+            // Weiterleitung an bestehendes Handling
+            handleWebSocketMessage(message)
         }
     }
 

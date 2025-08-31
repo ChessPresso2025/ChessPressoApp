@@ -871,4 +871,16 @@ class StompWebSocketService @Inject constructor(
         webSocket?.send(resignFrame)
         Log.d(TAG, "Sent end message: $messageJson")
     }
+
+    fun subscribeToTopic(topic: String, id: String = java.util.UUID.randomUUID().toString()) {
+        val subscribeFrame = buildString {
+            append("SUBSCRIBE\n")
+            append("id:sub-$id\n")
+            append("destination:$topic\n")
+            append("\n")
+            append(MESSAGE_END)
+        }
+        webSocket?.send(subscribeFrame)
+        Log.d(TAG, "Subscribed to topic: $topic with id: sub-$id")
+    }
 }
