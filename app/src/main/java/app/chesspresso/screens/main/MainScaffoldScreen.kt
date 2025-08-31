@@ -2,6 +2,7 @@ package app.chesspresso.screens.main
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -11,6 +12,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Home
@@ -21,6 +26,8 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.DrawerValue
@@ -43,6 +50,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -55,6 +63,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import app.chesspresso.R
 import app.chesspresso.auth.presentation.AuthViewModel
+import app.chesspresso.model.PieceType
+import app.chesspresso.model.TeamColor
 import app.chesspresso.model.game.GameMoveResponse
 import app.chesspresso.screens.game.ChessGameScreen
 import app.chesspresso.screens.game.GameOverScreen
@@ -62,14 +72,13 @@ import app.chesspresso.screens.lobby.LobbyWaitingScreen
 import app.chesspresso.screens.lobby.PrivateLobbyScreen
 import app.chesspresso.screens.lobby.QuickMatchScreen
 import app.chesspresso.viewmodel.ChessGameViewModel
-import app.chesspresso.websocket.WebSocketViewModel
+import app.chesspresso.viewmodel.GameViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MainScaffoldScreen(
     authViewModel: AuthViewModel,
-    webSocketViewModel: WebSocketViewModel,
     outerNavController: NavHostController
 ) {
     val innerNavController = rememberNavController()
@@ -79,6 +88,9 @@ fun MainScaffoldScreen(
     // Drawer-Logik hinzufügen
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
+
+    // GameViewModel zentral erstellen
+    val gameViewModel: GameViewModel = hiltViewModel()
 
     // Prüfe, ob wir uns in einem Lobby-Screen befinden
     val isLobbyScreen =
@@ -95,6 +107,7 @@ fun MainScaffoldScreen(
                 val currentGameState by chessGameViewModel.currentGameState.collectAsState()
                 val myColor by chessGameViewModel.myColor.collectAsState()
                 val initialGameData by chessGameViewModel.initialGameData.collectAsState()
+                val moveHistory by chessGameViewModel.moveHistory.collectAsState()
                 val lobbyId = initialGameData?.lobbyId
                 ModalDrawerSheet(
                     modifier = Modifier.background(MaterialTheme.colorScheme.surface)
@@ -108,6 +121,7 @@ fun MainScaffoldScreen(
                         Spacer(modifier = Modifier.height(32.dp))
                         GameDrawerContent(
                             currentGameState = currentGameState,
+                            moves = moveHistory,
                             onResign = {
                                 if (myColor != null && lobbyId != null) {
                                     chessGameViewModel.resignGame(myColor!!, lobbyId)
@@ -181,9 +195,16 @@ fun MainScaffoldScreen(
                             selected = item.route == selectedRoute,
                             onClick = {
                                 if (selectedRoute != item.route) {
-                                    innerNavController.navigate(item.route) {
-                                        popUpTo("home") { inclusive = false }
-                                        launchSingleTop = true
+                                    if (item.route == NavRoutes.STATS) {
+                                        innerNavController.navigate(NavRoutes.STATS) {
+                                            popUpTo("home") { inclusive = false }
+                                            launchSingleTop = true
+                                        }
+                                    } else {
+                                        innerNavController.navigate(item.route) {
+                                            popUpTo("home") { inclusive = false }
+                                            launchSingleTop = true
+                                        }
                                     }
                                 }
                             }
@@ -247,8 +268,15 @@ fun MainScaffoldScreen(
                 }
 
                 // Bestehende Screens
-                composable(NavRoutes.STATS) {
-                    StatsScreen()
+                composable(NavRoutes.STATS) { backStackEntry ->
+                    StatsScreen(navController = innerNavController)
+                }
+                composable("game_history") { backStackEntry ->
+                    GameHistoryScreen(navController = innerNavController, gameViewModel = gameViewModel)
+                }
+                composable("game_detail/{gameId}") { backStackEntry ->
+                    val gameId = backStackEntry.arguments?.getString("gameId") ?: ""
+                    GameDetailScreen(navController = innerNavController, gameId = gameId, gameViewModel = gameViewModel)
                 }
                 composable(NavRoutes.PROFILE) {
                     ProfileScreen(
@@ -307,7 +335,7 @@ fun MainScaffoldScreen(
                         com.google.gson.Gson().fromJson(gameEndJson, app.chesspresso.model.lobby.GameEndResponse::class.java)
                     } catch (e: Exception) { null }
                     if (gameEndResponse != null) {
-                        GameOverScreen(gameEndResponse, playerId)
+                        GameOverScreen(gameEndResponse, playerId, innerNavController)
                     } else {
                         // Fehleranzeige, falls Deserialisierung fehlschlägt
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
@@ -323,6 +351,7 @@ fun MainScaffoldScreen(
 @Composable
 fun GameDrawerContent(
     currentGameState: GameMoveResponse?,
+    moves: List<GameMoveResponse>,
     onResign: () -> Unit = {},
     onOfferDraw: () -> Unit = {}
 ) {
@@ -371,10 +400,72 @@ fun GameDrawerContent(
             thickness = DividerDefaults.Thickness,
             color = DividerDefaults.color
         )
-        // Hier später die Liste der Züge
-        Text("Hier werden die Züge angezeigt...")
+
+        // Anzeige der getätigten Züge
+        Text("Getätigte Züge:", style = MaterialTheme.typography.titleMedium)
+        Spacer(modifier = Modifier.height(8.dp))
+        if (moves.isEmpty()) {
+            Text("Noch keine Züge.", style = MaterialTheme.typography.bodySmall)
+        } else {
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                this@LazyColumn.itemsIndexed(moves) { index: Int, move: GameMoveResponse ->
+                    val color = getMoveColor(index)
+                    val pieceUnicode = getPieceUnicode(move.move.piece, color)
+                    val pieceColor = if (color == TeamColor.WHITE) MaterialTheme.colorScheme.onSurface else Color.Black
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "${index + 1}.",
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.width(32.dp)
+                            )
+                            Text(
+                                text = pieceUnicode + ": ",
+                                color = pieceColor,
+                                style = MaterialTheme.typography.bodyLarge,
+                                modifier = Modifier.width(28.dp)
+                            )
+                            Text(
+                                text = "${move.move.start}"+" -> " + "${move.move.end}",
+                                style = MaterialTheme.typography.bodyMedium,
+                                modifier = Modifier.padding(start = 8.dp)
+                            )
+                            Spacer(modifier = Modifier.weight(1f))
+                            if (move.move.specialMove != null) {
+                                Text(
+                                    text = move.move.specialMove.toString(),
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
+
+private fun getPieceUnicode(piece: PieceType, color: TeamColor): String = when (piece) {
+    PieceType.KING   -> if (color == TeamColor.WHITE) "\u2654" else "\u265A"
+    PieceType.QUEEN  -> if (color == TeamColor.WHITE) "\u2655" else "\u265B"
+    PieceType.ROOK   -> if (color == TeamColor.WHITE) "\u2656" else "\u265C"
+    PieceType.BISHOP -> if (color == TeamColor.WHITE) "\u2657" else "\u265D"
+    PieceType.KNIGHT -> if (color == TeamColor.WHITE) "\u2658" else "\u265E"
+    PieceType.PAWN   -> if (color == TeamColor.WHITE) "\u2659" else "\u265F"
+    else -> ""
+}
+
+private fun getMoveColor(index: Int, firstMoveColor: TeamColor = TeamColor.WHITE): TeamColor =
+    if (index % 2 == 0) firstMoveColor else if (firstMoveColor == TeamColor.WHITE) TeamColor.BLACK else TeamColor.WHITE
 
 enum class NavigationItem(val label: String, val icon: ImageVector, val route: String) {
     Profile("Profil", Icons.Default.Person, NavRoutes.PROFILE),

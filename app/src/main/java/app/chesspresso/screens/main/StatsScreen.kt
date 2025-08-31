@@ -29,10 +29,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import app.chesspresso.viewmodel.GameViewModel
+import androidx.navigation.NavController
 
 @Composable
 fun StatsScreen(
-    gameViewModel: GameViewModel = hiltViewModel()
+    navController: NavController,
+    gameViewModel: GameViewModel = hiltViewModel(),
 ) {
     val uiState by gameViewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -192,6 +194,14 @@ fun StatsScreen(
                         }
                     }
                 }
+            }
+
+            // Button um letzte Spiele anzuzeigen
+            Button(
+                onClick = { navController.navigate("game_history") },
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text("Letzte Spiele anzeigen")
             }
         }
 
