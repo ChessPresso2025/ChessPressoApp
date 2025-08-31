@@ -16,9 +16,16 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
 import app.chesspresso.model.lobby.GameEndResponse
 import app.chesspresso.screens.main.NavRoutes
+import androidx.hilt.navigation.compose.hiltViewModel
+import app.chesspresso.viewmodel.ChessGameViewModel
 
 @Composable
-fun GameOverScreen(gameEndResponse: GameEndResponse, playerId: String, navController: NavHostController) {
+fun GameOverScreen(
+    gameEndResponse: GameEndResponse,
+    playerId: String,
+    navController: NavHostController
+) {
+    val viewModel: ChessGameViewModel = hiltViewModel()
     val ergebnisText = when {
         gameEndResponse.draw == true -> "Unentschieden"
         playerId == gameEndResponse.winner -> "Gewonnen"
@@ -38,7 +45,12 @@ fun GameOverScreen(gameEndResponse: GameEndResponse, playerId: String, navContro
         Text("Endstellung:")
 
 
-        Button(onClick = { navController.navigate(NavRoutes.HOME)}) {
+        Button(onClick = {
+            viewModel.resetGameState()
+            navController.navigate(NavRoutes.HOME) {
+                popUpTo(0) { inclusive = true }
+            }
+        }) {
             Text("Zurück")
         }
         Button(onClick = { /* TODO: Rematch-Logik */ }) {
