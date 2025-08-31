@@ -56,9 +56,9 @@ class GameRepository @Inject constructor(
         }
     }
 
-    suspend fun getGameHistory(userId: String): Result<List<GameHistoryDto>> {
+    suspend fun getGameHistory(): Result<List<GameHistoryDto>> {
         return try {
-            val response = gameApi.getGameHistory(userId)
+            val response = gameApi.getGameHistory()
             if (response.isSuccessful && response.body() != null) {
                 Result.success(response.body()!!)
             } else {

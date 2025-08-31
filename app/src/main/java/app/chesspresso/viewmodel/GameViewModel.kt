@@ -112,10 +112,10 @@ class GameViewModel @Inject constructor(
         }
     }
 
-    fun loadGameHistory(userId: String) {
+    fun loadGameHistory() {
         _uiState.value = _uiState.value.copy(isHistoryLoading = true, historyErrorMessage = null)
         viewModelScope.launch {
-            gameRepository.getGameHistory(userId)
+            gameRepository.getGameHistory()
                 .onSuccess { history ->
                     _uiState.value = _uiState.value.copy(
                         isHistoryLoading = false,

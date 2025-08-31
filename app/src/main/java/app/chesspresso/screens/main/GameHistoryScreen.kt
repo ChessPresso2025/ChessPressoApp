@@ -24,15 +24,14 @@ import java.util.Locale
 @Composable
 fun GameHistoryScreen(
     navController: NavController,
-    userId: String,
     gameViewModel: GameViewModel = hiltViewModel()
 ) {
     val uiState by gameViewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
     // Historie beim Start laden
-    LaunchedEffect(userId) {
-        gameViewModel.loadGameHistory(userId)
+    LaunchedEffect(Unit) {
+        gameViewModel.loadGameHistory()
     }
 
     // Fehler anzeigen

@@ -20,6 +20,6 @@ interface GameApi {
     @GET("stats/me")
     suspend fun getMyStats(): Response<StatsResponse>
 
-    @GET("api/games/history/{userId}")
-    suspend fun getGameHistory(@Path("userId") userId: String): Response<List<GameHistoryDto>>
+    @GET("stats/history")
+    suspend fun getGameHistory(): Response<List<GameHistoryDto>>
 }

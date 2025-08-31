@@ -77,7 +77,6 @@ fun MainScaffoldScreen(
     val currentRoute by innerNavController.currentBackStackEntryAsState()
     val selectedRoute = currentRoute?.destination?.route ?: "home"
     val authState by authViewModel.authState.collectAsState()
-    val userId = (authState as? AuthState.Success)?.response?.playerId
 
     // Drawer-Logik hinzufügen
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
@@ -182,11 +181,10 @@ fun MainScaffoldScreen(
                             icon = { Icon(item.icon, contentDescription = item.label) },
                             label = { Text(item.label) },
                             selected = item.route == selectedRoute,
-                            enabled = if (item.route == NavRoutes.STATS) userId != null else true,
                             onClick = {
                                 if (selectedRoute != item.route) {
-                                    if (item.route == NavRoutes.STATS && userId != null) {
-                                        innerNavController.navigate("stats/$userId") {
+                                    if (item.route == NavRoutes.STATS) {
+                                        innerNavController.navigate(NavRoutes.STATS) {
                                             popUpTo("home") { inclusive = false }
                                             launchSingleTop = true
                                         }
@@ -258,13 +256,11 @@ fun MainScaffoldScreen(
                 }
 
                 // Bestehende Screens
-                composable(NavRoutes.STATS + "/{userId}") { backStackEntry ->
-                    val userId = backStackEntry.arguments?.getString("userId") ?: ""
-                    StatsScreen(navController = innerNavController, userId = userId)
+                composable(NavRoutes.STATS) { backStackEntry ->
+                    StatsScreen(navController = innerNavController)
                 }
-                composable("game_history/{userId}") { backStackEntry ->
-                    val userId = backStackEntry.arguments?.getString("userId") ?: ""
-                    GameHistoryScreen(navController = innerNavController, userId = userId)
+                composable("game_history") { backStackEntry ->
+                    GameHistoryScreen(navController = innerNavController)
                 }
                 composable("game_detail/{gameId}") { backStackEntry ->
                     val gameId = backStackEntry.arguments?.getString("gameId") ?: ""

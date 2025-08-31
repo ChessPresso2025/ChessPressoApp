@@ -35,7 +35,6 @@ import androidx.navigation.NavController
 fun StatsScreen(
     navController: NavController,
     gameViewModel: GameViewModel = hiltViewModel(),
-    userId: String // userId als Parameter
 ) {
     val uiState by gameViewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
@@ -199,7 +198,7 @@ fun StatsScreen(
 
             // Button um letzte Spiele anzuzeigen
             Button(
-                onClick = { navController.navigate("game_history/$userId") },
+                onClick = { navController.navigate("game_history") },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text("Letzte Spiele anzeigen")
