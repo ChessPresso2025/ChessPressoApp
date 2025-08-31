@@ -1,71 +1,235 @@
 package app.chesspresso.model.board
 
-import app.chesspresso.model.PieceType
+import android.util.Log
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import app.chesspresso.model.TeamColor
+import app.chesspresso.model.game.PieceInfo
+import app.chesspresso.model.game.PositionRequestMessage
 
 class Board {
-    val board : List<Field> = boardInit().toMutableList()
+    val board: List<Field> = boardInit().toMutableList()
 
-    fun boardInit() : List<Field> {
+    fun boardInit(): List<Field> {
         val list = mutableListOf<Field>()
         val cols = 'A'..'H'
         val rows = 1..8
 
-        for(row in rows.reversed()){
-            for(col in cols){
-                list.add(Field("$col$row"))
+        for (row in rows.reversed()) {
+            for (col in cols) {
+                val field = Field("$col$row")
+                // Setze die Farbe der Felder
+                field.isLightSquare = (row + col.code) % 2 == 0
+                list.add(field)
             }
         }
         return list
-    }
-
-    init {
-        setStartPosition()
-    }
-
-    private fun setStartPosition(){
-        board.forEach { it.piece = null }
-        val startMap: Map<String, Piece> = buildMap {
-
-            //white back row
-            put("A1", Piece(PieceType.ROOK, TeamColor.WHITE))
-            put("B1", Piece(PieceType.KNIGHT, TeamColor.WHITE))
-            put("C1", Piece(PieceType.BISHOP, TeamColor.WHITE))
-            put("D1", Piece(PieceType.QUEEN, TeamColor.WHITE))
-            put("E1", Piece(PieceType.KING, TeamColor.WHITE))
-            put("F1", Piece(PieceType.BISHOP, TeamColor.WHITE))
-            put("G1", Piece(PieceType.KNIGHT, TeamColor.WHITE))
-            put("H1", Piece(PieceType.ROOK, TeamColor.WHITE))
-
-            // white pawns (2))
-            for (c in 'A'..'H') {
-                put("${c}2", Piece(PieceType.PAWN, TeamColor.WHITE))
-            }
-
-            // black pawns (7)
-            for (c in 'A'..'H') {
-                put("${c}7", Piece(PieceType.PAWN, TeamColor.BLACK))
-            }
-
-            // black back row
-            put("A8", Piece(PieceType.ROOK, TeamColor.BLACK))
-            put("B8", Piece(PieceType.KNIGHT, TeamColor.BLACK))
-            put("C8", Piece(PieceType.BISHOP, TeamColor.BLACK))
-            put("D8", Piece(PieceType.QUEEN, TeamColor.BLACK))
-            put("E8", Piece(PieceType.KING, TeamColor.BLACK))
-            put("F8", Piece(PieceType.BISHOP, TeamColor.BLACK))
-            put("G8", Piece(PieceType.KNIGHT, TeamColor.BLACK))
-            put("H8", Piece(PieceType.ROOK, TeamColor.BLACK))
-        }
-
-        for ((square, piece) in startMap) {
-            getField(square)?.piece = piece
-        }
-
     }
 
     fun getField(name: String): Field? {
         return board.firstOrNull { it.name.equals(name, ignoreCase = true) }
     }
 
+    @Composable
+    fun BoardContent(
+        modifier: Modifier = Modifier,
+        nextPlayer: TeamColor = TeamColor.WHITE,
+        myColor: TeamColor? = null,
+        isCheck: String = "",
+        isCheckmate: String = "",
+        boardState: Map<String, PieceInfo?> = emptyMap(),
+        lobbyId: String = "",
+        onPositionRequest: (PositionRequestMessage) -> Unit = {},
+        isFlipped: Boolean = false,
+        possibleMoves: List<String> = emptyList(),
+        onGameMove: (from: String, to: String) -> Unit = { _, _ -> } // NEU: Callback für Züge
+    ) {
+        var selectedField by remember { mutableStateOf<String?>(null) }
+        var validMoves by remember { mutableStateOf<Set<String>>(possibleMoves.toSet()) }
+
+        var currentIndex : String? = boardState.keys.firstOrNull()
+        if(currentIndex.isNullOrEmpty()){
+            Log.d("BoardContent", "boardState is empty")
+        } else {
+            Log.d("BoardContent", "boardState has entries, first key: $currentIndex")
+        }
+
+        // Funktion zum Zurücksetzen der Auswahl
+        fun resetSelection() {
+            // Reset validMove states only (isSelected is now handled by Compose state)
+            board.forEach { field ->
+                field.isValidMove = false
+            }
+        }
+
+        // Funktion für Feldklicks
+        fun handleFieldClick(fieldName: String) {
+            //Nur erlauben, wenn der Spieler am Zug ist
+            if (myColor == null || myColor != nextPlayer) {
+                Log.d("BoardContent", "Nicht am Zug: myColor=$myColor, nextPlayer=$nextPlayer")
+                return
+            }
+
+            val field = getField(fieldName) ?: return
+
+            when {
+                // Wenn bereits ein Feld ausgewählt ist und wir auf ein anderes klicken
+                selectedField != null && selectedField != fieldName -> {
+                    if (validMoves.contains(fieldName)) {
+                        // Zug ausführen
+                        Log.d("Board", "Zug von $selectedField nach $fieldName")
+                        onGameMove(selectedField!!, fieldName) // NEU: Callback aufrufen
+                        resetSelection()
+                        selectedField = null // Auswahl nach Zug zurücksetzen
+                    } else {
+                        // Neue Auswahl oder Abwählen
+                        resetSelection()
+                        if (boardState[fieldName] != null) {
+                            // Neues Feld auswählen
+                            selectedField = fieldName
+
+                            // PositionRequestMessage erstellen und senden
+                            val positionRequest = PositionRequestMessage(
+                                lobbyId = lobbyId,
+                                position = fieldName
+                            )
+                            onPositionRequest(positionRequest)
+                            Log.d("Board", "PositionRequest gesendet: $positionRequest")
+                        }
+                    }
+                }
+                // Wenn das gleiche Feld nochmal geklickt wird
+                selectedField == fieldName -> {
+                    resetSelection()
+                    selectedField = null
+                    validMoves = emptySet() // possibleMoves zurücksetzen
+                }
+                // Wenn noch nichts ausgewählt ist
+                selectedField == null -> {
+                    if (boardState[fieldName] != null) {
+                        selectedField = fieldName
+
+                        // PositionRequestMessage erstellen und senden
+                        val positionRequest = PositionRequestMessage(
+                            lobbyId = lobbyId,
+                            position = fieldName
+                        )
+                        onPositionRequest(positionRequest)
+                        Log.d("Board", "PositionRequest gesendet: $positionRequest")
+                    }
+                }
+            }
+        }
+
+        // Synchronisiere validMoves mit possibleMoves
+        LaunchedEffect(possibleMoves) {
+            validMoves = possibleMoves.toSet()
+        }
+
+        // Labels und Reihenfolge je nach Drehung
+        val columnLabels = if (isFlipped) listOf("H", "G", "F", "E", "D", "C", "B", "A") else listOf("A", "B", "C", "D", "E", "F", "G", "H")
+        val rowLabels = if (isFlipped) (1..8).toList() else (8 downTo 1).toList()
+        val numberFontSize = 14.sp
+        val rowRange = if (isFlipped) 7 downTo 0 else 0..7
+        val colRange = if (isFlipped) 7 downTo 0 else 0..7
+
+        Column(
+            modifier = modifier.aspectRatio(1f)
+        ) {
+            // Obere Buchstaben-Beschriftung
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Spacer(modifier = Modifier.weight(0.2f))
+                for (label in columnLabels) {
+                    Box(
+                        modifier = Modifier.weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = label, fontSize = 14.sp)
+                    }
+                }
+                Spacer(modifier = Modifier.weight(0.2f))
+            }
+            // Das Brett mit Zahlen-Beschriftung links und rechts
+            for ((rowIdx, row) in rowRange.withIndex()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Linke Zahlen-Beschriftung mit Abstand zum Brett
+                    Box(
+                        modifier = Modifier.weight(0.2f).padding(end = 4.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = rowLabels[rowIdx].toString(), fontSize = numberFontSize)
+                    }
+                    // Schachbrettfelder
+                    for (col in colRange) {
+                        val index = row * 8 + col
+                        val field = board[index]
+                        val isLightSquare = (row + col) % 2 == 0
+                        field.isLightSquare = isLightSquare
+                        Box(
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            field.FieldContent(
+                                modifier = Modifier.fillMaxSize(),
+                                isCheck = isCheck == field.name,
+                                isCheckmate = isCheckmate == field.name,
+                                pieceInfo = boardState.getValue(field.name),
+                                isFieldSelected = selectedField == field.name,
+                                isValidMove = validMoves.contains(field.name),
+                                onFieldClick = { handleFieldClick(field.name) }
+                            )
+                        }
+                    }
+                    // Rechte Zahlen-Beschriftung mit Abstand zum Brett
+                    Box(
+                        modifier = Modifier.weight(0.2f).padding(start = 4.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = rowLabels[rowIdx].toString(), fontSize = numberFontSize)
+                    }
+                }
+            }
+            // Untere Buchstaben-Beschriftung
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Spacer(modifier = Modifier.weight(0.2f))
+                for (label in columnLabels) {
+                    Box(
+                        modifier = Modifier.weight(1f),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(text = label, fontSize = 14.sp)
+                    }
+                }
+                Spacer(modifier = Modifier.weight(0.2f))
+            }
+        }
+    }
+
+    // Funktion zum Setzen der gültigen Züge (wird später vom Server Response aufgerufen)
+    fun setValidMoves(moves: Set<String>) {
+        board.forEach { field ->
+            field.isValidMove = moves.contains(field.name)
+        }
+    }
 }

@@ -1,20 +1,28 @@
 package app.chesspresso.di
 
 import android.content.Context
+import app.chesspresso.api.LobbyApiService
 import app.chesspresso.auth.data.AuthApi
 import app.chesspresso.auth.data.AuthRepository
-import app.chesspresso.websocket.WebSocketManager
+import app.chesspresso.data.api.GameApi
+import app.chesspresso.data.api.UserApi
+import app.chesspresso.data.network.AuthInterceptor
+import app.chesspresso.data.storage.TokenStorage
+import app.chesspresso.service.LobbyService
+import app.chesspresso.websocket.StompWebSocketService
+import com.google.gson.Gson
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
+import retrofit2.Retrofit
+import retrofit2.converter.gson.GsonConverterFactory
 import java.util.concurrent.TimeUnit
 import javax.inject.Singleton
+import app.chesspresso.data.api.AuthApi as JwtAuthApi
 
 @Module
 @InstallIn(SingletonComponent::class)
@@ -22,12 +30,25 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient {
+    fun provideTokenStorage(@ApplicationContext context: Context): TokenStorage {
+        return TokenStorage(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideAuthInterceptor(tokenStorage: TokenStorage): AuthInterceptor {
+        return AuthInterceptor(tokenStorage)
+    }
+
+    @Provides
+    @Singleton
+    fun provideOkHttpClient(authInterceptor: AuthInterceptor): OkHttpClient {
         val loggingInterceptor = HttpLoggingInterceptor().apply {
             level = HttpLoggingInterceptor.Level.BODY
         }
 
         return OkHttpClient.Builder()
+            .addInterceptor(authInterceptor)
             .addInterceptor(loggingInterceptor)
             .connectTimeout(30, TimeUnit.SECONDS)
             .readTimeout(30, TimeUnit.SECONDS)
@@ -39,7 +60,7 @@ object AppModule {
     @Singleton
     fun provideRetrofit(okHttpClient: OkHttpClient): Retrofit {
         return Retrofit.Builder()
-            .baseUrl("http://10.0.2.2:8080") // Android Emulator localhost
+            .baseUrl("http://10.0.2.2:8080/") // Android Emulator localhost
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
@@ -53,16 +74,61 @@ object AppModule {
 
     @Provides
     @Singleton
-    fun provideAuthRepository(
-        authApi: AuthApi,
-        @ApplicationContext context: Context
-    ): AuthRepository {
-        return AuthRepository(authApi, context)
+    fun provideJwtAuthApi(retrofit: Retrofit): JwtAuthApi {
+        return retrofit.create(JwtAuthApi::class.java)
     }
 
     @Provides
     @Singleton
-    fun provideWebSocketManager(): WebSocketManager {
-        return WebSocketManager
+    fun provideGameApi(retrofit: Retrofit): GameApi {
+        return retrofit.create(GameApi::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideLobbyApiService(retrofit: Retrofit): LobbyApiService {
+        return retrofit.create(LobbyApiService::class.java)
+    }
+
+    @Provides
+    @Singleton
+    fun provideGson(): Gson {
+        return Gson()
+    }
+
+    @Provides
+    @Singleton
+    fun provideLobbyService(
+        lobbyApiService: LobbyApiService,
+        webSocketService: StompWebSocketService,
+        gson: Gson
+    ): LobbyService {
+        return LobbyService(lobbyApiService, webSocketService, gson)
+    }
+
+    @Provides
+    @Singleton
+    fun provideAuthRepository(
+        authApi: AuthApi,
+        jwtAuthApi: JwtAuthApi,
+        tokenStorage: TokenStorage,
+        @ApplicationContext context: Context,
+        webSocketService: StompWebSocketService
+    ): AuthRepository {
+        return AuthRepository(authApi, jwtAuthApi, tokenStorage, context, webSocketService)
+    }
+
+    @Provides
+    @Singleton
+    fun provideStompWebSocketService(
+        tokenStorage: TokenStorage
+    ): StompWebSocketService {
+        return StompWebSocketService(tokenStorage)
+    }
+
+    @Provides
+    @Singleton
+    fun provideUserApi(retrofit: Retrofit): UserApi {
+        return retrofit.create(UserApi::class.java)
     }
 }
