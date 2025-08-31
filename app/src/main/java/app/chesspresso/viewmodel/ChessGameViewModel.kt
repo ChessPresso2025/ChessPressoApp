@@ -62,6 +62,7 @@ class ChessGameViewModel @Inject constructor(
 
     private var timerJob: Job? = null
     private var lastActivePlayer: TeamColor? = null
+    private var timeoutSent = false // Neu: Flag, um Mehrfachsendung zu verhindern
 
     init {
         viewModelScope.launch {
@@ -159,15 +160,38 @@ class ChessGameViewModel @Inject constructor(
     private fun startTimer(activePlayer: TeamColor) {
         timerJob?.cancel()
         timerJob = viewModelScope.launch {
+            timeoutSent = false // Timer-Start: Reset Flag
             while (true) {
                 delay(1000)
                 if (activePlayer == TeamColor.WHITE) {
-                    if (_whiteTime.value > 0) _whiteTime.value = _whiteTime.value - 1
+                    if (_whiteTime.value > 0) {
+                        _whiteTime.value = _whiteTime.value - 1
+                        if (_whiteTime.value == 0 && !timeoutSent && _myColor.value == TeamColor.WHITE) {
+                            timeoutSent = true
+                            sendTimeoutEndMessage(TeamColor.WHITE)
+                        }
+                    }
                 } else {
-                    if (_blackTime.value > 0) _blackTime.value = _blackTime.value - 1
+                    if (_blackTime.value > 0) {
+                        _blackTime.value = _blackTime.value - 1
+                        if (_blackTime.value == 0 && !timeoutSent && _myColor.value == TeamColor.BLACK) {
+                            timeoutSent = true
+                            sendTimeoutEndMessage(TeamColor.BLACK)
+                        }
+                    }
                 }
             }
         }
+    }
+
+    private fun sendTimeoutEndMessage(teamColor: TeamColor) {
+        val lobbyId = _initialGameData.value?.lobbyId ?: return
+        val gameEndMessage = GameEndMessage(
+            lobbyId = lobbyId,
+            player = teamColor.name,
+            endType = EndType.TIMEOUT
+        )
+        webSocketService.sendEndGameMessage(gameEndMessage)
     }
 
     fun sendPositionRequest(lobbyId: String, position: String) {
@@ -195,6 +219,26 @@ class ChessGameViewModel @Inject constructor(
             endType = EndType.RESIGNATION
         )
         webSocketService.sendEndGameMessage(gameEndMessage)
+    }
+
+    fun resetGameState() {
+        timerJob?.cancel()
+        timeoutSent = false
+        lastActivePlayer = null
+        _currentGameState.value = null
+        _initialGameData.value = null
+        _currentBoard.value = emptyMap()
+        _currentPlayer.value = null
+        _whiteTime.value = 0
+        _blackTime.value = 0
+        _myColor.value = null
+        _possibleMoves.value = emptyList()
+        _capturedWhitePieces.value = emptyList()
+        _capturedBlackPieces.value = emptyList()
+        _promotionRequest.value = null
+        _gameEndEvent.value = null
+        _moveHistory.value = emptyList()
+        webSocketService.unsubscribeFromGame()
     }
 
     override fun onCleared() {
