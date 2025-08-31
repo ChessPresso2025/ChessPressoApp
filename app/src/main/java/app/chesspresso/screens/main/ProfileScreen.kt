@@ -42,6 +42,7 @@ import app.chesspresso.auth.presentation.AuthViewModel
 fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel(),
     authViewModel: AuthViewModel,
+    onLogout: () -> Unit,
     outerNavController: NavHostController
 ) {
     val usernameChangeState by viewModel.usernameChangeState.collectAsState()
@@ -240,20 +241,43 @@ fun ProfileScreen(
                             Spacer(modifier = Modifier.height(8.dp))
                             CircularProgressIndicator()
                         }
+
                         is PasswordChangeState.Success -> {
-                             // Message handled by logout navigation
+                            // Message handled by logout navigation
                         }
+
                         is PasswordChangeState.Error -> {
                             Spacer(modifier = Modifier.height(8.dp))
                             Text(state.message, color = MaterialTheme.colorScheme.error)
                         }
+
                         else -> {}
                     }
-
                 }
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Button(
+                onClick = onLogout,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp)
+                    .padding(horizontal = 32.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error
+                )
+
+            ) {
+                Text(
+                    text = "Abmelden",
+                    color = Color.White
+                )
+            }
+
         }
     }
+
 
     if (showUsernameConfirmDialog) {
         AlertDialog(

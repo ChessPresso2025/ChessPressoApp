@@ -281,7 +281,14 @@ fun MainScaffoldScreen(
                 composable(NavRoutes.PROFILE) {
                     ProfileScreen(
                         authViewModel = authViewModel,
-                        outerNavController = outerNavController)
+                        onLogout = {
+                            authViewModel.logout()
+                            outerNavController.navigate("welcome") {
+                                popUpTo(0) // Löscht den Backstack
+                            }
+                        },
+                        outerNavController = outerNavController
+                    )
                 }
                 composable(NavRoutes.SETTINGS) {
                     SettingsScreen()
