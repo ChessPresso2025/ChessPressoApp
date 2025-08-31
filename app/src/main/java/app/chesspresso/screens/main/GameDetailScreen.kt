@@ -23,21 +23,40 @@ import java.util.Locale
 fun GameDetailScreen(
     navController: NavController, // bleibt für Navigationserweiterung
     gameId: String,
-    gameViewModel: GameViewModel = hiltViewModel()
+    gameViewModel: GameViewModel // kein Default mehr!
 ) {
     val uiState by gameViewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Hole das Spiel aus der Historie
+    // Hole das Spiel aus der Historie (direkter Vergleich, kein .toString())
     val game = uiState.gameHistory?.find { it.id.toString() == gameId }
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (game == null) {
-            Text(
-                text = "Spiel nicht gefunden.",
+            Column(
                 modifier = Modifier.align(Alignment.Center),
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Text(
+                    text = "Spiel nicht gefunden.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Übergebene gameId: $gameId",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                Text(
+                    text = "Vorhandene IDs:",
+                    style = MaterialTheme.typography.bodySmall
+                )
+                uiState.gameHistory?.forEach {
+                    Text(
+                        text = it.id.toString(),
+                        style = MaterialTheme.typography.bodySmall
+                    )
+                }
+            }
         } else {
             Column(
                 modifier = Modifier

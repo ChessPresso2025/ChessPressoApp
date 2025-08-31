@@ -15,7 +15,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import app.chesspresso.viewmodel.GameViewModel
 import java.text.SimpleDateFormat
@@ -24,7 +23,7 @@ import java.util.Locale
 @Composable
 fun GameHistoryScreen(
     navController: NavController,
-    gameViewModel: GameViewModel = hiltViewModel()
+    gameViewModel: GameViewModel // kein Default mehr!
 ) {
     val uiState by gameViewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }

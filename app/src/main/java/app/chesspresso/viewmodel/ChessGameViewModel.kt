@@ -57,6 +57,9 @@ class ChessGameViewModel @Inject constructor(
     private val _gameEndEvent = MutableStateFlow<GameEndResponse?>(null)
     val gameEndEvent: StateFlow<GameEndResponse?> = _gameEndEvent
 
+    private val _moveHistory = MutableStateFlow<List<GameMoveResponse>>(emptyList())
+    val moveHistory: StateFlow<List<GameMoveResponse>> = _moveHistory.asStateFlow()
+
     private var timerJob: Job? = null
     private var lastActivePlayer: TeamColor? = null
 
@@ -98,6 +101,8 @@ class ChessGameViewModel @Inject constructor(
                     _currentPlayer.value = response.nextPlayer
                     // Promotion-UI ausblenden, sobald ein Zug vom Server kommt
                     _promotionRequest.value = null
+                    // Zug zur History hinzufügen
+                    _moveHistory.value = _moveHistory.value + response
                 }
             }
         }

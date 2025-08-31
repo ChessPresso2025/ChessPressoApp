@@ -74,6 +74,7 @@ dependencies {
 
     // Lifecycle Process dependency für ProcessLifecycleOwner
     implementation("androidx.lifecycle:lifecycle-process:2.7.0")
+    implementation(libs.androidx.foundation)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

@@ -21,7 +21,6 @@ import app.chesspresso.screens.WelcomeScreen
 import app.chesspresso.screens.main.MainScaffoldScreen
 import app.chesspresso.ui.theme.ChessPressoAppTheme
 import app.chesspresso.websocket.StompWebSocketService
-import app.chesspresso.websocket.WebSocketViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -85,7 +84,6 @@ class MainActivity : ComponentActivity() {
     @Composable
     fun AppNavigation(navController: NavHostController) {
         val authViewModel: AuthViewModel = hiltViewModel()
-        val webSocketViewModel: WebSocketViewModel = hiltViewModel()
         val authState by authViewModel.authState.collectAsState()
 
         NavHost(
@@ -106,7 +104,6 @@ class MainActivity : ComponentActivity() {
             composable("main") {
                 MainScaffoldScreen(
                     authViewModel = authViewModel,
-                    webSocketViewModel = webSocketViewModel,
                     outerNavController = navController
                 ) //verwaltet eigene interne BottomNav
             }
