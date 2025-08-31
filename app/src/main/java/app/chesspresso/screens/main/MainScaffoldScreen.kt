@@ -293,17 +293,7 @@ fun MainScaffoldScreen(
                 composable(NavRoutes.SETTINGS) {
                     SettingsScreen()
                 }
-                composable(NavRoutes.INFO) {
-                    InfoScreen(
-                        authViewModel = authViewModel,
-                        onLogout = {
-                            authViewModel.logout()
-                            outerNavController.navigate("welcome") {
-                                popUpTo(0) // Löscht den Backstack
-                            }
-                        }
-                    )
-                }
+
 
                 // Spiel-Screen
                 composable("game/{lobbyId}") { backStackEntry ->
@@ -478,8 +468,7 @@ enum class NavigationItem(val label: String, val icon: ImageVector, val route: S
     Profile("Profil", Icons.Default.Person, NavRoutes.PROFILE),
     Stats("Statistik", Icons.Default.Search, NavRoutes.STATS), //durch Statistik Icon ersetzen
     Gameplay("Spielen", Icons.Default.Home, NavRoutes.HOME), //durch Schach-Icon ersetzen
-    Settings("Optionen", Icons.Default.Settings, NavRoutes.SETTINGS),
-    Info("Status", Icons.Default.Info, NavRoutes.INFO)
+    Settings("Optionen", Icons.Default.Settings, NavRoutes.SETTINGS)
 }
 
 
@@ -488,7 +477,6 @@ object NavRoutes {
     const val PROFILE = "profile"
     const val STATS = "stats"
     const val SETTINGS = "settings"
-    const val INFO = "info"
     const val QUICK_MATCH = "quick_match"
     const val PRIVATE_LOBBY = "private_lobby"
 }
