@@ -9,6 +9,7 @@ import app.chesspresso.model.game.GameMoveResponse
 import app.chesspresso.model.lobby.GameStartResponse
 import app.chesspresso.model.lobby.GameEndMessage
 import app.chesspresso.model.lobby.GameEndResponse
+import app.chesspresso.model.lobby.RematchOffer
 import app.chesspresso.websocket.StompWebSocketService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -16,9 +17,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlin.concurrent.timer
 
 @HiltViewModel
 class ChessGameViewModel @Inject constructor(
@@ -64,6 +65,9 @@ class ChessGameViewModel @Inject constructor(
     private var timerJob: Job? = null
     private var lastActivePlayer: TeamColor? = null
     private var timeoutSent = false // Neu: Flag, um Mehrfachsendung zu verhindern
+
+    private val _rematchDialogState = MutableStateFlow<RematchDialogState>(RematchDialogState.None)
+    val rematchDialogState: StateFlow<RematchDialogState> = _rematchDialogState.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -116,6 +120,28 @@ class ChessGameViewModel @Inject constructor(
         viewModelScope.launch {
             webSocketService.gameEndEvent.collect { event ->
                 _gameEndEvent.value = event
+            }
+        }
+        viewModelScope.launch {
+            webSocketService.rematchOfferEvent.collectLatest { offer ->
+                val lobbyId = _initialGameData.value?.lobbyId ?: return@collectLatest
+                val myId = webSocketService.playerId?.trim()?.lowercase()
+                val toId = offer?.toPlayerId?.trim()?.lowercase()
+                android.util.Log.d("RematchDebug", "Vergleich: myId=$myId, toId=$toId, offer=$offer")
+                if (offer != null && offer.lobbyId == lobbyId && myId == toId) {
+                    android.util.Log.d("RematchDebug", "Rematch-Dialog wird angezeigt für playerId=$myId")
+                    _rematchDialogState.value = RematchDialogState.OfferReceived(offer)
+                }
+            }
+        }
+        viewModelScope.launch {
+            webSocketService.rematchResultEvent.collectLatest { result ->
+                val lobbyId = _initialGameData.value?.lobbyId ?: return@collectLatest
+                if (result != null && result.lobbyId == lobbyId) {
+                    _rematchDialogState.value =
+                        if (result.result == "accepted") RematchDialogState.Accepted
+                        else RematchDialogState.Declined
+                }
             }
         }
     }
@@ -228,6 +254,22 @@ class ChessGameViewModel @Inject constructor(
 
     fun clearGameEndEvent() {
         _gameEndEvent.value = null
+    }
+
+    fun requestRematch() {
+        val lobbyId = _initialGameData.value?.lobbyId ?: return
+        _rematchDialogState.value = RematchDialogState.WaitingForResponse
+        webSocketService.sendRematchRequest(lobbyId)
+    }
+
+    fun respondRematch(accept: Boolean) {
+        val lobbyId = _initialGameData.value?.lobbyId ?: return
+        webSocketService.sendRematchResponse(lobbyId, if (accept) "accepted" else "declined")
+        _rematchDialogState.value = RematchDialogState.WaitingForResult
+    }
+
+    fun clearRematchDialog() {
+        _rematchDialogState.value = RematchDialogState.None
     }
 
     override fun onCleared() {

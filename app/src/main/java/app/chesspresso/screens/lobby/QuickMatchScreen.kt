@@ -33,6 +33,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.chesspresso.model.lobby.GameTime
 import app.chesspresso.viewmodel.QuickMatchViewModel
+import app.chesspresso.viewmodel.RematchDialogState
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.TextButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,6 +47,7 @@ fun QuickMatchScreen(
     val isWaiting by viewModel.isWaitingForMatch.collectAsStateWithLifecycle()
     val error by viewModel.lobbyError.collectAsStateWithLifecycle()
     val gameStarted by viewModel.gameStarted.collectAsStateWithLifecycle()
+    val rematchDialogState by viewModel.rematchDialogState.collectAsStateWithLifecycle()
 
     var selectedGameTime by remember { mutableStateOf(GameTime.MIDDLE) }
 
@@ -176,6 +180,80 @@ fun QuickMatchScreen(
                 }
                 Text("Spiel suchen")
             }
+        }
+
+        // Rematch-Dialoge
+        when (rematchDialogState) {
+            is RematchDialogState.WaitingForResponse -> {
+                AlertDialog(
+                    onDismissRequest = { viewModel.clearRematchDialog() },
+                    title = { Text("Rematch angefragt") },
+                    text = { Text("Warte auf Antwort des Gegners...") },
+                    confirmButton = {
+                        TextButton(onClick = { viewModel.clearRematchDialog() }) {
+                            Text("Abbrechen")
+                        }
+                    }
+                )
+            }
+            is RematchDialogState.OfferReceived -> {
+                AlertDialog(
+                    onDismissRequest = { viewModel.clearRematchDialog() },
+                    title = { Text("Rematch erhalten") },
+                    text = { Text("Dein Gegner möchte ein Rematch. Annehmen?") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            viewModel.respondRematch(true)
+                        }) { Text("Annehmen") }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = {
+                            viewModel.respondRematch(false)
+                        }) { Text("Ablehnen") }
+                    }
+                )
+            }
+            is RematchDialogState.WaitingForResult -> {
+                AlertDialog(
+                    onDismissRequest = { viewModel.clearRematchDialog() },
+                    title = { Text("Antwort gesendet") },
+                    text = { Text("Warte auf Bestätigung...") },
+                    confirmButton = {
+                        TextButton(onClick = { viewModel.clearRematchDialog() }) {
+                            Text("Schließen")
+                        }
+                    }
+                )
+            }
+            is RematchDialogState.Accepted -> {
+                AlertDialog(
+                    onDismissRequest = { viewModel.clearRematchDialog() },
+                    title = { Text("Rematch angenommen") },
+                    text = { Text("Das Rematch startet jetzt!") },
+                    confirmButton = {
+                        TextButton(onClick = { viewModel.clearRematchDialog() }) {
+                            Text("OK")
+                        }
+                    }
+                )
+                // TODO: Hier ggf. Navigation ins neue Spiel auslösen
+            }
+            is RematchDialogState.Declined -> {
+                AlertDialog(
+                    onDismissRequest = { viewModel.clearRematchDialog() },
+                    title = { Text("Rematch abgelehnt") },
+                    text = { Text("Der Gegner hat das Rematch abgelehnt. Du wirst zum Startbildschirm zurückgeleitet.") },
+                    confirmButton = {
+                        TextButton(onClick = {
+                            viewModel.clearRematchDialog()
+                            // TODO: Navigation zum Startscreen auslösen
+                        }) {
+                            Text("OK")
+                        }
+                    }
+                )
+            }
+            else -> {}
         }
     }
 }

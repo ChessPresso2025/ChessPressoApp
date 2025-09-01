@@ -71,6 +71,7 @@ fun ChessGameScreen(
         }
     }
 
+
     // ModalNavigationDrawer entfernt, Drawer wird jetzt zentral im MainScaffoldScreen verwaltet
     Scaffold(
         // TopAppBar entfernt, damit sie nur noch im MainScaffoldScreen angezeigt wird

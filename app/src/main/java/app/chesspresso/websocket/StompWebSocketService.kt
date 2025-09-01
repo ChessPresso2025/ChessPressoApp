@@ -11,6 +11,10 @@ import app.chesspresso.model.game.PositionRequestMessage
 import app.chesspresso.model.lobby.GameStartResponse
 import app.chesspresso.model.lobby.GameEndMessage
 import app.chesspresso.model.lobby.GameEndResponse
+import app.chesspresso.model.lobby.RematchRequest
+import app.chesspresso.model.lobby.RematchOffer
+import app.chesspresso.model.lobby.RematchResponse
+import app.chesspresso.model.lobby.RematchResult
 import app.chesspresso.service.LobbyListener
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -89,6 +93,12 @@ class StompWebSocketService @Inject constructor(
     // Game End Flow
     private val _gameEndEvent = MutableStateFlow<GameEndResponse?>(null)
     val gameEndEvent: StateFlow<GameEndResponse?> = _gameEndEvent
+
+    // Rematch-Events
+    private val _rematchOfferEvent = MutableStateFlow<RematchOffer?>(null)
+    val rematchOfferEvent: StateFlow<RematchOffer?> = _rematchOfferEvent.asStateFlow()
+    private val _rematchResultEvent = MutableStateFlow<RematchResult?>(null)
+    val rematchResultEvent: StateFlow<RematchResult?> = _rematchResultEvent.asStateFlow()
 
     enum class ConnectionState {
         DISCONNECTED, CONNECTING, CONNECTED, RECONNECTING
@@ -227,6 +237,31 @@ class StompWebSocketService @Inject constructor(
                 webSocket?.send(subscribeFrame1)
             }
         }
+    }
+
+    fun subscribeToRematchOffer(lobbyId: String) {
+        Log.d(TAG, "subscribeToRematchOffer aufgerufen mit lobbyId=$lobbyId, isConnected=${isConnected()}")
+        val subscribeRematchOffer = buildString {
+            append("SUBSCRIBE\n")
+            append("id:sub-rematch-offer-$lobbyId\n")
+            append("destination:/topic/lobby/$lobbyId/rematch-offer\n")
+            append("\n")
+            append(MESSAGE_END)
+        }
+        webSocket?.send(subscribeRematchOffer)
+        Log.d(TAG, "SUBSCRIBE-Frame gesendet: $subscribeRematchOffer")
+    }
+
+    fun unsubscribeFromRematchOffer(lobbyId: String) {
+        Log.d(TAG, "unsubscribeFromRematchOffer aufgerufen mit lobbyId=$lobbyId, isConnected=${isConnected()}")
+        val unsubscribeRematchOffer = buildString {
+            append("UNSUBSCRIBE\n")
+            append("id:sub-rematch-offer-$lobbyId\n")
+            append("\n")
+            append(MESSAGE_END)
+        }
+        webSocket?.send(unsubscribeRematchOffer)
+        Log.d(TAG, "UNSUBSCRIBE-Frame gesendet: $unsubscribeRematchOffer")
     }
 
     private fun startHeartbeat() {
@@ -397,6 +432,25 @@ class StompWebSocketService @Inject constructor(
                     val event = GameEndResponse(winner, loser, draw, lobbyId, typeStr)
                     _gameEndEvent.value = event
                     Log.d(TAG, "Received game-end event: $event")
+                }
+
+                "rematch-offer" -> {
+                    try {
+                        val offer = gson.fromJson(body, RematchOffer::class.java)
+                        _rematchOfferEvent.value = offer
+                        Log.d(TAG, "Received rematch offer: $offer")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error parsing RematchOffer: "+e.message)
+                    }
+                }
+                "rematch-result" -> {
+                    try {
+                        val result = gson.fromJson(body, RematchResult::class.java)
+                        _rematchResultEvent.value = result
+                        Log.d(TAG, "Received rematch result: $result")
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Error parsing RematchResult: "+e.message)
+                    }
                 }
 
                 else -> {
@@ -895,5 +949,40 @@ class StompWebSocketService @Inject constructor(
         _possibleMoves.value = emptyList()
         _promotionRequest.value = null
         _gameEndEvent.value = null
+    }
+
+    // Rematch-Nachrichten senden
+    fun sendRematchRequest(lobbyId: String) {
+        _playerId?.let { id ->
+            val request = RematchRequest(lobbyId = lobbyId, playerId = id)
+            val messageJson = json.encodeToString(RematchRequest.serializer(), request)
+            val sendFrame = buildString {
+                append("SEND\n")
+                append("destination:/app/lobby/rematch/request\n")
+                append("content-type:application/json\n")
+                append("\n")
+                append(messageJson)
+                append(MESSAGE_END)
+            }
+            webSocket?.send(sendFrame)
+            Log.d(TAG, "Sent rematch request: $messageJson")
+        }
+    }
+
+    fun sendRematchResponse(lobbyId: String, response: String) {
+        _playerId?.let { id ->
+            val resp = RematchResponse(lobbyId = lobbyId, playerId = id, response = response)
+            val messageJson = json.encodeToString(RematchResponse.serializer(), resp)
+            val sendFrame = buildString {
+                append("SEND\n")
+                append("destination:/app/lobby/rematch/response\n")
+                append("content-type:application/json\n")
+                append("\n")
+                append(messageJson)
+                append(MESSAGE_END)
+            }
+            webSocket?.send(sendFrame)
+            Log.d(TAG, "Sent rematch response: $messageJson")
+        }
     }
 }
