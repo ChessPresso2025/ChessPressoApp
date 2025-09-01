@@ -127,7 +127,11 @@ fun MainScaffoldScreen(
                                     chessGameViewModel.resignGame(myColor!!, lobbyId)
                                 }
                             },
-                            onOfferDraw = { /* TODO: Remis-Logik */ }
+                            onOfferDraw = {
+                                if (myColor != null && lobbyId != null) {
+                                    chessGameViewModel.offerDraw(lobbyId, myColor!!)
+                                }
+                            }
                         )
                     }
                 }

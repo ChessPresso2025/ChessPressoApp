@@ -2,22 +2,8 @@
 <project version="4">
   <component name="deploymentTargetSelector">
     <selectionStates>
-      <SelectionState runConfigName="MainActivity">
-        <option name="selectionMode" value="DIALOG" />
-        <DialogSelection>
-          <targets>
-            <Target type="DEFAULT_BOOT">
-              <handle>
-                <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\Michael\.android\avd\Pixel_9_Pro_XL_3.avd" />
-              </handle>
-            </Target>
-            <Target type="DEFAULT_BOOT">
-              <handle>
-                <DeviceId pluginId="LocalEmulator" identifier="path=C:\Users\Michael\.android\avd\Pixel_9_Pro_XL_4.avd" />
-              </handle>
-            </Target>
-          </targets>
-        </DialogSelection>
+      <SelectionState runConfigName="ChessPressoApp.app">
+        <option name="selectionMode" value="DROPDOWN" />
       </SelectionState>
     </selectionStates>
   </component>

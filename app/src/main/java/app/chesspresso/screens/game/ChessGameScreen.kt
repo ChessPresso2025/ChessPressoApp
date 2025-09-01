@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -57,6 +58,8 @@ fun ChessGameScreen(
     val possibleMoves by viewModel.possibleMoves.collectAsState()
     val promotionRequest by viewModel.promotionRequest.collectAsState()
     val gameEndEvent by viewModel.gameEndEvent.collectAsState()
+    val fieldHighlights by viewModel.fieldHighlights.collectAsState()
+    val pendingRemisRequest by viewModel.pendingRemisRequest.collectAsState()
 
     // Determine which board state to use (current or initial)
     val boardToDisplay = currentBoard.ifEmpty { gameStartResponse.board }
@@ -179,6 +182,7 @@ fun ChessGameScreen(
                     isFlipped = (myColor == TeamColor.BLACK),
                     possibleMoves = if (myColor == currentPlayer) possibleMoves else emptyList(),
                     nextPlayer = currentPlayer ?: TeamColor.WHITE,
+                    fieldHighlights = fieldHighlights, // NEU: Markierungen für Schachmatt
                     myColor = myColor,
                     isCheck = currentGameState?.isCheck ?: "",
                     onGameMove = { from, to ->
@@ -254,6 +258,25 @@ fun ChessGameScreen(
                             }
                         }
                     }
+                }
+
+                // Remis-Anfrage-Dialog
+                if (pendingRemisRequest != null) {
+                    androidx.compose.material3.AlertDialog(
+                        onDismissRequest = { viewModel.respondToRemisRequest(false) },
+                        title = { Text("Unentschieden?") },
+                        text = { Text("Dein Gegner bietet ein Remis an. Möchtest du das Remis annehmen?") },
+                        confirmButton = {
+                            Button(onClick = { viewModel.respondToRemisRequest(true) }) {
+                                Text("Annehmen")
+                            }
+                        },
+                        dismissButton = {
+                            Button(onClick = { viewModel.respondToRemisRequest(false) }) {
+                                Text("Ablehnen")
+                            }
+                        }
+                    )
                 }
             }
         })

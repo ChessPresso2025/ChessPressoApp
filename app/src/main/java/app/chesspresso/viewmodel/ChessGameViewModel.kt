@@ -64,6 +64,18 @@ class ChessGameViewModel @Inject constructor(
     private var lastActivePlayer: TeamColor? = null
     private var timeoutSent = false // Neu: Flag, um Mehrfachsendung zu verhindern
 
+    enum class FieldHighlight {
+        NONE,
+        CHECKMATE_KING,
+        CHECKMATE_ATTACKER
+    }
+
+    private val _fieldHighlights = MutableStateFlow<Map<String, FieldHighlight>>(emptyMap())
+    val fieldHighlights: StateFlow<Map<String, FieldHighlight>> = _fieldHighlights.asStateFlow()
+
+    private val _pendingRemisRequest = MutableStateFlow<app.chesspresso.model.lobby.RemisMessage?>(null)
+    val pendingRemisRequest: StateFlow<app.chesspresso.model.lobby.RemisMessage?> = _pendingRemisRequest.asStateFlow()
+
     init {
         viewModelScope.launch {
             webSocketService.gameStartedEvent.collect { event ->
@@ -104,6 +116,25 @@ class ChessGameViewModel @Inject constructor(
                     _promotionRequest.value = null
                     // Zug zur History hinzufügen
                     _moveHistory.value = _moveHistory.value + response
+
+                    // --- Schachmatt-Markierungen setzen ---
+                    val highlights = mutableMapOf<String, FieldHighlight>()
+                    val checkmateFields = response.checkmate
+                    if (!checkmateFields.isNullOrEmpty()) {
+                        // König des aktiven Teams suchen
+                        val kingField = newBoard.entries.find { (_, piece) ->
+                            piece.type == app.chesspresso.model.PieceType.KING && piece.color == response.nextPlayer
+                        }?.key
+                        if (kingField != null) {
+                            highlights[kingField] = FieldHighlight.CHECKMATE_KING
+                        }
+                        // Angreiferfelder markieren
+                        checkmateFields.forEach { field ->
+                            highlights[field] = FieldHighlight.CHECKMATE_ATTACKER
+                        }
+                    }
+                    _fieldHighlights.value = highlights
+                    // --- Ende Schachmatt-Markierungen ---
                 }
             }
         }
@@ -115,6 +146,16 @@ class ChessGameViewModel @Inject constructor(
         viewModelScope.launch {
             webSocketService.gameEndEvent.collect { event ->
                 _gameEndEvent.value = event
+            }
+        }
+        viewModelScope.launch {
+            webSocketService.remisRequest.collect { remisMessage ->
+                // Nur anzeigen, wenn es eine Anfrage vom Gegner ist (responder == null, requester != ich)
+                if (remisMessage != null && !remisMessage.accept && remisMessage.responder == null) {
+                    _pendingRemisRequest.value = remisMessage
+                } else {
+                    _pendingRemisRequest.value = null
+                }
             }
         }
     }
@@ -219,6 +260,28 @@ class ChessGameViewModel @Inject constructor(
             endType = EndType.RESIGNATION
         )
         webSocketService.sendEndGameMessage(gameEndMessage)
+    }
+
+    fun offerDraw(lobbyId: String, player: TeamColor) {
+        val remisMessage = app.chesspresso.model.lobby.RemisMessage(
+            lobbyId = lobbyId,
+            requester = player,
+            responder = TeamColor.NULL,
+            accept = false // Remis wird angeboten
+        )
+        webSocketService.sendRemisMessage(remisMessage)
+    }
+
+    fun respondToRemisRequest(accept: Boolean) {
+        val request = _pendingRemisRequest.value ?: return
+        val response = app.chesspresso.model.lobby.RemisMessage(
+            lobbyId = request.lobbyId,
+            requester = request.requester,
+            responder = myColor.value ?: TeamColor.NULL,
+            accept = accept
+        )
+        webSocketService.sendRemisMessage(response)
+        _pendingRemisRequest.value = null
     }
 
     fun resetGameState() {

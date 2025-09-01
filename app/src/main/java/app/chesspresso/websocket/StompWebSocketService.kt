@@ -90,6 +90,10 @@ class StompWebSocketService @Inject constructor(
     private val _gameEndEvent = MutableStateFlow<GameEndResponse?>(null)
     val gameEndEvent: StateFlow<GameEndResponse?> = _gameEndEvent
 
+    // Remis Flow
+    private val _remisRequest = MutableStateFlow<app.chesspresso.model.lobby.RemisMessage?>(null)
+    val remisRequest: StateFlow<app.chesspresso.model.lobby.RemisMessage?> = _remisRequest.asStateFlow()
+
     enum class ConnectionState {
         DISCONNECTED, CONNECTING, CONNECTED, RECONNECTING
     }
@@ -399,6 +403,13 @@ class StompWebSocketService @Inject constructor(
                     Log.d(TAG, "Received game-end event: $event")
                 }
 
+                // RemisMessage erkennen (jetzt mit type == "remis")
+                "remis" -> {
+                    val remisMessage = this.json.decodeFromString(app.chesspresso.model.lobby.RemisMessage.serializer(), body)
+                    _remisRequest.value = remisMessage
+                    Log.d(TAG, "Received RemisMessage: $remisMessage")
+                }
+
                 else -> {
                     Log.w(TAG, "Unknown message type received: $type")
                 }
@@ -676,7 +687,7 @@ class StompWebSocketService @Inject constructor(
             append(MESSAGE_END)
         }
         webSocket?.send(subscribeFrame)
-        Log.d(TAG, "Subscribed to game updates for lobby: $lobbyId")
+
         currentLobbyId?.let { lobbyId ->
             val subscribeFrameMoves = buildString {
                 append("SUBSCRIBE\n")
@@ -686,7 +697,6 @@ class StompWebSocketService @Inject constructor(
                 append(MESSAGE_END)
             }
             webSocket?.send(subscribeFrameMoves)
-            Log.d(TAG, "Subscribed to possible-moves for lobby $lobbyId")
         }
 
         currentLobbyId?.let { lobbyId ->
@@ -698,7 +708,6 @@ class StompWebSocketService @Inject constructor(
                 append(MESSAGE_END)
             }
             webSocket?.send(subscribeFrameMoves)
-            Log.d(TAG, "Subscribed to possible-moves for lobby $lobbyId")
         }
 
         // Subscription für Promotion-Topic
@@ -710,7 +719,16 @@ class StompWebSocketService @Inject constructor(
             append(MESSAGE_END)
         }
         webSocket?.send(subscribePromotion)
-        Log.d(TAG, "Subscribed to promotion topic for lobby $lobbyId")
+
+        // Subscription für Remis-Topic (persönlich)
+        val subscribeRemis = buildString {
+            append("SUBSCRIBE\n")
+            append("id:sub-remis\n")
+            append("destination:/queue/remis\n")
+            append("\n")
+            append(MESSAGE_END)
+        }
+        webSocket?.send(subscribeRemis)
     }
 
     fun unsubscribeFromGame() {
@@ -722,7 +740,6 @@ class StompWebSocketService @Inject constructor(
                 append(MESSAGE_END)
             }
             webSocket?.send(unsubscribeFrame)
-            Log.d(TAG, "Unsubscribed from game updates for lobby: $lobbyId")
         }
         currentLobbyId?.let { lobbyId ->
             val subscribeFrameMoves = buildString {
@@ -732,7 +749,6 @@ class StompWebSocketService @Inject constructor(
                 append(MESSAGE_END)
             }
             webSocket?.send(subscribeFrameMoves)
-            Log.d(TAG, "Unsubscribed from possible-moves for lobby $lobbyId")
         }
         currentLobbyId?.let { lobbyId ->
             val subscribeFrameMoves = buildString {
@@ -742,7 +758,6 @@ class StompWebSocketService @Inject constructor(
                 append(MESSAGE_END)
             }
             webSocket?.send(subscribeFrameMoves)
-            Log.d(TAG, "Subscribed to possible-moves for lobby $lobbyId")
         }
 
         val unsubscribePromotion = buildString {
@@ -752,6 +767,14 @@ class StompWebSocketService @Inject constructor(
             append(MESSAGE_END)
         }
         webSocket?.send(unsubscribePromotion)
+
+        val subscribeRemis = buildString {
+            append("UNSUBSCRIBE\n")
+            append("id:sub-remis\n")
+            append("\n")
+            append(MESSAGE_END)
+        }
+        webSocket?.send(subscribeRemis)
 
         currentLobbyId = null
     }
@@ -882,5 +905,19 @@ class StompWebSocketService @Inject constructor(
         }
         webSocket?.send(subscribeFrame)
         Log.d(TAG, "Subscribed to topic: $topic with id: sub-$id")
+    }
+
+    fun sendRemisMessage(remisMessage: app.chesspresso.model.lobby.RemisMessage) {
+        val messageJson = json.encodeToString(app.chesspresso.model.lobby.RemisMessage.serializer(), remisMessage)
+        val frame = buildString {
+            append("SEND\n")
+            append("destination:/app/lobby/$currentLobbyId/remis\n")
+            append("content-type:application/json\n")
+            append("\n")
+            append(messageJson)
+            append(MESSAGE_END)
+        }
+        webSocket?.send(frame)
+        Log.d(TAG, "Sent remis message: $messageJson")
     }
 }
