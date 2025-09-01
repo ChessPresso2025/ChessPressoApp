@@ -20,9 +20,9 @@ import app.chesspresso.viewmodel.ChessGameViewModel
 fun GameOverScreen(
     gameEndResponse: GameEndResponse,
     playerId: String,
-    navController: NavHostController
+    navController: NavHostController,
+    viewModel: ChessGameViewModel
 ) {
-    val viewModel: ChessGameViewModel = hiltViewModel()
     val ergebnisText = when {
         gameEndResponse.draw -> "Unentschieden"
         playerId == gameEndResponse.winner -> "Gewonnen"
