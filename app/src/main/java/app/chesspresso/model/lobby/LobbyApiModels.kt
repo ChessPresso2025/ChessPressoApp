@@ -1,8 +1,8 @@
 package app.chesspresso.model.lobby
 
-import kotlinx.serialization.Serializable
 import app.chesspresso.model.EndType
 import app.chesspresso.model.TeamColor
+import kotlinx.serialization.Serializable
 
 // Request Models
 data class QuickJoinRequest(

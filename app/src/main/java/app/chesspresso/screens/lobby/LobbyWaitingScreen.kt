@@ -47,6 +47,7 @@ fun LobbyWaitingScreen(
     lobbyCode: String,
     onBackClick: () -> Unit,
     onGameStart: (String) -> Unit,
+    chessGameViewModel: app.chesspresso.viewmodel.ChessGameViewModel,
     viewModel: PrivateLobbyViewModel = hiltViewModel()
 ) {
     val currentLobby by viewModel.currentLobby.collectAsStateWithLifecycle()

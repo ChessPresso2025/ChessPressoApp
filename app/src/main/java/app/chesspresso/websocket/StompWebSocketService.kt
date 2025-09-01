@@ -8,9 +8,9 @@ import app.chesspresso.model.game.GameStartMessage
 import app.chesspresso.model.game.PawnPromotionMessage
 import app.chesspresso.model.game.PieceInfo
 import app.chesspresso.model.game.PositionRequestMessage
-import app.chesspresso.model.lobby.GameStartResponse
 import app.chesspresso.model.lobby.GameEndMessage
 import app.chesspresso.model.lobby.GameEndResponse
+import app.chesspresso.model.lobby.GameStartResponse
 import app.chesspresso.service.LobbyListener
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -330,7 +330,6 @@ class StompWebSocketService @Inject constructor(
                         gson.fromJson<Map<String, PieceInfo>>(boardJson, boardType)
                     }
                     val rawSuccess = json.opt("success")
-                    Log.d(TAG, "[DEBUG] gameStarted: rawSuccess=$rawSuccess, type=${rawSuccess?.javaClass?.name}")
                     val success = when (rawSuccess) {
                         is Boolean -> rawSuccess
                         is String -> rawSuccess.equals("true", ignoreCase = true)
@@ -662,19 +661,6 @@ class StompWebSocketService @Inject constructor(
         }
     }
 
-    // Legacy-Methoden für Kompatibilität (werden intern umgeleitet)
-    fun joinLobby(lobbyId: String) {
-        subscribeToLobby(lobbyId)
-    }
-
-    fun leaveLobby() {
-        unsubscribeFromLobby()
-    }
-
-    fun sendLobbyMessage(message: String) {
-        sendLobbyChat(message)
-    }
-
     fun subscribeToGame(lobbyId: String) {
         currentLobbyId = lobbyId
 
@@ -730,7 +716,9 @@ class StompWebSocketService @Inject constructor(
         }
         webSocket?.send(subscribeRemis)
 
-        Log.d("TAG", "Subscribed to game updates for lobby: $lobbyId")
+        // Subscription zu Remis-Topic für user-spezifische Nachrichten
+        subscribeToTopic("/user/queue/remis", "remis")
+        Log.d(TAG, "Subscribed to game updates for lobby: $lobbyId")
     }
 
     fun unsubscribeFromGame() {
@@ -777,7 +765,7 @@ class StompWebSocketService @Inject constructor(
 
         currentLobbyId = null
 
-        Log.d("TAG", "Unsubscribed from game updates")
+        Log.d(TAG, "Unsubscribed from game updates")
     }
 
     private fun startServerStatusCheck() {

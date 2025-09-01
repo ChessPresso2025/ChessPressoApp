@@ -32,7 +32,6 @@ import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.hilt.navigation.compose.hiltViewModel
 import app.chesspresso.model.TeamColor
 import app.chesspresso.model.board.Board
 import app.chesspresso.model.lobby.GameStartResponse
@@ -42,7 +41,7 @@ import app.chesspresso.viewmodel.ChessGameViewModel
 @Composable
 fun ChessGameScreen(
     gameStartResponse: GameStartResponse,
-    viewModel: ChessGameViewModel = hiltViewModel(),
+    viewModel: ChessGameViewModel,
     playerId: String,
     onGameEnd: (gameEndResponse: app.chesspresso.model.lobby.GameEndResponse, playerId: String) -> Unit = { _, _ -> }
 ) {
