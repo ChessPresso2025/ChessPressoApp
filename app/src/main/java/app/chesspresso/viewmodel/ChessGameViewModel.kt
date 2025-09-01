@@ -6,9 +6,9 @@ import app.chesspresso.model.EndType
 import app.chesspresso.model.PieceType
 import app.chesspresso.model.TeamColor
 import app.chesspresso.model.game.GameMoveResponse
-import app.chesspresso.model.lobby.GameStartResponse
 import app.chesspresso.model.lobby.GameEndMessage
 import app.chesspresso.model.lobby.GameEndResponse
+import app.chesspresso.model.lobby.GameStartResponse
 import app.chesspresso.websocket.StompWebSocketService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -18,7 +18,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import kotlin.concurrent.timer
 
 @HiltViewModel
 class ChessGameViewModel @Inject constructor(
@@ -31,8 +30,10 @@ class ChessGameViewModel @Inject constructor(
     private val _initialGameData = MutableStateFlow<GameStartResponse?>(null)
     val initialGameData: StateFlow<GameStartResponse?> = _initialGameData.asStateFlow()
 
-    private val _currentBoard = MutableStateFlow<Map<String, app.chesspresso.model.game.PieceInfo>>(emptyMap())
-    val currentBoard: StateFlow<Map<String, app.chesspresso.model.game.PieceInfo>> = _currentBoard.asStateFlow()
+    private val _currentBoard =
+        MutableStateFlow<Map<String, app.chesspresso.model.game.PieceInfo>>(emptyMap())
+    val currentBoard: StateFlow<Map<String, app.chesspresso.model.game.PieceInfo>> =
+        _currentBoard.asStateFlow()
 
     private val _currentPlayer = MutableStateFlow<app.chesspresso.model.TeamColor?>(null)
     val currentPlayer: StateFlow<app.chesspresso.model.TeamColor?> = _currentPlayer.asStateFlow()
@@ -48,12 +49,18 @@ class ChessGameViewModel @Inject constructor(
     private val _possibleMoves = MutableStateFlow<List<String>>(emptyList())
     val possibleMoves: StateFlow<List<String>> = _possibleMoves.asStateFlow()
 
-    private val _capturedWhitePieces = MutableStateFlow<List<app.chesspresso.model.game.PieceInfo>>(emptyList())
-    val capturedWhitePieces: StateFlow<List<app.chesspresso.model.game.PieceInfo>> = _capturedWhitePieces.asStateFlow()
-    private val _capturedBlackPieces = MutableStateFlow<List<app.chesspresso.model.game.PieceInfo>>(emptyList())
-    val capturedBlackPieces: StateFlow<List<app.chesspresso.model.game.PieceInfo>> = _capturedBlackPieces.asStateFlow()
-    private val _promotionRequest = MutableStateFlow<app.chesspresso.model.game.PromotionRequest?>(null)
-    val promotionRequest: StateFlow<app.chesspresso.model.game.PromotionRequest?> = _promotionRequest.asStateFlow()
+    private val _capturedWhitePieces =
+        MutableStateFlow<List<app.chesspresso.model.game.PieceInfo>>(emptyList())
+    val capturedWhitePieces: StateFlow<List<app.chesspresso.model.game.PieceInfo>> =
+        _capturedWhitePieces.asStateFlow()
+    private val _capturedBlackPieces =
+        MutableStateFlow<List<app.chesspresso.model.game.PieceInfo>>(emptyList())
+    val capturedBlackPieces: StateFlow<List<app.chesspresso.model.game.PieceInfo>> =
+        _capturedBlackPieces.asStateFlow()
+    private val _promotionRequest =
+        MutableStateFlow<app.chesspresso.model.game.PromotionRequest?>(null)
+    val promotionRequest: StateFlow<app.chesspresso.model.game.PromotionRequest?> =
+        _promotionRequest.asStateFlow()
 
     private val _gameEndEvent = MutableStateFlow<GameEndResponse?>(null)
     val gameEndEvent: StateFlow<GameEndResponse?> = _gameEndEvent
@@ -64,6 +71,20 @@ class ChessGameViewModel @Inject constructor(
     private var timerJob: Job? = null
     private var lastActivePlayer: TeamColor? = null
     private var timeoutSent = false // Neu: Flag, um Mehrfachsendung zu verhindern
+
+    enum class FieldHighlight {
+        NONE,
+        CHECKMATE_KING,
+        CHECKMATE_ATTACKER
+    }
+
+    private val _fieldHighlights = MutableStateFlow<Map<String, FieldHighlight>>(emptyMap())
+    val fieldHighlights: StateFlow<Map<String, FieldHighlight>> = _fieldHighlights.asStateFlow()
+
+    private val _pendingRemisRequest =
+        MutableStateFlow<app.chesspresso.model.lobby.RemisMessage?>(null)
+    val pendingRemisRequest: StateFlow<app.chesspresso.model.lobby.RemisMessage?> =
+        _pendingRemisRequest.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -76,7 +97,7 @@ class ChessGameViewModel @Inject constructor(
                 _possibleMoves.value = moves
             }
         }
-        // GameMoveResponse-Listener nur einmalig im init-Block registrieren!
+
         viewModelScope.launch {
             webSocketService.gameMoveUpdates.collect { gameMoveResponse ->
                 gameMoveResponse?.let { response ->
@@ -87,8 +108,12 @@ class ChessGameViewModel @Inject constructor(
                             color = captured.color
                         )
                         when (captured.color) {
-                            TeamColor.WHITE -> _capturedWhitePieces.value = _capturedWhitePieces.value + capturedPiece
-                            TeamColor.BLACK -> _capturedBlackPieces.value = _capturedBlackPieces.value + capturedPiece
+                            TeamColor.WHITE -> _capturedWhitePieces.value =
+                                _capturedWhitePieces.value + capturedPiece
+
+                            TeamColor.BLACK -> _capturedBlackPieces.value =
+                                _capturedBlackPieces.value + capturedPiece
+
                             else -> {}
                         }
                     }
@@ -105,6 +130,25 @@ class ChessGameViewModel @Inject constructor(
                     _promotionRequest.value = null
                     // Zug zur History hinzufügen
                     _moveHistory.value = _moveHistory.value + response
+
+                    // --- Schachmatt-Markierungen setzen ---
+                    val highlights = mutableMapOf<String, FieldHighlight>()
+                    val checkmateFields = response.checkmate
+                    if (!checkmateFields.isNullOrEmpty()) {
+                        // König des aktiven Teams suchen
+                        val kingField = newBoard.entries.find { (_, piece) ->
+                            piece.type == app.chesspresso.model.PieceType.KING && piece.color == response.nextPlayer
+                        }?.key
+                        if (kingField != null) {
+                            highlights[kingField] = FieldHighlight.CHECKMATE_KING
+                        }
+                        // Angreiferfelder markieren
+                        checkmateFields.forEach { field ->
+                            highlights[field] = FieldHighlight.CHECKMATE_ATTACKER
+                        }
+                    }
+                    _fieldHighlights.value = highlights
+                    // --- Ende Schachmatt-Markierungen ---
                 }
             }
         }
@@ -116,6 +160,16 @@ class ChessGameViewModel @Inject constructor(
         viewModelScope.launch {
             webSocketService.gameEndEvent.collect { event ->
                 _gameEndEvent.value = event
+            }
+        }
+        viewModelScope.launch {
+            webSocketService.remisRequest.collect { remisMessage ->
+                // Nur anzeigen, wenn es eine Anfrage vom Gegner ist (responder == null, requester != ich)
+                if (remisMessage != null && !remisMessage.accept && remisMessage.responder == null) {
+                    _pendingRemisRequest.value = remisMessage
+                } else {
+                    _pendingRemisRequest.value = null
+                }
             }
         }
     }
@@ -132,15 +186,16 @@ class ChessGameViewModel @Inject constructor(
             }
             if (myId == null) {
                 // Fehlerfall: ID konnte nicht ermittelt werden
-                android.util.Log.e("ChessGameViewModel", "playerId ist nach 5 Sekunden immer noch null!")
+                android.util.Log.e(
+                    "ChessGameViewModel",
+                    "playerId ist nach 5 Sekunden immer noch null!"
+                )
             }
             _currentGameState.value = null
             _initialGameData.value = gameStartResponse
             _currentBoard.value = gameStartResponse.board
             _currentPlayer.value = TeamColor.WHITE // Weiß beginnt immer
 
-            // Eigene Farbe bestimmen
-            android.util.Log.d("ChessGameViewModel", "myId: $myId, whitePlayer: ${gameStartResponse.whitePlayer}, blackPlayer: ${gameStartResponse.blackPlayer}")
             _myColor.value = when (myId) {
                 gameStartResponse.whitePlayer -> TeamColor.WHITE
                 gameStartResponse.blackPlayer -> TeamColor.BLACK
@@ -202,7 +257,13 @@ class ChessGameViewModel @Inject constructor(
         }
     }
 
-    fun sendGameMoveMessage(lobbyId: String, from: String, to: String, teamColor: TeamColor, promotedPiece: PieceType? = null) {
+    fun sendGameMoveMessage(
+        lobbyId: String,
+        from: String,
+        to: String,
+        teamColor: TeamColor,
+        promotedPiece: PieceType? = null
+    ) {
         val message = app.chesspresso.model.game.GameMoveMessage(
             lobbyId = lobbyId,
             from = from,
@@ -235,5 +296,27 @@ class ChessGameViewModel @Inject constructor(
         timerJob?.cancel()
         webSocketService.unsubscribeFromGame()
         webSocketService.resetGameFlows()
+    }
+
+    fun offerDraw(lobbyId: String, player: TeamColor) {
+        val remisMessage = app.chesspresso.model.lobby.RemisMessage(
+            lobbyId = lobbyId,
+            requester = player,
+            responder = TeamColor.NULL,
+            accept = false // Remis wird angeboten
+        )
+        webSocketService.sendRemisMessage(remisMessage)
+    }
+
+    fun respondToRemisRequest(accept: Boolean) {
+        val request = _pendingRemisRequest.value ?: return
+        val response = app.chesspresso.model.lobby.RemisMessage(
+            lobbyId = request.lobbyId,
+            requester = request.requester,
+            responder = myColor.value ?: TeamColor.NULL,
+            accept = accept
+        )
+        webSocketService.sendRemisMessage(response)
+        _pendingRemisRequest.value = null
     }
 }

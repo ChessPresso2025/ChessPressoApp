@@ -1,6 +1,8 @@
 package app.chesspresso.model.board
 
 import android.util.Log
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -18,6 +20,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import app.chesspresso.model.TeamColor
@@ -59,7 +63,8 @@ class Board {
         onPositionRequest: (PositionRequestMessage) -> Unit = {},
         isFlipped: Boolean = false,
         possibleMoves: List<String> = emptyList(),
-        onGameMove: (from: String, to: String) -> Unit = { _, _ -> } // NEU: Callback für Züge
+        onGameMove: (from: String, to: String) -> Unit = { _, _ -> },
+        fieldHighlights: Map<String, app.chesspresso.viewmodel.ChessGameViewModel.FieldHighlight> = emptyMap() // NEU
     ) {
         var selectedField by remember { mutableStateOf<String?>(null) }
         var validMoves by remember { mutableStateOf<Set<String>>(possibleMoves.toSet()) }
@@ -187,11 +192,17 @@ class Board {
                         val field = board[index]
                         val isLightSquare = (row + col) % 2 == 0
                         field.isLightSquare = isLightSquare
+                        val highlight = fieldHighlights[field.name] ?: app.chesspresso.viewmodel.ChessGameViewModel.FieldHighlight.NONE
+                        val backgroundColor = when (highlight) {
+                            app.chesspresso.viewmodel.ChessGameViewModel.FieldHighlight.CHECKMATE_KING -> Color(colorResource(id = app.chesspresso.R.color.checkmate_king).value)
+                            app.chesspresso.viewmodel.ChessGameViewModel.FieldHighlight.CHECKMATE_ATTACKER -> Color(colorResource(id = app.chesspresso.R.color.checkmate_attacker).value)
+                            else -> if (isLightSquare) Color(0xFFF0D9B5) else Color(0xFFB58863)
+                        }
                         Box(
                             modifier = Modifier.weight(1f)
                         ) {
                             field.FieldContent(
-                                modifier = Modifier.fillMaxSize(),
+                                modifier = Modifier.fillMaxSize().clickable { handleFieldClick(field.name) }.background(backgroundColor),
                                 isCheck = isCheck == field.name,
                                 isCheckmate = isCheckmate == field.name,
                                 pieceInfo = boardState.getValue(field.name),
