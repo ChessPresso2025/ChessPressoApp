@@ -3,7 +3,9 @@ package app.chesspresso.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.chesspresso.model.lobby.GameTime
+import app.chesspresso.model.lobby.RematchOffer
 import app.chesspresso.service.LobbyService
+import app.chesspresso.websocket.StompWebSocketService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -13,11 +15,15 @@ import javax.inject.Inject
 
 @HiltViewModel
 class QuickMatchViewModel @Inject constructor(
-    private val lobbyService: LobbyService
+    private val lobbyService: LobbyService,
+    private val webSocketService: StompWebSocketService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(QuickMatchUiState())
     val uiState: StateFlow<QuickMatchUiState> = _uiState.asStateFlow()
+
+    private val _rematchDialogState = MutableStateFlow<RematchDialogState>(RematchDialogState.None)
+    val rematchDialogState: StateFlow<RematchDialogState> = _rematchDialogState.asStateFlow()
 
     val isWaitingForMatch = lobbyService.isWaitingForMatch
     val lobbyError = lobbyService.lobbyError
@@ -67,6 +73,33 @@ class QuickMatchViewModel @Inject constructor(
         lobbyService.forceResetWaitingState()
         _uiState.value = QuickMatchUiState()
     }
+
+    fun requestRematch() {
+        _rematchDialogState.value = RematchDialogState.WaitingForResponse
+        _uiState.value.lobbyId?.let { lobbyId ->
+            webSocketService.sendRematchRequest(lobbyId)
+        }
+    }
+
+    fun respondRematch(accept: Boolean) {
+        _uiState.value.lobbyId?.let { lobbyId ->
+            webSocketService.sendRematchResponse(lobbyId, if (accept) "accepted" else "declined")
+            _rematchDialogState.value = RematchDialogState.WaitingForResult
+        }
+    }
+
+    fun clearRematchDialog() {
+        _rematchDialogState.value = RematchDialogState.None
+    }
+}
+
+sealed class RematchDialogState {
+    object None : RematchDialogState()
+    object WaitingForResponse : RematchDialogState()
+    data class OfferReceived(val offer: RematchOffer) : RematchDialogState()
+    object WaitingForResult : RematchDialogState()
+    object Accepted : RematchDialogState()
+    object Declined : RematchDialogState()
 }
 
 data class QuickMatchUiState(

@@ -319,7 +319,9 @@ fun MainScaffoldScreen(
                                     drawerState.close()
                                     gameViewModel.reset()
                                     val gameEndJson = com.google.gson.Gson().toJson(gameEndResponse)
-                                    innerNavController.navigate("gameOverScreen/${gameEndJson}/$playerId") {
+                                    val lobbyId = gameEndResponse.lobbyId
+                                    val lobbyType = if (lobbyId.length <= 6) "PRIVATE" else "QUICK"
+                                    innerNavController.navigate("gameOverScreen/${gameEndJson}/$playerId/$lobbyType") {
                                         popUpTo("chessGameScreen") { inclusive = true }
                                     }
                                 }
@@ -333,10 +335,11 @@ fun MainScaffoldScreen(
                     }
                 }
 
-                // GameOverScreen mit Übergabe des GameEndResponse als JSON-String und playerId
-                composable("gameOverScreen/{gameEndJson}/{playerId}") { backStackEntry ->
+                // GameOverScreen mit Übergabe des GameEndResponse als JSON-String, playerId und lobbyType
+                composable("gameOverScreen/{gameEndJson}/{playerId}/{lobbyType}") { backStackEntry ->
                     val gameEndJson = backStackEntry.arguments?.getString("gameEndJson") ?: ""
                     val playerId = backStackEntry.arguments?.getString("playerId") ?: ""
+                    val lobbyType = backStackEntry.arguments?.getString("lobbyType") ?: "UNKNOWN"
                     val gameEndResponse = try {
                         com.google.gson.Gson().fromJson(gameEndJson, app.chesspresso.model.lobby.GameEndResponse::class.java)
                     } catch (e: Exception) { null }
