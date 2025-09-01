@@ -70,3 +70,9 @@ data class GameStartResponse(
     val board: Map<String, PieceInfo>,
     val error: String? = null
 )
+
+data class LobbyCloseMessage(
+    val lobbyId: String,
+    val playerId: String,
+    val type: String = "lobby-close"
+)

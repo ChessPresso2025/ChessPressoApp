@@ -380,4 +380,9 @@ class LobbyService @Inject constructor(
     fun clearGameStart() {
         _gameStarted.value = null
     }
+
+    // Warte-State zurücksetzen
+    fun forceResetWaitingState() {
+        _isWaitingForMatch.value = false
+    }
 }

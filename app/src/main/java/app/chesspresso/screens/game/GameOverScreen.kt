@@ -46,7 +46,7 @@ fun GameOverScreen(
 
 
         Button(onClick = {
-            viewModel.resetGameState()
+            viewModel.closeLobby(gameEndResponse.lobbyId)
             navController.navigate(NavRoutes.HOME) {
                 popUpTo(0) { inclusive = true }
             }

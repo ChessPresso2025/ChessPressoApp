@@ -45,6 +45,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
@@ -227,11 +228,15 @@ fun MainScaffoldScreen(
 
                 // Neue Lobby-Screens
                 composable(NavRoutes.QUICK_MATCH) {
+                    val quickMatchViewModel: app.chesspresso.viewmodel.QuickMatchViewModel = hiltViewModel()
+                    // State zurücksetzen, damit keine alten Werte übernommen werden
+                    LaunchedEffect(Unit) { quickMatchViewModel.reset() }
                     QuickMatchScreen(
                         onGameStart = { lobbyId ->
                             // TODO: Navigation zum Spiel-Screen
                             innerNavController.navigate("game/$lobbyId")
-                        }
+                        },
+                        viewModel = quickMatchViewModel
                     )
                 }
 
@@ -250,10 +255,13 @@ fun MainScaffoldScreen(
                     val lobbyCode = backStackEntry.arguments?.getString("lobbyCode") ?: ""
                     val isCreator = backStackEntry.arguments?.getString("isCreator")
                         ?.toBoolean() ?: false
+                    val chessGameViewModel: ChessGameViewModel = hiltViewModel()
+                    val gameViewModel: GameViewModel = hiltViewModel()
                     LobbyWaitingScreen(
                         isCreator = isCreator,
                         lobbyCode = lobbyCode,
                         onBackClick = {
+                            gameViewModel.reset()
                             // Explizit zum Home-Screen navigieren und alles andere löschen
                             innerNavController.navigate(NavRoutes.HOME) {
                                 popUpTo(NavRoutes.HOME) { inclusive = false }
@@ -309,6 +317,7 @@ fun MainScaffoldScreen(
                             onGameEnd = { gameEndResponse, playerId ->
                                 scope.launch {
                                     drawerState.close()
+                                    gameViewModel.reset()
                                     val gameEndJson = com.google.gson.Gson().toJson(gameEndResponse)
                                     innerNavController.navigate("gameOverScreen/${gameEndJson}/$playerId") {
                                         popUpTo("chessGameScreen") { inclusive = true }
