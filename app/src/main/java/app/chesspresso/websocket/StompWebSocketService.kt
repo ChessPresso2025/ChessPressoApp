@@ -8,11 +8,11 @@ import app.chesspresso.model.game.GameStartMessage
 import app.chesspresso.model.game.PawnPromotionMessage
 import app.chesspresso.model.game.PieceInfo
 import app.chesspresso.model.game.PositionRequestMessage
-import app.chesspresso.model.lobby.GameStartResponse
 import app.chesspresso.model.lobby.GameEndMessage
 import app.chesspresso.model.lobby.GameEndResponse
-import app.chesspresso.model.lobby.RematchRequest
+import app.chesspresso.model.lobby.GameStartResponse
 import app.chesspresso.model.lobby.RematchOffer
+import app.chesspresso.model.lobby.RematchRequest
 import app.chesspresso.model.lobby.RematchResponse
 import app.chesspresso.model.lobby.RematchResult
 import app.chesspresso.service.LobbyListener

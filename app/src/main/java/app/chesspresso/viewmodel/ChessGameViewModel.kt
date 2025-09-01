@@ -8,7 +8,8 @@ import app.chesspresso.model.TeamColor
 import app.chesspresso.model.game.GameMoveResponse
 import app.chesspresso.model.lobby.GameEndMessage
 import app.chesspresso.model.lobby.GameEndResponse
-import app.chesspresso.model.lobby.RematchOffer
+import app.chesspresso.model.lobby.GameStartResponse
+import app.chesspresso.model.lobby.RematchResult
 import app.chesspresso.websocket.StompWebSocketService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
@@ -19,8 +20,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
-import app.chesspresso.model.lobby.GameStartResponse
-import app.chesspresso.model.lobby.RematchResult
 
 @HiltViewModel
 class ChessGameViewModel @Inject constructor(

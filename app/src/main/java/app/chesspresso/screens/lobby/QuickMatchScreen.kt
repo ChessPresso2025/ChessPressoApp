@@ -33,9 +33,6 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.chesspresso.model.lobby.GameTime
 import app.chesspresso.viewmodel.QuickMatchViewModel
-import app.chesspresso.viewmodel.RematchDialogState
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -47,7 +44,6 @@ fun QuickMatchScreen(
     val isWaiting by viewModel.isWaitingForMatch.collectAsStateWithLifecycle()
     val error by viewModel.lobbyError.collectAsStateWithLifecycle()
     val gameStarted by viewModel.gameStarted.collectAsStateWithLifecycle()
-    val rematchDialogState by viewModel.rematchDialogState.collectAsStateWithLifecycle()
 
     var selectedGameTime by remember { mutableStateOf(GameTime.MIDDLE) }
 
