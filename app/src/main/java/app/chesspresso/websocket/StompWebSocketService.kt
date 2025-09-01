@@ -706,19 +706,11 @@ class StompWebSocketService @Inject constructor(
         }
         webSocket?.send(subscribePromotion)
 
-        // Subscription für Remis-Topic (persönlich)
-        val subscribeRemis = buildString {
-            append("SUBSCRIBE\n")
-            append("id:sub-remis\n")
-            append("destination:/queue/remis\n")
-            append("\n")
-            append(MESSAGE_END)
+        // Neue Subscription auf das Topic mit Username
+        _playerId?.let { username ->
+            subscribeToTopic("/topic/lobby/remis/$username", "remis-$username")
         }
-        webSocket?.send(subscribeRemis)
-
-        // Subscription zu Remis-Topic für user-spezifische Nachrichten
-        subscribeToTopic("/user/queue/remis", "remis")
-        Log.d(TAG, "Subscribed to game updates for lobby: $lobbyId")
+        Log.d(TAG, "Subscribed to game updates for lobby: $lobbyId und Remis für User: $_playerId")
     }
 
     fun unsubscribeFromGame() {
@@ -755,13 +747,16 @@ class StompWebSocketService @Inject constructor(
         }
         webSocket?.send(unsubscribePromotion)
 
-        val subscribeRemis = buildString {
-            append("UNSUBSCRIBE\n")
-            append("id:sub-remis\n")
-            append("\n")
-            append(MESSAGE_END)
+        // Unsubscribe vom Remis-Topic für diesen User
+        _playerId?.let { username ->
+            val unsubscribeRemis = buildString {
+                append("UNSUBSCRIBE\n")
+                append("id:sub-remis-$username\n")
+                append("\n")
+                append(MESSAGE_END)
+            }
+            webSocket?.send(unsubscribeRemis)
         }
-        webSocket?.send(subscribeRemis)
 
         currentLobbyId = null
 
@@ -925,5 +920,6 @@ class StompWebSocketService @Inject constructor(
         _possibleMoves.value = emptyList()
         _promotionRequest.value = null
         _gameEndEvent.value = null
+        _remisRequest.value = null
     }
 }

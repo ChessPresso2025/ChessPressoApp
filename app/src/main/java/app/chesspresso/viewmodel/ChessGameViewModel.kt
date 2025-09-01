@@ -97,7 +97,7 @@ class ChessGameViewModel @Inject constructor(
                 _possibleMoves.value = moves
             }
         }
-        // GameMoveResponse-Listener nur einmalig im init-Block registrieren!
+
         viewModelScope.launch {
             webSocketService.gameMoveUpdates.collect { gameMoveResponse ->
                 gameMoveResponse?.let { response ->
