@@ -31,28 +31,6 @@ class QuickMatchViewModel @Inject constructor(
     val lobbyError = lobbyService.lobbyError
     val gameStarted = lobbyService.gameStarted
 
-    init {
-        viewModelScope.launch {
-            webSocketService.rematchOfferEvent.collectLatest { offer ->
-                if (offer != null && offer.lobbyId == _uiState.value.lobbyId) {
-                    _rematchDialogState.value = RematchDialogState.OfferReceived(offer)
-                }
-            }
-        }
-        viewModelScope.launch {
-            webSocketService.rematchResultEvent.collectLatest { result ->
-                if (result != null && result.lobbyId == _uiState.value.lobbyId) {
-                    if (result.result == "accepted" && result.newlobbyid != null) {
-                        _rematchDialogState.value = RematchDialogState.Accepted
-                        webSocketService.resetGameFlows()
-                        webSocketService.subscribeToLobby(result.newlobbyid)
-                    }
-                    else _rematchDialogState.value = RematchDialogState.Declined
-                }
-            }
-        }
-    }
-
     fun joinQuickMatch(gameTime: GameTime) {
         viewModelScope.launch {
             _uiState.value = _uiState.value.copy(isLoading = true, error = null)
