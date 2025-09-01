@@ -19,6 +19,7 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
+import app.chesspresso.model.TeamColor
 import app.chesspresso.viewmodel.RematchDialogState
 
 @Composable
@@ -114,7 +115,16 @@ fun GameOverScreen(
                             viewModel.clearRematchDialog()
                             val isPrivate = gameEndResponse.lobbyId.length <= 6
                             if (isPrivate) {
-                                navController.navigate(NavRoutes.PRIVATE_LOBBY) {
+                                if(viewModel.rematchResult.value == null) {
+                                    // Sollte eigentlich nie passieren
+                                    android.util.Log.e(
+                                        "GameOverScreen",
+                                        "rematchResult ist null, kann nicht navigieren"
+                                    )
+                                    return@TextButton
+                                }
+                                val isCreator = viewModel.myColor.value == TeamColor.WHITE
+                                navController.navigate("lobby_waiting/${viewModel.rematchResult.value!!.newlobbyid}/$isCreator") {
                                     popUpTo(NavRoutes.HOME) { inclusive = false }
                                 }
                             } else {

@@ -20,6 +20,7 @@ import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 import app.chesspresso.model.lobby.GameStartResponse
+import app.chesspresso.model.lobby.RematchResult
 
 @HiltViewModel
 class ChessGameViewModel @Inject constructor(
@@ -76,6 +77,9 @@ class ChessGameViewModel @Inject constructor(
 
     private val _rematchDialogState = MutableStateFlow<RematchDialogState>(RematchDialogState.None)
     val rematchDialogState: StateFlow<RematchDialogState> = _rematchDialogState.asStateFlow()
+
+    private val _rematchResult = MutableStateFlow<RematchResult?>(null)
+    val rematchResult: StateFlow<RematchResult?> = _rematchResult.asStateFlow()
 
     enum class FieldHighlight {
         NONE,
@@ -186,6 +190,7 @@ class ChessGameViewModel @Inject constructor(
                         _rematchDialogState.value = RematchDialogState.Accepted
                         webSocketService.resetGameFlows()
                         webSocketService.subscribeToLobby(result.newlobbyid)
+                        _rematchResult.value = result
                     }
                     else _rematchDialogState.value = RematchDialogState.Declined
                 }
