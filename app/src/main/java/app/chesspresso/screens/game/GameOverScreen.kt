@@ -23,6 +23,38 @@ import app.chesspresso.model.TeamColor
 import app.chesspresso.viewmodel.RematchDialogState
 
 @Composable
+fun RematchDialog(
+    show: Boolean,
+    onDismissRequest: () -> Unit,
+    title: String,
+    text: String,
+    confirmButtonText: String,
+    onConfirm: () -> Unit,
+    dismissButtonText: String? = null,
+    onDismiss: (() -> Unit)? = null
+) {
+    if (show) {
+        AlertDialog(
+            onDismissRequest = onDismissRequest,
+            title = { Text(title) },
+            text = { Text(text) },
+            confirmButton = {
+                TextButton(onClick = onConfirm) {
+                    Text(confirmButtonText)
+                }
+            },
+            dismissButton = if (dismissButtonText != null && onDismiss != null) {
+                {
+                    TextButton(onClick = onDismiss) {
+                        Text(dismissButtonText)
+                    }
+                }
+            } else null
+        )
+    }
+}
+
+@Composable
 fun GameOverScreen(
     gameEndResponse: GameEndResponse,
     playerId: String,
@@ -65,92 +97,78 @@ fun GameOverScreen(
         // Rematch-Dialoge
         when (rematchDialogState) {
             is RematchDialogState.WaitingForResponse -> {
-                AlertDialog(
+                RematchDialog(
+                    show = true,
                     onDismissRequest = { viewModel.clearRematchDialog() },
-                    title = { Text("Rematch angefragt") },
-                    text = { Text("Warte auf Antwort des Gegners...") },
-                    confirmButton = {
-                        TextButton(onClick = { viewModel.clearRematchDialog() }) {
-                            Text("Abbrechen")
-                        }
-                    }
+                    title = "Rematch angefragt",
+                    text = "Warte auf Antwort des Gegners...",
+                    confirmButtonText = "Abbrechen",
+                    onConfirm = { viewModel.clearRematchDialog() }
                 )
             }
             is RematchDialogState.OfferReceived -> {
-                AlertDialog(
+                RematchDialog(
+                    show = true,
                     onDismissRequest = { viewModel.clearRematchDialog() },
-                    title = { Text("Rematch erhalten") },
-                    text = { Text("Dein Gegner möchte ein Rematch. Annehmen?") },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            viewModel.respondRematch(true)
-                        }) { Text("Annehmen") }
-                    },
-                    dismissButton = {
-                        TextButton(onClick = {
-                            viewModel.respondRematch(false)
-                        }) { Text("Ablehnen") }
-                    }
+                    title = "Rematch erhalten",
+                    text = "Dein Gegner möchte ein Rematch. Annehmen?",
+                    confirmButtonText = "Annehmen",
+                    onConfirm = { viewModel.respondRematch(true) },
+                    dismissButtonText = "Ablehnen",
+                    onDismiss = { viewModel.respondRematch(false) }
                 )
             }
             is RematchDialogState.WaitingForResult -> {
-                AlertDialog(
+                RematchDialog(
+                    show = true,
                     onDismissRequest = { viewModel.clearRematchDialog() },
-                    title = { Text("Antwort gesendet") },
-                    text = { Text("Warte auf Bestätigung...") },
-                    confirmButton = {
-                        TextButton(onClick = { viewModel.clearRematchDialog() }) {
-                            Text("Schließen")
-                        }
-                    }
+                    title = "Antwort gesendet",
+                    text = "Warte auf Bestätigung...",
+                    confirmButtonText = "Schließen",
+                    onConfirm = { viewModel.clearRematchDialog() }
                 )
             }
             is RematchDialogState.Accepted -> {
-                AlertDialog(
+                RematchDialog(
+                    show = true,
                     onDismissRequest = { viewModel.clearRematchDialog() },
-                    title = { Text("Rematch angenommen") },
-                    text = { Text("Das Rematch startet jetzt!") },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            viewModel.clearRematchDialog()
-                            val isPrivate = gameEndResponse.lobbyId.length <= 6
-                            if (isPrivate) {
-                                if(viewModel.rematchResult.value == null) {
-                                    // Sollte eigentlich nie passieren
-                                    android.util.Log.e(
-                                        "GameOverScreen",
-                                        "rematchResult ist null, kann nicht navigieren"
-                                    )
-                                    return@TextButton
-                                }
-                                val isCreator = viewModel.myColor.value == TeamColor.WHITE
-                                navController.navigate("lobby_waiting/${viewModel.rematchResult.value!!.newlobbyid}/$isCreator") {
-                                    popUpTo(NavRoutes.HOME) { inclusive = false }
-                                }
-                            } else {
-                                navController.navigate("game/${gameEndResponse.lobbyId}") {
-                                    popUpTo(NavRoutes.HOME) { inclusive = false }
-                                }
+                    title = "Rematch angenommen",
+                    text = "Das Rematch startet jetzt!",
+                    confirmButtonText = "OK",
+                    onConfirm = {
+                        viewModel.clearRematchDialog()
+                        val isPrivate = gameEndResponse.lobbyId.length <= 6
+                        if (isPrivate) {
+                            if(viewModel.rematchResult.value == null) {
+                                android.util.Log.e(
+                                    "GameOverScreen",
+                                    "rematchResult ist null, kann nicht navigieren"
+                                )
+                                return@RematchDialog
                             }
-                        }) {
-                            Text("OK")
+                            val isCreator = viewModel.myColor.value == TeamColor.WHITE
+                            navController.navigate("lobby_waiting/${viewModel.rematchResult.value!!.newlobbyid}/$isCreator") {
+                                popUpTo(NavRoutes.HOME) { inclusive = false }
+                            }
+                        } else {
+                            navController.navigate("game/${gameEndResponse.lobbyId}") {
+                                popUpTo(NavRoutes.HOME) { inclusive = false }
+                            }
                         }
                     }
                 )
             }
             is RematchDialogState.Declined -> {
-                AlertDialog(
+                RematchDialog(
+                    show = true,
                     onDismissRequest = { viewModel.clearRematchDialog() },
-                    title = { Text("Rematch abgelehnt") },
-                    text = { Text("Der Gegner hat das Rematch abgelehnt. Du wirst zum Startbildschirm zurückgeleitet.") },
-                    confirmButton = {
-                        TextButton(onClick = {
-                            viewModel.clearRematchDialog()
-                            navController.navigate(NavRoutes.HOME) {
-                                popUpTo(0) { inclusive = true }
-                            }
-                        }) {
-                            Text("OK")
+                    title = "Rematch abgelehnt",
+                    text = "Der Gegner hat das Rematch abgelehnt. Du wirst zum Startbildschirm zurückgeleitet.",
+                    confirmButtonText = "OK",
+                    onConfirm = {
+                        viewModel.clearRematchDialog()
+                        navController.navigate(NavRoutes.HOME) {
+                            popUpTo(0) { inclusive = true }
                         }
                     }
                 )
