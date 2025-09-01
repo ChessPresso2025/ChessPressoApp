@@ -100,6 +100,10 @@ class StompWebSocketService @Inject constructor(
     private val _rematchResultEvent = MutableStateFlow<RematchResult?>(null)
     val rematchResultEvent: StateFlow<RematchResult?> = _rematchResultEvent.asStateFlow()
 
+    // Remis Flow
+    private val _remisRequest = MutableStateFlow<app.chesspresso.model.lobby.RemisMessage?>(null)
+    val remisRequest: StateFlow<app.chesspresso.model.lobby.RemisMessage?> = _remisRequest.asStateFlow()
+
     enum class ConnectionState {
         DISCONNECTED, CONNECTING, CONNECTED, RECONNECTING
     }
@@ -224,23 +228,10 @@ class StompWebSocketService @Inject constructor(
             }
             webSocket?.send(subscribeFrame2)
             Log.d(TAG, "Subscribed to topics")
-
-            CoroutineScope(Dispatchers.IO).launch {
-                delay(200)
-                val subscribeFrame1 = buildString {
-                    append("SUBSCRIBE\n")
-                    append("id:sub-1\n")
-                    append("destination:/user/queue/status\n")
-                    append("\n")
-                    append(MESSAGE_END)
-                }
-                webSocket?.send(subscribeFrame1)
-            }
         }
     }
 
     fun subscribeToRematchOffer(lobbyId: String) {
-        Log.d(TAG, "subscribeToRematchOffer aufgerufen mit lobbyId=$lobbyId, isConnected=${isConnected()}")
         val subscribeRematchOffer = buildString {
             append("SUBSCRIBE\n")
             append("id:sub-rematch-offer-$lobbyId\n")
@@ -249,11 +240,20 @@ class StompWebSocketService @Inject constructor(
             append(MESSAGE_END)
         }
         webSocket?.send(subscribeRematchOffer)
-        Log.d(TAG, "SUBSCRIBE-Frame gesendet: $subscribeRematchOffer")
+
+        val subscribeRematchResult = buildString {
+            append("SUBSCRIBE\n")
+            append("id:sub-rematch-result-$lobbyId\n")
+            append("destination:/topic/lobby/$lobbyId/rematch-result\n")
+            append("\n")
+            append(MESSAGE_END)
+        }
+        webSocket?.send(subscribeRematchResult)
+
+        Log.d(TAG, "Rematch subscriptions sent for lobbyId=$lobbyId")
     }
 
     fun unsubscribeFromRematchOffer(lobbyId: String) {
-        Log.d(TAG, "unsubscribeFromRematchOffer aufgerufen mit lobbyId=$lobbyId, isConnected=${isConnected()}")
         val unsubscribeRematchOffer = buildString {
             append("UNSUBSCRIBE\n")
             append("id:sub-rematch-offer-$lobbyId\n")
@@ -261,7 +261,15 @@ class StompWebSocketService @Inject constructor(
             append(MESSAGE_END)
         }
         webSocket?.send(unsubscribeRematchOffer)
-        Log.d(TAG, "UNSUBSCRIBE-Frame gesendet: $unsubscribeRematchOffer")
+
+        val subscribeRematchResult = buildString {
+            append("UNSUBSCRIBE\n")
+            append("id:sub-rematch-result-$lobbyId\n")
+            append("\n")
+            append(MESSAGE_END)
+        }
+        webSocket?.send(subscribeRematchResult)
+        Log.d(TAG, "UNSUBSCRIBE-Frames for rematch sent for lobbyId=$lobbyId")
     }
 
     private fun startHeartbeat() {
@@ -451,6 +459,13 @@ class StompWebSocketService @Inject constructor(
                     } catch (e: Exception) {
                         Log.e(TAG, "Error parsing RematchResult: "+e.message)
                     }
+                }
+
+                // RemisMessage erkennen (jetzt mit type == "remis")
+                "remis" -> {
+                    val remisMessage = this.json.decodeFromString(app.chesspresso.model.lobby.RemisMessage.serializer(), body)
+                    _remisRequest.value = remisMessage
+                    Log.d(TAG, "Received RemisMessage: $remisMessage")
                 }
 
                 else -> {
@@ -705,19 +720,6 @@ class StompWebSocketService @Inject constructor(
         }
     }
 
-    // Legacy-Methoden für Kompatibilität (werden intern umgeleitet)
-    fun joinLobby(lobbyId: String) {
-        subscribeToLobby(lobbyId)
-    }
-
-    fun leaveLobby() {
-        unsubscribeFromLobby()
-    }
-
-    fun sendLobbyMessage(message: String) {
-        sendLobbyChat(message)
-    }
-
     fun subscribeToGame(lobbyId: String) {
         currentLobbyId = lobbyId
 
@@ -740,7 +742,6 @@ class StompWebSocketService @Inject constructor(
                 append(MESSAGE_END)
             }
             webSocket?.send(subscribeFrameMoves)
-
         }
 
         currentLobbyId?.let { lobbyId ->
@@ -764,7 +765,11 @@ class StompWebSocketService @Inject constructor(
         }
         webSocket?.send(subscribePromotion)
 
-        Log.d("TAG", "Subscribed to game updates for lobby: $lobbyId")
+        // Neue Subscription auf das Topic mit Username
+        _playerId?.let { username ->
+            subscribeToTopic("/topic/lobby/remis/$username", "remis-$username")
+        }
+        Log.d(TAG, "Subscribed to game updates for lobby: $lobbyId und Remis für User: $_playerId")
     }
 
     fun unsubscribeFromGame() {
@@ -801,9 +806,20 @@ class StompWebSocketService @Inject constructor(
         }
         webSocket?.send(unsubscribePromotion)
 
+        // Unsubscribe vom Remis-Topic für diesen User
+        _playerId?.let { username ->
+            val unsubscribeRemis = buildString {
+                append("UNSUBSCRIBE\n")
+                append("id:sub-remis-$username\n")
+                append("\n")
+                append(MESSAGE_END)
+            }
+            webSocket?.send(unsubscribeRemis)
+        }
+
         currentLobbyId = null
 
-        Log.d("TAG", "Unsubscribed from game updates")
+        Log.d(TAG, "Unsubscribed from game updates")
     }
 
     private fun startServerStatusCheck() {
@@ -934,6 +950,20 @@ class StompWebSocketService @Inject constructor(
         Log.d(TAG, "Subscribed to topic: $topic with id: sub-$id")
     }
 
+    fun sendRemisMessage(remisMessage: app.chesspresso.model.lobby.RemisMessage) {
+        val messageJson = json.encodeToString(app.chesspresso.model.lobby.RemisMessage.serializer(), remisMessage)
+        val frame = buildString {
+            append("SEND\n")
+            append("destination:/app/lobby/$currentLobbyId/remis\n")
+            append("content-type:application/json\n")
+            append("\n")
+            append(messageJson)
+            append(MESSAGE_END)
+        }
+        webSocket?.send(frame)
+        Log.d(TAG, "Sent remis message: $messageJson")
+    }
+
     fun sendLobbyCloseMessage(lobbyId: String) {
         val playerId = _playerId ?: return
         val message = app.chesspresso.model.lobby.LobbyCloseMessage(lobbyId, playerId)
@@ -949,6 +979,7 @@ class StompWebSocketService @Inject constructor(
         _possibleMoves.value = emptyList()
         _promotionRequest.value = null
         _gameEndEvent.value = null
+        _remisRequest.value = null
     }
 
     // Rematch-Nachrichten senden

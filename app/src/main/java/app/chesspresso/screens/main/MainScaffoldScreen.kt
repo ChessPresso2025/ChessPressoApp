@@ -14,12 +14,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
@@ -98,13 +96,14 @@ fun MainScaffoldScreen(
         selectedRoute == NavRoutes.QUICK_MATCH || selectedRoute == NavRoutes.PRIVATE_LOBBY
     // Prüfe, ob wir im Spiel-Screen sind
     val isGameScreen = selectedRoute.startsWith("game/")
+    val chessGameViewModel: ChessGameViewModel = hiltViewModel()
 
     ModalNavigationDrawer(
         drawerState = drawerState,
         scrimColor = MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f), // Optional: Abdunklung beim Öffnen
         drawerContent = {
             if (isGameScreen) {
-                val chessGameViewModel: ChessGameViewModel = hiltViewModel()
+
                 val currentGameState by chessGameViewModel.currentGameState.collectAsState()
                 val myColor by chessGameViewModel.myColor.collectAsState()
                 val initialGameData by chessGameViewModel.initialGameData.collectAsState()
@@ -128,7 +127,11 @@ fun MainScaffoldScreen(
                                     chessGameViewModel.resignGame(myColor!!, lobbyId)
                                 }
                             },
-                            onOfferDraw = { /* TODO: Remis-Logik */ }
+                            onOfferDraw = {
+                                if (myColor != null && lobbyId != null) {
+                                    chessGameViewModel.offerDraw(lobbyId, myColor!!)
+                                }
+                            }
                         )
                     }
                 }
@@ -255,8 +258,6 @@ fun MainScaffoldScreen(
                     val lobbyCode = backStackEntry.arguments?.getString("lobbyCode") ?: ""
                     val isCreator = backStackEntry.arguments?.getString("isCreator")
                         ?.toBoolean() ?: false
-                    val chessGameViewModel: ChessGameViewModel = hiltViewModel()
-                    val gameViewModel: GameViewModel = hiltViewModel()
                     LobbyWaitingScreen(
                         isCreator = isCreator,
                         lobbyCode = lobbyCode,
@@ -269,9 +270,9 @@ fun MainScaffoldScreen(
                             }
                         },
                         onGameStart = { lobbyId ->
-                            // TODO: Navigation zum Spiel-Screen
                             innerNavController.navigate("game/$lobbyId")
-                        }
+                        },
+                        chessGameViewModel = chessGameViewModel
                     )
                 }
 
@@ -306,7 +307,6 @@ fun MainScaffoldScreen(
                 // Spiel-Screen
                 composable("game/{lobbyId}") { backStackEntry ->
                     val lobbyId = backStackEntry.arguments?.getString("lobbyId") ?: ""
-                    val chessGameViewModel: ChessGameViewModel = hiltViewModel()
                     val gameStartResponse by chessGameViewModel.initialGameData.collectAsState()
                     val playerId = chessGameViewModel.webSocketService.playerId ?: ""
                     if (gameStartResponse != null) {
@@ -344,7 +344,7 @@ fun MainScaffoldScreen(
                         com.google.gson.Gson().fromJson(gameEndJson, app.chesspresso.model.lobby.GameEndResponse::class.java)
                     } catch (e: Exception) { null }
                     if (gameEndResponse != null) {
-                        GameOverScreen(gameEndResponse, playerId,  innerNavController)
+                        GameOverScreen(gameEndResponse, playerId, innerNavController, chessGameViewModel)
                     } else {
                         // Fehleranzeige, falls Deserialisierung fehlschlägt
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

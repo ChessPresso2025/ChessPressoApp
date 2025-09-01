@@ -42,9 +42,12 @@ class QuickMatchViewModel @Inject constructor(
         viewModelScope.launch {
             webSocketService.rematchResultEvent.collectLatest { result ->
                 if (result != null && result.lobbyId == _uiState.value.lobbyId) {
-                    _rematchDialogState.value =
-                        if (result.result == "accepted") RematchDialogState.Accepted
-                        else RematchDialogState.Declined
+                    if (result.result == "accepted" && result.newlobbyid != null) {
+                        _rematchDialogState.value = RematchDialogState.Accepted
+                        webSocketService.resetGameFlows()
+                        webSocketService.subscribeToLobby(result.newlobbyid)
+                    }
+                    else _rematchDialogState.value = RematchDialogState.Declined
                 }
             }
         }

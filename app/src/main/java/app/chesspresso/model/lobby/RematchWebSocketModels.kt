@@ -29,5 +29,6 @@ data class RematchResponse(
 data class RematchResult(
     val type: String = "rematch-result",
     val lobbyId: String,
+    val newlobbyid: String?,
     val result: String // "accepted" oder "declined"
 )

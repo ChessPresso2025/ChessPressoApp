@@ -1,7 +1,8 @@
 package app.chesspresso.model.lobby
 
-import kotlinx.serialization.Serializable
 import app.chesspresso.model.EndType
+import app.chesspresso.model.TeamColor
+import kotlinx.serialization.Serializable
 
 // Request Models
 data class QuickJoinRequest(
@@ -16,9 +17,11 @@ data class LeaveLobbyRequest(
     val lobbyId: String
 )
 
+@Serializable
 data class RemisMessage(
     val lobbyId: String,
-    val player: String,
+    val requester: TeamColor,
+    val responder: TeamColor? = null,
     val accept: Boolean
 )
 
