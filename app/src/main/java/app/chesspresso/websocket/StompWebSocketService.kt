@@ -729,6 +729,8 @@ class StompWebSocketService @Inject constructor(
             append(MESSAGE_END)
         }
         webSocket?.send(subscribeRemis)
+
+        Log.d("TAG", "Subscribed to game updates for lobby: $lobbyId")
     }
 
     fun unsubscribeFromGame() {
@@ -741,24 +743,21 @@ class StompWebSocketService @Inject constructor(
             }
             webSocket?.send(unsubscribeFrame)
         }
-        currentLobbyId?.let { lobbyId ->
-            val subscribeFrameMoves = buildString {
-                append("UNSUBSCRIBE\n")
-                append("id:sub-3\n")
-                append("\n")
-                append(MESSAGE_END)
-            }
-            webSocket?.send(subscribeFrameMoves)
+        val unsubscribeFrameSub3 = buildString {
+            append("UNSUBSCRIBE\n")
+            append("id:sub-3\n")
+            append("\n")
+            append(MESSAGE_END)
         }
-        currentLobbyId?.let { lobbyId ->
-            val subscribeFrameMoves = buildString {
-                append("UNSUBSCRIBE\n")
-                append("id:sub-4\n")
-                append("\n")
-                append(MESSAGE_END)
-            }
-            webSocket?.send(subscribeFrameMoves)
+        webSocket?.send(unsubscribeFrameSub3)
+
+        val unsubscribeFrameSub4 = buildString {
+            append("UNSUBSCRIBE\n")
+            append("id:sub-4\n")
+            append("\n")
+            append(MESSAGE_END)
         }
+        webSocket?.send(unsubscribeFrameSub4)
 
         val unsubscribePromotion = buildString {
             append("UNSUBSCRIBE\n")
@@ -777,6 +776,8 @@ class StompWebSocketService @Inject constructor(
         webSocket?.send(subscribeRemis)
 
         currentLobbyId = null
+
+        Log.d("TAG", "Unsubscribed from game updates")
     }
 
     private fun startServerStatusCheck() {
@@ -919,5 +920,22 @@ class StompWebSocketService @Inject constructor(
         }
         webSocket?.send(frame)
         Log.d(TAG, "Sent remis message: $messageJson")
+    }
+
+    fun sendLobbyCloseMessage(lobbyId: String) {
+        val playerId = _playerId ?: return
+        val message = app.chesspresso.model.lobby.LobbyCloseMessage(lobbyId, playerId)
+        val jsonMessage = gson.toJson(message)
+        val destination = "/app/lobby/close"
+        val stompMessage = "SEND\ndestination:$destination\ncontent-type:application/json\n\n$jsonMessage\u0000"
+        webSocket?.send(stompMessage)
+    }
+
+    fun resetGameFlows() {
+        _gameMoveUpdates.value = null
+        _gameStartedEvent.value = null
+        _possibleMoves.value = emptyList()
+        _promotionRequest.value = null
+        _gameEndEvent.value = null
     }
 }

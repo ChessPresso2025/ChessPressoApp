@@ -65,15 +65,12 @@ fun ChessGameScreen(
     val boardToDisplay = currentBoard.ifEmpty { gameStartResponse.board }
     val activePlayer = currentPlayer ?: TeamColor.WHITE
 
-    // Initialize game when component first loads
-    LaunchedEffect(gameStartResponse) {
-        viewModel.initializeGame(gameStartResponse)
-    }
 
     // Navigation zum GameOverScreen, wenn das Spiel beendet ist
     LaunchedEffect(gameEndEvent) {
         if (gameEndEvent != null) {
             onGameEnd(gameEndEvent!!, playerId)
+            viewModel.clearGameEndEvent()
         }
     }
 

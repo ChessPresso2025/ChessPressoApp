@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.concurrent.timer
 
 @HiltViewModel
 class ChessGameViewModel @Inject constructor(
@@ -262,6 +263,19 @@ class ChessGameViewModel @Inject constructor(
         webSocketService.sendEndGameMessage(gameEndMessage)
     }
 
+    fun closeLobby(lobbyId: String) {
+        webSocketService.sendLobbyCloseMessage(lobbyId)
+    }
+
+    fun clearGameEndEvent() {
+        _gameEndEvent.value = null
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        timerJob?.cancel()
+        webSocketService.unsubscribeFromGame()
+    }
     fun offerDraw(lobbyId: String, player: TeamColor) {
         val remisMessage = app.chesspresso.model.lobby.RemisMessage(
             lobbyId = lobbyId,
@@ -282,31 +296,5 @@ class ChessGameViewModel @Inject constructor(
         )
         webSocketService.sendRemisMessage(response)
         _pendingRemisRequest.value = null
-    }
-
-    fun resetGameState() {
-        timerJob?.cancel()
-        timeoutSent = false
-        lastActivePlayer = null
-        _currentGameState.value = null
-        _initialGameData.value = null
-        _currentBoard.value = emptyMap()
-        _currentPlayer.value = null
-        _whiteTime.value = 0
-        _blackTime.value = 0
-        _myColor.value = null
-        _possibleMoves.value = emptyList()
-        _capturedWhitePieces.value = emptyList()
-        _capturedBlackPieces.value = emptyList()
-        _promotionRequest.value = null
-        _gameEndEvent.value = null
-        _moveHistory.value = emptyList()
-        webSocketService.unsubscribeFromGame()
-    }
-
-    override fun onCleared() {
-        super.onCleared()
-        timerJob?.cancel()
-        webSocketService.unsubscribeFromGame()
     }
 }

@@ -61,6 +61,12 @@ class QuickMatchViewModel @Inject constructor(
     fun clearGameStart() {
         lobbyService.clearGameStart()
     }
+
+    fun reset() {
+        cancelSearch()
+        lobbyService.forceResetWaitingState()
+        _uiState.value = QuickMatchUiState()
+    }
 }
 
 data class QuickMatchUiState(

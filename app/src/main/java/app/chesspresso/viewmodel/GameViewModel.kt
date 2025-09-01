@@ -143,6 +143,10 @@ class GameViewModel @Inject constructor(
             historyErrorMessage = null
         )
     }
+
+    fun reset() {
+        _uiState.value = GameUiState()
+    }
 }
 
 data class GameUiState(
