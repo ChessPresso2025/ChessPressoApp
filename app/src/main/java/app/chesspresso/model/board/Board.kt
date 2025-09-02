@@ -195,7 +195,8 @@ class Board {
                         val highlight = fieldHighlights[field.name] ?: app.chesspresso.viewmodel.ChessGameViewModel.FieldHighlight.NONE
                         val backgroundColor = when (highlight) {
                             app.chesspresso.viewmodel.ChessGameViewModel.FieldHighlight.CHECKMATE_KING -> Color(colorResource(id = app.chesspresso.R.color.checkmate_king).value)
-                            app.chesspresso.viewmodel.ChessGameViewModel.FieldHighlight.CHECKMATE_ATTACKER -> Color(colorResource(id = app.chesspresso.R.color.checkmate_attacker).value)
+                            app.chesspresso.viewmodel.ChessGameViewModel.FieldHighlight.CHECKMATE_ATTACKER, 
+                            app.chesspresso.viewmodel.ChessGameViewModel.FieldHighlight.CHECK_KING -> Color(colorResource(id = app.chesspresso.R.color.checkmate_attacker).value)
                             else -> if (isLightSquare) Color(0xFFF0D9B5) else Color(0xFFB58863)
                         }
                         Box(

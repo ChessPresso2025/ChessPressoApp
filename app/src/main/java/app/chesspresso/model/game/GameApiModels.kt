@@ -50,7 +50,7 @@ data class GameMoveResponse(
     val board: Map<String, PieceInfo>,
     val isCheck: String,
     val move: MoveInfo,
-    val checkmate: List<String>? = null // NEU: Liste der Angreiferfelder bei Schachmatt
+    val checkMatePositions: List<String>? = null // NEU: Liste der Angreiferfelder bei Schachmatt
 )
 @Serializable
 data class MoveInfo(
