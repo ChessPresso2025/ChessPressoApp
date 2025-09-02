@@ -2,16 +2,21 @@ package app.chesspresso.screens.game
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
@@ -54,139 +59,146 @@ fun RematchDialog(
 }
 
 @Composable
-fun GameOverScreen(
-    gameEndResponse: GameEndResponse,
-    playerId: String,
-    navController: NavHostController,
-    viewModel: ChessGameViewModel
-) {
-    val lobbyId = gameEndResponse.lobbyId
-    val stompWebSocketService = viewModel.webSocketService
-
-    androidx.compose.runtime.LaunchedEffect(lobbyId) {
-        android.util.Log.d("GameOverScreen", "LaunchedEffect: subscribeToRematchOffer wird aufgerufen mit lobbyId=$lobbyId")
-        stompWebSocketService.subscribeToRematchOffer(lobbyId)
-    }
-    androidx.compose.runtime.DisposableEffect(lobbyId) {
-        onDispose {
-            android.util.Log.d("GameOverScreen", "DisposableEffect: unsubscribeFromRematchOffer wird aufgerufen mit lobbyId=$lobbyId")
-            stompWebSocketService.unsubscribeFromRematchOffer(lobbyId)
+fun RematchDialogsHandler(viewModel: ChessGameViewModel, gameEndResponse: GameEndResponse, navController: NavHostController?) {
+    val rematchDialogState = viewModel.rematchDialogState.collectAsStateWithLifecycle().value
+    when (rematchDialogState) {
+        is RematchDialogState.WaitingForResponse -> {
+            RematchDialog(
+                show = true,
+                onDismissRequest = { viewModel.clearRematchDialog() },
+                title = "Rematch angefragt",
+                text = "Warte auf Antwort des Gegners...",
+                confirmButtonText = "Abbrechen",
+                onConfirm = { viewModel.clearRematchDialog() }
+            )
         }
+        is RematchDialogState.OfferReceived -> {
+            RematchDialog(
+                show = true,
+                onDismissRequest = { viewModel.clearRematchDialog() },
+                title = "Rematch erhalten",
+                text = "Dein Gegner möchte ein Rematch. Annehmen?",
+                confirmButtonText = "Annehmen",
+                onConfirm = { viewModel.respondRematch(true) },
+                dismissButtonText = "Ablehnen",
+                onDismiss = { viewModel.respondRematch(false) }
+            )
+        }
+        is RematchDialogState.WaitingForResult -> {
+            RematchDialog(
+                show = true,
+                onDismissRequest = { viewModel.clearRematchDialog() },
+                title = "Antwort gesendet",
+                text = "Warte auf Bestätigung...",
+                confirmButtonText = "Schließen",
+                onConfirm = { viewModel.clearRematchDialog() }
+            )
+        }
+        is RematchDialogState.Accepted -> {
+            RematchDialog(
+                show = true,
+                onDismissRequest = { viewModel.clearRematchDialog() },
+                title = "Rematch angenommen",
+                text = "Das Rematch startet jetzt!",
+                confirmButtonText = "OK",
+                onConfirm = {
+                    viewModel.clearRematchDialog()
+                    val isPrivate = gameEndResponse.lobbyId.length <= 6
+                    if (isPrivate) {
+                        if(viewModel.rematchResult.value == null) {
+                            android.util.Log.e(
+                                "GameOverScreen",
+                                "rematchResult ist null, kann nicht navigieren"
+                            )
+                            return@RematchDialog
+                        }
+                        val isCreator = viewModel.myColor.value == TeamColor.WHITE
+                        navController!!.navigate("lobby_waiting/${viewModel.rematchResult.value!!.newlobbyid}/$isCreator") {
+                            popUpTo(NavRoutes.HOME) { inclusive = false }
+                        }
+                    } else {
+                        navController!!.navigate("game/${gameEndResponse.lobbyId}") {
+                            popUpTo(NavRoutes.HOME) { inclusive = false }
+                        }
+                    }
+                }
+            )
+        }
+        is RematchDialogState.Declined -> {
+            RematchDialog(
+                show = true,
+                onDismissRequest = { viewModel.clearRematchDialog() },
+                title = "Rematch abgelehnt",
+                text = "Der Gegner hat das Rematch abgelehnt.",
+                confirmButtonText = "OK",
+                onConfirm = {
+                    viewModel.clearRematchDialog()
+                    navController!!.navigate(NavRoutes.HOME) {
+                        popUpTo(0) { inclusive = true }
+                    }
+                }
+            )
+        }
+        else -> null
     }
+}
+
+@Composable
+fun GameOverResultInfo(
+    gameEndResponse: GameEndResponse,
+    playerId: String
+) {
     val ergebnisText = when {
         gameEndResponse.draw -> "Unentschieden"
-        playerId == gameEndResponse.winner -> "Gewonnen"
-        playerId == gameEndResponse.loser -> "Verloren"
+        playerId == gameEndResponse.winner -> "Sieg"
+        playerId == gameEndResponse.loser -> "Niederlage"
         else -> "Unbekannt"
     }
-    val rematchDialogState by viewModel.rematchDialogState.collectAsStateWithLifecycle()
-
     Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp),
-        horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Text("Spiel beendet", style = MaterialTheme.typography.headlineMedium)
-        Text("Lobby-ID: ${gameEndResponse.lobbyId}")
-        Text("Ergebnis: $ergebnisText")
-        Text("Endstellung:")
+        Text(
+            text = ergebnisText,
+            style = MaterialTheme.typography.displayMedium,
+            color = when (ergebnisText) {
+                "Sieg" -> Color(0xFF4CAF50)
+                "Niederlage" -> Color(0xFFF44336)
+                "Unentschieden" -> Color(0xFF9E9E9E)
+                else -> MaterialTheme.colorScheme.onSurface
+            },
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
+        Text(
+            text = if (playerId == gameEndResponse.winner) "Du hast gewonnen!" else if (playerId == gameEndResponse.loser) "Du hast verloren." else "",
+            style = MaterialTheme.typography.titleLarge,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+    }
+}
 
-        // Rematch-Dialoge
-        when (rematchDialogState) {
-            is RematchDialogState.WaitingForResponse -> {
-                RematchDialog(
-                    show = true,
-                    onDismissRequest = { viewModel.clearRematchDialog() },
-                    title = "Rematch angefragt",
-                    text = "Warte auf Antwort des Gegners...",
-                    confirmButtonText = "Abbrechen",
-                    onConfirm = { viewModel.clearRematchDialog() }
-                )
-            }
-            is RematchDialogState.OfferReceived -> {
-                RematchDialog(
-                    show = true,
-                    onDismissRequest = { viewModel.clearRematchDialog() },
-                    title = "Rematch erhalten",
-                    text = "Dein Gegner möchte ein Rematch. Annehmen?",
-                    confirmButtonText = "Annehmen",
-                    onConfirm = { viewModel.respondRematch(true) },
-                    dismissButtonText = "Ablehnen",
-                    onDismiss = { viewModel.respondRematch(false) }
-                )
-            }
-            is RematchDialogState.WaitingForResult -> {
-                RematchDialog(
-                    show = true,
-                    onDismissRequest = { viewModel.clearRematchDialog() },
-                    title = "Antwort gesendet",
-                    text = "Warte auf Bestätigung...",
-                    confirmButtonText = "Schließen",
-                    onConfirm = { viewModel.clearRematchDialog() }
-                )
-            }
-            is RematchDialogState.Accepted -> {
-                RematchDialog(
-                    show = true,
-                    onDismissRequest = { viewModel.clearRematchDialog() },
-                    title = "Rematch angenommen",
-                    text = "Das Rematch startet jetzt!",
-                    confirmButtonText = "OK",
-                    onConfirm = {
-                        viewModel.clearRematchDialog()
-                        val isPrivate = gameEndResponse.lobbyId.length <= 6
-                        if (isPrivate) {
-                            if(viewModel.rematchResult.value == null) {
-                                android.util.Log.e(
-                                    "GameOverScreen",
-                                    "rematchResult ist null, kann nicht navigieren"
-                                )
-                                return@RematchDialog
-                            }
-                            val isCreator = viewModel.myColor.value == TeamColor.WHITE
-                            navController.navigate("lobby_waiting/${viewModel.rematchResult.value!!.newlobbyid}/$isCreator") {
-                                popUpTo(NavRoutes.HOME) { inclusive = false }
-                            }
-                        } else {
-                            navController.navigate("game/${gameEndResponse.lobbyId}") {
-                                popUpTo(NavRoutes.HOME) { inclusive = false }
-                            }
-                        }
-                    }
-                )
-            }
-            is RematchDialogState.Declined -> {
-                RematchDialog(
-                    show = true,
-                    onDismissRequest = { viewModel.clearRematchDialog() },
-                    title = "Rematch abgelehnt",
-                    text = "Der Gegner hat das Rematch abgelehnt. Du wirst zum Startbildschirm zurückgeleitet.",
-                    confirmButtonText = "OK",
-                    onConfirm = {
-                        viewModel.clearRematchDialog()
-                        navController.navigate(NavRoutes.HOME) {
-                            popUpTo(0) { inclusive = true }
-                        }
-                    }
-                )
-            }
-            else -> null
+@Composable
+fun GameOverActions(
+    gameEndResponse: GameEndResponse,
+    viewModel: ChessGameViewModel,
+    navController: NavHostController? = null
+) {
+    Row(
+        modifier = Modifier.fillMaxSize(),
+        horizontalArrangement = Arrangement.Center,
+    ) {
+        Button(onClick = { viewModel.requestRematch() }) {
+            Text("Rematch")
         }
-
+        Spacer(modifier = Modifier.width(16.dp))
         Button(onClick = {
             viewModel.closeLobby(gameEndResponse.lobbyId)
-            navController.navigate(NavRoutes.HOME) {
+            navController?.navigate(NavRoutes.HOME) {
                 popUpTo(0) { inclusive = true }
             }
         }) {
             Text("Zurück")
-        }
-        Button(onClick = {
-            viewModel.requestRematch()
-        }) {
-            Text("Rematch")
         }
     }
 }

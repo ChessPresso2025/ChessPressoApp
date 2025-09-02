@@ -83,7 +83,8 @@ class ChessGameViewModel @Inject constructor(
     enum class FieldHighlight {
         NONE,
         CHECKMATE_KING,
-        CHECKMATE_ATTACKER
+        CHECKMATE_ATTACKER,
+        CHECK_KING
     }
 
     private val _fieldHighlights = MutableStateFlow<Map<String, FieldHighlight>>(emptyMap())
@@ -138,24 +139,20 @@ class ChessGameViewModel @Inject constructor(
                     // Zug zur History hinzufügen
                     _moveHistory.value = _moveHistory.value + response
 
-                    // --- Schachmatt-Markierungen setzen ---
                     val highlights = mutableMapOf<String, FieldHighlight>()
-                    val checkmateFields = response.checkmate
-                    if (!checkmateFields.isNullOrEmpty()) {
-                        // König des aktiven Teams suchen
-                        val kingField = newBoard.entries.find { (_, piece) ->
-                            piece.type == app.chesspresso.model.PieceType.KING && piece.color == response.nextPlayer
-                        }?.key
-                        if (kingField != null) {
-                            highlights[kingField] = FieldHighlight.CHECKMATE_KING
-                        }
-                        // Angreiferfelder markieren
-                        checkmateFields.forEach { field ->
+                    val checkmateFields = response.checkMatePositions
+                    val kingField = response.isCheck
+                    if (checkmateFields != null && checkmateFields.isNotEmpty() && kingField.isNotEmpty()) {
+                        // Schachmatt: König dunkelrot, Angreifer hellrot
+                        highlights[kingField] = FieldHighlight.CHECKMATE_KING
+                        checkmateFields.forEach { field: String ->
                             highlights[field] = FieldHighlight.CHECKMATE_ATTACKER
                         }
+                    } else if(kingField.isNotEmpty()){
+                        // Schach: König hellrot
+                        highlights[kingField] = FieldHighlight.CHECK_KING
                     }
                     _fieldHighlights.value = highlights
-                    // --- Ende Schachmatt-Markierungen ---
                 }
             }
         }
@@ -167,6 +164,7 @@ class ChessGameViewModel @Inject constructor(
         viewModelScope.launch {
             webSocketService.gameEndEvent.collect { event ->
                 _gameEndEvent.value = event
+                stopTimer()
             }
         }
         viewModelScope.launch {
@@ -274,6 +272,11 @@ class ChessGameViewModel @Inject constructor(
         }
     }
 
+    private fun stopTimer() {
+        timerJob?.cancel()
+        timerJob = null
+    }
+
     private fun sendTimeoutEndMessage(teamColor: TeamColor) {
         val lobbyId = _initialGameData.value?.lobbyId ?: return
         val gameEndMessage = GameEndMessage(
@@ -319,6 +322,8 @@ class ChessGameViewModel @Inject constructor(
 
     fun closeLobby(lobbyId: String) {
         webSocketService.sendLobbyCloseMessage(lobbyId)
+        webSocketService.resetGameFlows()
+        webSocketService.unsubscribeFromGame()
     }
 
     fun clearGameEndEvent() {

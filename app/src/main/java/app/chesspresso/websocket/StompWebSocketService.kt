@@ -231,47 +231,6 @@ class StompWebSocketService @Inject constructor(
         }
     }
 
-    fun subscribeToRematchOffer(lobbyId: String) {
-        val subscribeRematchOffer = buildString {
-            append("SUBSCRIBE\n")
-            append("id:sub-rematch-offer-$lobbyId\n")
-            append("destination:/topic/lobby/$lobbyId/rematch-offer\n")
-            append("\n")
-            append(MESSAGE_END)
-        }
-        webSocket?.send(subscribeRematchOffer)
-
-        val subscribeRematchResult = buildString {
-            append("SUBSCRIBE\n")
-            append("id:sub-rematch-result-$lobbyId\n")
-            append("destination:/topic/lobby/$lobbyId/rematch-result\n")
-            append("\n")
-            append(MESSAGE_END)
-        }
-        webSocket?.send(subscribeRematchResult)
-
-        Log.d(TAG, "Rematch subscriptions sent for lobbyId=$lobbyId")
-    }
-
-    fun unsubscribeFromRematchOffer(lobbyId: String) {
-        val unsubscribeRematchOffer = buildString {
-            append("UNSUBSCRIBE\n")
-            append("id:sub-rematch-offer-$lobbyId\n")
-            append("\n")
-            append(MESSAGE_END)
-        }
-        webSocket?.send(unsubscribeRematchOffer)
-
-        val subscribeRematchResult = buildString {
-            append("UNSUBSCRIBE\n")
-            append("id:sub-rematch-result-$lobbyId\n")
-            append("\n")
-            append(MESSAGE_END)
-        }
-        webSocket?.send(subscribeRematchResult)
-        Log.d(TAG, "UNSUBSCRIBE-Frames for rematch sent for lobbyId=$lobbyId")
-    }
-
     private fun startHeartbeat() {
         heartbeatJob = CoroutineScope(Dispatchers.IO).launch {
             while (isActive && _connectionState.value == ConnectionState.CONNECTED) {
@@ -466,6 +425,12 @@ class StompWebSocketService @Inject constructor(
                     val remisMessage = this.json.decodeFromString(app.chesspresso.model.lobby.RemisMessage.serializer(), body)
                     _remisRequest.value = remisMessage
                     Log.d(TAG, "Received RemisMessage: $remisMessage")
+                }
+
+                "LOBBY_REMOVED" -> {
+                    Log.i(TAG, "LOBBY_REMOVED empfangen, unsubscribing von Lobby und Game")
+                    unsubscribeFromLobby()
+                    unsubscribeFromGame()
                 }
 
                 else -> {
@@ -769,7 +734,27 @@ class StompWebSocketService @Inject constructor(
         _playerId?.let { username ->
             subscribeToTopic("/topic/lobby/remis/$username", "remis-$username")
         }
+
+        val subscribeRematchOffer = buildString {
+            append("SUBSCRIBE\n")
+            append("id:sub-rematch-offer-$lobbyId\n")
+            append("destination:/topic/lobby/$lobbyId/rematch-offer\n")
+            append("\n")
+            append(MESSAGE_END)
+        }
+        webSocket?.send(subscribeRematchOffer)
+
+        val subscribeRematchResult = buildString {
+            append("SUBSCRIBE\n")
+            append("id:sub-rematch-result-$lobbyId\n")
+            append("destination:/topic/lobby/$lobbyId/rematch-result\n")
+            append("\n")
+            append(MESSAGE_END)
+        }
+        webSocket?.send(subscribeRematchResult)
+
         Log.d(TAG, "Subscribed to game updates for lobby: $lobbyId und Remis für User: $_playerId")
+
     }
 
     fun unsubscribeFromGame() {
@@ -815,6 +800,26 @@ class StompWebSocketService @Inject constructor(
                 append(MESSAGE_END)
             }
             webSocket?.send(unsubscribeRemis)
+        }
+
+        currentLobbyId?.let { lobbyId ->
+            val unsubscribeRematchOffer = buildString {
+                append("UNSUBSCRIBE\n")
+                append("id:sub-rematch-offer-$lobbyId\n")
+                append("\n")
+                append(MESSAGE_END)
+            }
+            webSocket?.send(unsubscribeRematchOffer)
+        }
+
+        currentLobbyId?.let { lobbyId ->
+            val subscribeRematchResult = buildString {
+                append("UNSUBSCRIBE\n")
+                append("id:sub-rematch-result-$lobbyId\n")
+                append("\n")
+                append(MESSAGE_END)
+            }
+            webSocket?.send(subscribeRematchResult)
         }
 
         currentLobbyId = null

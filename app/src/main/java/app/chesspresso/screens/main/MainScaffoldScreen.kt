@@ -66,12 +66,12 @@ import app.chesspresso.model.PieceType
 import app.chesspresso.model.TeamColor
 import app.chesspresso.model.game.GameMoveResponse
 import app.chesspresso.screens.game.ChessGameScreen
-import app.chesspresso.screens.game.GameOverScreen
 import app.chesspresso.screens.lobby.LobbyWaitingScreen
 import app.chesspresso.screens.lobby.PrivateLobbyScreen
 import app.chesspresso.screens.lobby.QuickMatchScreen
 import app.chesspresso.viewmodel.ChessGameViewModel
 import app.chesspresso.viewmodel.GameViewModel
+import app.chesspresso.viewmodel.QuickMatchViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -231,7 +231,7 @@ fun MainScaffoldScreen(
 
                 // Neue Lobby-Screens
                 composable(NavRoutes.QUICK_MATCH) {
-                    val quickMatchViewModel: app.chesspresso.viewmodel.QuickMatchViewModel = hiltViewModel()
+                    val quickMatchViewModel: QuickMatchViewModel = hiltViewModel()
                     // State zurücksetzen, damit keine alten Werte übernommen werden
                     LaunchedEffect(Unit) { quickMatchViewModel.reset() }
                     QuickMatchScreen(
@@ -314,41 +314,12 @@ fun MainScaffoldScreen(
                             gameStartResponse = gameStartResponse!!,
                             viewModel = chessGameViewModel,
                             playerId = playerId,
-                            onGameEnd = { gameEndResponse, playerId ->
-                                scope.launch {
-                                    drawerState.close()
-                                    gameViewModel.reset()
-                                    val gameEndJson = com.google.gson.Gson().toJson(gameEndResponse)
-                                    val lobbyId = gameEndResponse.lobbyId
-                                    val lobbyType = if (lobbyId.length <= 6) "PRIVATE" else "QUICK"
-                                    innerNavController.navigate("gameOverScreen/${gameEndJson}/$playerId/$lobbyType") {
-                                        popUpTo("chessGameScreen") { inclusive = true }
-                                    }
-                                }
-                            }
+                            navController = innerNavController,
+                            onGameEnd = { scope.launch { drawerState.close() } }
                         )
                     } else {
-                        // Ladeanzeige oder Platzhalter, bis die Spieldaten geladen sind
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             CircularProgressIndicator()
-                        }
-                    }
-                }
-
-                // GameOverScreen mit Übergabe des GameEndResponse als JSON-String, playerId und lobbyType
-                composable("gameOverScreen/{gameEndJson}/{playerId}/{lobbyType}") { backStackEntry ->
-                    val gameEndJson = backStackEntry.arguments?.getString("gameEndJson") ?: ""
-                    val playerId = backStackEntry.arguments?.getString("playerId") ?: ""
-                    val lobbyType = backStackEntry.arguments?.getString("lobbyType") ?: "UNKNOWN"
-                    val gameEndResponse = try {
-                        com.google.gson.Gson().fromJson(gameEndJson, app.chesspresso.model.lobby.GameEndResponse::class.java)
-                    } catch (e: Exception) { null }
-                    if (gameEndResponse != null) {
-                        GameOverScreen(gameEndResponse, playerId, innerNavController, chessGameViewModel)
-                    } else {
-                        // Fehleranzeige, falls Deserialisierung fehlschlägt
-                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            Text("Fehler beim Laden des Spielergebnisses.")
                         }
                     }
                 }
