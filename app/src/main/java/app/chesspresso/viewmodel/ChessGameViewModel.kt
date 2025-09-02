@@ -1,5 +1,6 @@
 package app.chesspresso.viewmodel
 
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.chesspresso.model.EndType
@@ -37,8 +38,8 @@ class ChessGameViewModel @Inject constructor(
     val currentBoard: StateFlow<Map<String, app.chesspresso.model.game.PieceInfo>> =
         _currentBoard.asStateFlow()
 
-    private val _currentPlayer = MutableStateFlow<app.chesspresso.model.TeamColor?>(null)
-    val currentPlayer: StateFlow<app.chesspresso.model.TeamColor?> = _currentPlayer.asStateFlow()
+    private val _currentPlayer = MutableStateFlow<TeamColor?>(null)
+    val currentPlayer: StateFlow<TeamColor?> = _currentPlayer.asStateFlow()
 
     private val _whiteTime = MutableStateFlow(0)
     val whiteTime: StateFlow<Int> = _whiteTime.asStateFlow()
@@ -72,7 +73,7 @@ class ChessGameViewModel @Inject constructor(
 
     private var timerJob: Job? = null
     private var lastActivePlayer: TeamColor? = null
-    private var timeoutSent = false // Neu: Flag, um Mehrfachsendung zu verhindern
+    private var timeoutSent = false
 
     private val _rematchDialogState = MutableStateFlow<RematchDialogState>(RematchDialogState.None)
     val rematchDialogState: StateFlow<RematchDialogState> = _rematchDialogState.asStateFlow()
@@ -94,9 +95,11 @@ class ChessGameViewModel @Inject constructor(
         MutableStateFlow<app.chesspresso.model.lobby.RemisMessage?>(null)
     val pendingRemisRequest: StateFlow<app.chesspresso.model.lobby.RemisMessage?> =
         _pendingRemisRequest.asStateFlow()
+
     init {
         viewModelScope.launch {
             webSocketService.gameStartedEvent.collect { event ->
+                resetViewModel()
                 event?.let { initializeGame(it) }
             }
         }
@@ -323,7 +326,9 @@ class ChessGameViewModel @Inject constructor(
     fun closeLobby(lobbyId: String) {
         webSocketService.sendLobbyCloseMessage(lobbyId)
         webSocketService.resetGameFlows()
+        webSocketService.unsubscribeFromLobby()
         webSocketService.unsubscribeFromGame()
+        resetViewModel()
     }
 
     fun clearGameEndEvent() {
@@ -373,5 +378,31 @@ class ChessGameViewModel @Inject constructor(
         )
         webSocketService.sendRemisMessage(response)
         _pendingRemisRequest.value = null
+    }
+
+    fun resetViewModel(){
+        _currentGameState.value = null
+        _initialGameData.value = null
+        _currentBoard.value = emptyMap()
+        _currentPlayer.value = null
+        _whiteTime.value = 0
+        _blackTime.value = 0
+        _myColor.value = null
+        _possibleMoves.value = emptyList()
+        _capturedWhitePieces.value = emptyList()
+        _capturedBlackPieces.value = emptyList()
+        _promotionRequest.value = null
+        _gameEndEvent.value = null
+        _moveHistory.value = emptyList()
+        timerJob?.cancel()
+        timerJob = null
+        lastActivePlayer = null
+        timeoutSent = false
+        _rematchDialogState.value = RematchDialogState.None
+        _rematchResult.value = null
+        _fieldHighlights.value = emptyMap()
+        _pendingRemisRequest.value = null
+
+        Log.d("ChessGameViewModel", "ViewModel wurde zurückgesetzt.")
     }
 }
