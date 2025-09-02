@@ -164,6 +164,7 @@ class ChessGameViewModel @Inject constructor(
         viewModelScope.launch {
             webSocketService.gameEndEvent.collect { event ->
                 _gameEndEvent.value = event
+                stopTimer()
             }
         }
         viewModelScope.launch {
@@ -271,6 +272,11 @@ class ChessGameViewModel @Inject constructor(
         }
     }
 
+    private fun stopTimer() {
+        timerJob?.cancel()
+        timerJob = null
+    }
+
     private fun sendTimeoutEndMessage(teamColor: TeamColor) {
         val lobbyId = _initialGameData.value?.lobbyId ?: return
         val gameEndMessage = GameEndMessage(
@@ -316,6 +322,8 @@ class ChessGameViewModel @Inject constructor(
 
     fun closeLobby(lobbyId: String) {
         webSocketService.sendLobbyCloseMessage(lobbyId)
+        webSocketService.resetGameFlows()
+        webSocketService.unsubscribeFromGame()
     }
 
     fun clearGameEndEvent() {

@@ -1,15 +1,11 @@
 package app.chesspresso.screens.game
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.AlertDialog
@@ -18,7 +14,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -60,38 +55,6 @@ fun RematchDialog(
                 }
             } else null
         )
-    }
-}
-
-@Composable
-fun GameOverScreen(
-    gameEndResponse: GameEndResponse,
-    playerId: String,
-    viewModel: ChessGameViewModel,
-    modifier: Modifier = Modifier,
-    navController : NavHostController? = null
-) {
-
-    Box(
-        modifier = modifier
-            .fillMaxSize(), // Kein Hintergrund mehr, komplett transparent
-        contentAlignment = Alignment.Center
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 24.dp, vertical = 32.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // Ergebnisanzeige
-            GameOverResultInfo(gameEndResponse, playerId)
-
-            Spacer(modifier = Modifier.weight(1f))
-            // Action-Buttons
-            GameOverActions(gameEndResponse, viewModel, navController)
-        }
-        // Rematch-Dialoge als AlertDialog über dem Overlay
-        RematchDialogsHandler(viewModel, gameEndResponse, navController)
     }
 }
 
@@ -207,7 +170,7 @@ fun GameOverResultInfo(
             modifier = Modifier.padding(bottom = 8.dp)
         )
         Text(
-            text = if (playerId == gameEndResponse.winner) "Du hast gewonnen!" else if (playerId == gameEndResponse.loser) "Du hast verloren." else "Unentschieden.",
+            text = if (playerId == gameEndResponse.winner) "Du hast gewonnen!" else if (playerId == gameEndResponse.loser) "Du hast verloren." else "",
             style = MaterialTheme.typography.titleLarge,
             color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(bottom = 16.dp)
