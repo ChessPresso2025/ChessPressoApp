@@ -37,11 +37,12 @@ class Field(
         onFieldClick: () -> Unit = {}
     ) {
         val backgroundColor = when {
-            isCheckmate || isCheck -> Color.Red.copy(alpha = if (isCheckmate) 0.7f else 0.4f)
-            isFieldSelected -> Color.Yellow.copy(alpha = 0.5f)
-            isValidMove -> Color.Cyan.copy(alpha = 0.3f) // NEU: optische Hervorhebung für mögliche Züge
-            isLightSquare -> Color(0xFFEEEED2)
-            else -> Color(0xFF769656)
+            isCheckmate -> app.chesspresso.ui.theme.CoffeeRedMate.copy(alpha = 0.7f)
+            isCheck -> app.chesspresso.ui.theme.CoffeeRedCheck.copy(alpha = 0.7f)
+            isFieldSelected -> app.chesspresso.ui.theme.CoffeeOrange.copy(alpha = 0.35f)
+            isValidMove -> app.chesspresso.ui.theme.CoffeeGreen.copy(alpha = 0.3f)
+            isLightSquare -> app.chesspresso.ui.theme.CoffeeCremeMid
+            else -> app.chesspresso.ui.theme.CoffeeBrownLight
         }
 
         Box(

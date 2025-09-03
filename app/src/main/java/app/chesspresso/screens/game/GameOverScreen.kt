@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -23,6 +22,8 @@ import androidx.navigation.NavHostController
 import app.chesspresso.model.TeamColor
 import app.chesspresso.model.lobby.GameEndResponse
 import app.chesspresso.screens.main.NavRoutes
+import app.chesspresso.ui.theme.CoffeeButton
+import app.chesspresso.ui.theme.CoffeeText
 import app.chesspresso.viewmodel.ChessGameViewModel
 import app.chesspresso.viewmodel.RematchDialogState
 
@@ -40,17 +41,17 @@ fun RematchDialog(
     if (show) {
         AlertDialog(
             onDismissRequest = onDismissRequest,
-            title = { Text(title) },
-            text = { Text(text) },
+            title = { CoffeeText(title) },
+            text = { CoffeeText(text) },
             confirmButton = {
                 TextButton(onClick = onConfirm) {
-                    Text(confirmButtonText)
+                    CoffeeText(confirmButtonText)
                 }
             },
             dismissButton = if (dismissButtonText != null && onDismiss != null) {
                 {
                     TextButton(onClick = onDismiss) {
-                        Text(dismissButtonText)
+                        CoffeeText(dismissButtonText)
                     }
                 }
             } else null
@@ -162,9 +163,8 @@ fun GameOverResultInfo(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.fillMaxWidth()
     ) {
-        Text(
+        CoffeeText(
             text = ergebnisText,
-            style = MaterialTheme.typography.displayMedium,
             color = when (ergebnisText) {
                 "Sieg" -> Color(0xFF4CAF50)
                 "Niederlage" -> Color(0xFFF44336)
@@ -173,10 +173,8 @@ fun GameOverResultInfo(
             },
             modifier = Modifier.padding(bottom = 8.dp)
         )
-        Text(
+        CoffeeText(
             text = if (playerId == gameEndResponse.winner) "Du hast gewonnen!" else if (playerId == gameEndResponse.loser) "Du hast verloren." else "",
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(bottom = 16.dp)
         )
     }
@@ -192,17 +190,23 @@ fun GameOverActions(
         modifier = Modifier.fillMaxSize(),
         horizontalArrangement = Arrangement.Center,
     ) {
-        Button(onClick = { viewModel.requestRematch() }) {
-            Text("Rematch")
-        }
-        Spacer(modifier = Modifier.width(16.dp))
-        Button(onClick = {
-            viewModel.closeLobby(gameEndResponse.lobbyId)
-            navController?.navigate(NavRoutes.HOME) {
-                popUpTo(0) { inclusive = true }
+        CoffeeButton(
+            onClick = { viewModel.requestRematch() },
+            content = {
+                Text("Rematch")
             }
-        }) {
-            Text("Zurück")
-        }
+        )
+        Spacer(modifier = Modifier.width(16.dp))
+        CoffeeButton(
+            onClick = {
+                viewModel.closeLobby(gameEndResponse.lobbyId)
+                navController?.navigate(NavRoutes.HOME) {
+                    popUpTo(0) { inclusive = true }
+                }
+            },
+            content = {
+                Text("Zurück zur Lobby")
+            }
+        )
     }
 }

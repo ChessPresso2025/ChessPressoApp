@@ -98,24 +98,23 @@ fun MainScaffoldScreen(
     val isGameScreen = selectedRoute.startsWith("game/")
     val chessGameViewModel: ChessGameViewModel = hiltViewModel()
 
-    ModalNavigationDrawer(
-        drawerState = drawerState,
-        scrimColor = MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f), // Optional: Abdunklung beim Öffnen
-        drawerContent = {
-            if (isGameScreen) {
-
+    if (isGameScreen) {
+        ModalNavigationDrawer(
+            drawerState = drawerState,
+            scrimColor = MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f),
+            drawerContent = {
                 val currentGameState by chessGameViewModel.currentGameState.collectAsState()
                 val myColor by chessGameViewModel.myColor.collectAsState()
                 val initialGameData by chessGameViewModel.initialGameData.collectAsState()
                 val moveHistory by chessGameViewModel.moveHistory.collectAsState()
                 val lobbyId = initialGameData?.lobbyId
                 ModalDrawerSheet(
-                    modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                    modifier = Modifier.background(app.chesspresso.ui.theme.CoffeeCremeLight)
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(MaterialTheme.colorScheme.surface)
+                            .background(app.chesspresso.ui.theme.CoffeeCremeLight)
                             .padding(16.dp)
                     ) {
                         Spacer(modifier = Modifier.height(32.dp))
@@ -135,23 +134,195 @@ fun MainScaffoldScreen(
                         )
                     }
                 }
-            } else {
-                ModalDrawerSheet(
-                    modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+            }
+        ) {
+            Scaffold(
+                topBar = {
+                    TopAppBar(
+                        navigationIcon = {
+                            when {
+                                isGameScreen -> {
+                                    IconButton(onClick = { scope.launch { drawerState.open() } }) {
+                                        Icon(
+                                            imageVector = Icons.Default.Menu,
+                                            contentDescription = "Menü"
+                                        )
+                                    }
+                                }
+                                isLobbyScreen -> {
+                                    IconButton(onClick = { innerNavController.navigateUp() }) {
+                                        Icon(
+                                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                            contentDescription = "Zurück"
+                                        )
+                                    }
+                                }
+                            }
+                        },
+                        title = {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Image(
+                                    painter = painterResource(id = R.drawable.watermark_chess),
+                                    contentDescription = "App-Logo",
+                                    modifier = Modifier
+                                        .size(32.dp)
+                                        .padding(end = 8.dp),
+                                    contentScale = ContentScale.Fit
+                                )
+                                Text("ChessPresso")
+                            }
+                        }
+                    )
+                },
+                bottomBar = {
+                    if (!isGameScreen) {
+                        NavigationBar(
+                            containerColor = MaterialTheme.colorScheme.surface,
+                            contentColor = MaterialTheme.colorScheme.onSurface
+                        ) {
+                            NavigationItem.entries.forEach { item ->
+                                NavigationBarItem(
+                                    icon = { Icon(item.icon, contentDescription = item.label) },
+                                    label = { Text(item.label) },
+                                    selected = item.route == selectedRoute,
+                                    onClick = {
+                                        if (selectedRoute != item.route) {
+                                            if (item.route == NavRoutes.STATS) {
+                                                innerNavController.navigate(NavRoutes.STATS) {
+                                                    popUpTo("home") { inclusive = false }
+                                                    launchSingleTop = true
+                                                }
+                                            } else {
+                                                innerNavController.navigate(item.route) {
+                                                    popUpTo("home") { inclusive = false }
+                                                    launchSingleTop = true
+                                                }
+                                            }
+                                        }
+                                    },
+                                    colors = androidx.compose.material3.NavigationBarItemDefaults.colors(
+                                        selectedIconColor = MaterialTheme.colorScheme.primary,
+                                        unselectedIconColor = MaterialTheme.colorScheme.onSurface,
+                                        selectedTextColor = MaterialTheme.colorScheme.primary,
+                                        unselectedTextColor = MaterialTheme.colorScheme.onSurface,
+                                        indicatorColor = MaterialTheme.colorScheme.surface
+                                    )
+                                )
+                            }
+                        }
+                    }
+                }
+            ) { padding ->
+                NavHost(
+                    navController = innerNavController,
+                    startDestination = NavRoutes.HOME,
+                    modifier = Modifier.padding(padding)
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(MaterialTheme.colorScheme.surface)
-                            .padding(16.dp)
-                    ) {
-                        Spacer(modifier = Modifier.height(32.dp))
-                        Text("Menü", modifier = Modifier)
+                    composable(NavRoutes.HOME) {
+                        HomeScreen(
+                            onPrivateGameClick = { innerNavController.navigate(NavRoutes.PRIVATE_LOBBY) },
+                            onPublicGameClick = { innerNavController.navigate(NavRoutes.QUICK_MATCH) }
+                        )
+                    }
+
+                    // Neue Lobby-Screens
+                    composable(NavRoutes.QUICK_MATCH) {
+                        val quickMatchViewModel: QuickMatchViewModel = hiltViewModel()
+                        // State zurücksetzen, damit keine alten Werte übernommen werden
+                        LaunchedEffect(Unit) { quickMatchViewModel.reset() }
+                        QuickMatchScreen(
+                            onGameStart = { lobbyId ->
+                                // TODO: Navigation zum Spiel-Screen
+                                innerNavController.navigate("game/$lobbyId")
+                            },
+                            viewModel = quickMatchViewModel
+                        )
+                    }
+
+                    composable(NavRoutes.PRIVATE_LOBBY) {
+                        PrivateLobbyScreen(
+                            onLobbyCreated = { lobbyCode ->
+                                innerNavController.navigate("lobby_waiting/$lobbyCode/true")
+                            },
+                            onLobbyJoined = { lobbyCode ->
+                                innerNavController.navigate("lobby_waiting/$lobbyCode/false")
+                            }
+                        )
+                    }
+
+                    composable("lobby_waiting/{lobbyCode}/{isCreator}") { backStackEntry ->
+                        val lobbyCode = backStackEntry.arguments?.getString("lobbyCode") ?: ""
+                        val isCreator = backStackEntry.arguments?.getString("isCreator")
+                            ?.toBoolean() ?: false
+                        LobbyWaitingScreen(
+                            isCreator = isCreator,
+                            lobbyCode = lobbyCode,
+                            onBackClick = {
+                                gameViewModel.reset()
+                                // Explizit zum Home-Screen navigieren und alles andere löschen
+                                innerNavController.navigate(NavRoutes.HOME) {
+                                    popUpTo(NavRoutes.HOME) { inclusive = false }
+                                    launchSingleTop = true
+                                }
+                            },
+                            onGameStart = { lobbyId ->
+                                innerNavController.navigate("game/$lobbyId")
+                            },
+                            chessGameViewModel = chessGameViewModel
+                        )
+                    }
+
+                    // Bestehende Screens
+                    composable(NavRoutes.STATS) { backStackEntry ->
+                        StatsScreen(navController = innerNavController)
+                    }
+                    composable("game_history") { backStackEntry ->
+                        GameHistoryScreen(navController = innerNavController, gameViewModel = gameViewModel)
+                    }
+                    composable("game_detail/{gameId}") { backStackEntry ->
+                        val gameId = backStackEntry.arguments?.getString("gameId") ?: ""
+                        GameDetailScreen(navController = innerNavController, gameId = gameId, gameViewModel = gameViewModel)
+                    }
+                    composable(NavRoutes.PROFILE) {
+                        ProfileScreen(
+                            authViewModel = authViewModel,
+                            onLogout = {
+                                authViewModel.logout()
+                                outerNavController.navigate("welcome") {
+                                    popUpTo(0) // Löscht den Backstack
+                                }
+                            },
+                            outerNavController = outerNavController
+                        )
+                    }
+                    composable(NavRoutes.SETTINGS) {
+                        SettingsScreen()
+                    }
+
+
+                    // Spiel-Screen
+                    composable("game/{lobbyId}") { backStackEntry ->
+                        val lobbyId = backStackEntry.arguments?.getString("lobbyId") ?: ""
+                        val gameStartResponse by chessGameViewModel.initialGameData.collectAsState()
+                        val playerId = chessGameViewModel.webSocketService.playerId ?: ""
+                        if (gameStartResponse != null) {
+                            ChessGameScreen(
+                                gameStartResponse = gameStartResponse!!,
+                                viewModel = chessGameViewModel,
+                                playerId = playerId,
+                                navController = innerNavController,
+                                onGameEnd = { scope.launch { drawerState.close() } }
+                            )
+                        } else {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                CircularProgressIndicator()
+                            }
+                        }
                     }
                 }
             }
         }
-    ) {
+    } else {
         Scaffold(
             topBar = {
                 TopAppBar(
@@ -191,28 +362,40 @@ fun MainScaffoldScreen(
                 )
             },
             bottomBar = {
-                NavigationBar {
-                    NavigationItem.entries.forEach { item ->
-                        NavigationBarItem(
-                            icon = { Icon(item.icon, contentDescription = item.label) },
-                            label = { Text(item.label) },
-                            selected = item.route == selectedRoute,
-                            onClick = {
-                                if (selectedRoute != item.route) {
-                                    if (item.route == NavRoutes.STATS) {
-                                        innerNavController.navigate(NavRoutes.STATS) {
-                                            popUpTo("home") { inclusive = false }
-                                            launchSingleTop = true
-                                        }
-                                    } else {
-                                        innerNavController.navigate(item.route) {
-                                            popUpTo("home") { inclusive = false }
-                                            launchSingleTop = true
+                if (!isGameScreen) {
+                    NavigationBar(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        contentColor = MaterialTheme.colorScheme.onSurface
+                    ) {
+                        NavigationItem.entries.forEach { item ->
+                            NavigationBarItem(
+                                icon = { Icon(item.icon, contentDescription = item.label) },
+                                label = { Text(item.label) },
+                                selected = item.route == selectedRoute,
+                                onClick = {
+                                    if (selectedRoute != item.route) {
+                                        if (item.route == NavRoutes.STATS) {
+                                            innerNavController.navigate(NavRoutes.STATS) {
+                                                popUpTo("home") { inclusive = false }
+                                                launchSingleTop = true
+                                            }
+                                        } else {
+                                            innerNavController.navigate(item.route) {
+                                                popUpTo("home") { inclusive = false }
+                                                launchSingleTop = true
+                                            }
                                         }
                                     }
-                                }
-                            }
-                        )
+                                },
+                                colors = androidx.compose.material3.NavigationBarItemDefaults.colors(
+                                    selectedIconColor = MaterialTheme.colorScheme.primary,
+                                    unselectedIconColor = MaterialTheme.colorScheme.onSurface,
+                                    selectedTextColor = MaterialTheme.colorScheme.primary,
+                                    unselectedTextColor = MaterialTheme.colorScheme.onSurface,
+                                    indicatorColor = MaterialTheme.colorScheme.surface
+                                )
+                            )
+                        }
                     }
                 }
             }
@@ -382,10 +565,10 @@ fun GameDrawerContent(
         )
 
         // Anzeige der getätigten Züge
-        Text("Getätigte Züge:", style = MaterialTheme.typography.titleMedium)
+        Text("Getätigte Züge:", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
         Spacer(modifier = Modifier.height(8.dp))
         if (moves.isEmpty()) {
-            Text("Noch keine Züge.", style = MaterialTheme.typography.bodySmall)
+            Text("Noch keine Züge.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface)
         } else {
             LazyColumn(
                 modifier = Modifier.weight(1f),
@@ -394,9 +577,14 @@ fun GameDrawerContent(
                 this@LazyColumn.itemsIndexed(moves) { index: Int, move: GameMoveResponse ->
                     val color = getMoveColor(index)
                     val pieceUnicode = getPieceUnicode(move.move.piece, color)
-                    val pieceColor = if (color == TeamColor.WHITE) MaterialTheme.colorScheme.onSurface else Color.Black
+                    val pieceColor = if (color == TeamColor.WHITE) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
                     Card(
-                        modifier = Modifier.fillMaxWidth(),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(app.chesspresso.ui.theme.CoffeeCremeLight),
+                        colors = CardDefaults.cardColors(
+                            containerColor = app.chesspresso.ui.theme.CoffeeCremeMid
+                        ),
                         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
                     ) {
                         Row(
@@ -406,6 +594,7 @@ fun GameDrawerContent(
                             Text(
                                 text = "${index + 1}.",
                                 style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.primary,
                                 modifier = Modifier.width(32.dp)
                             )
                             Text(
@@ -415,15 +604,17 @@ fun GameDrawerContent(
                                 modifier = Modifier.width(28.dp)
                             )
                             Text(
-                                text = "${move.move.start}"+" -> " + "${move.move.end}",
+                                text = "${move.move.start} -> ${move.move.end}",
                                 style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.padding(start = 8.dp)
                             )
                             Spacer(modifier = Modifier.weight(1f))
                             if (move.move.specialMove != null) {
                                 Text(
                                     text = move.move.specialMove.toString(),
-                                    style = MaterialTheme.typography.bodySmall
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.secondary
                                 )
                             }
                         }

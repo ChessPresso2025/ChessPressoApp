@@ -1,7 +1,6 @@
 package app.chesspresso.websocket
 
 import android.util.Log
-import androidx.lifecycle.viewmodel.compose.viewModel
 import app.chesspresso.data.storage.TokenStorage
 import app.chesspresso.model.game.GameMoveMessage
 import app.chesspresso.model.game.GameMoveResponse

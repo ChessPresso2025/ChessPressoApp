@@ -10,10 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -27,11 +24,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.chesspresso.model.lobby.GameTime
+import app.chesspresso.ui.theme.CoffeeButton
+import app.chesspresso.ui.theme.CoffeeCard
+import app.chesspresso.ui.theme.CoffeeText
 import app.chesspresso.viewmodel.QuickMatchViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -72,7 +71,7 @@ fun QuickMatchScreen(
 
         if (isWaiting) {
             // Wartezustand
-            Card(
+            CoffeeCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
@@ -83,39 +82,35 @@ fun QuickMatchScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     CircularProgressIndicator()
-                    Text(
-                        text = "Suche nach Gegner...",
-                        style = MaterialTheme.typography.bodyLarge
+                    CoffeeText(
+                        text = "Suche nach Gegner..."
                     )
-                    Text(
-                        text = "Spielzeit: ${selectedGameTime.displayName}",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    CoffeeText(
+                        text = "Spielzeit: ${selectedGameTime.displayName}"
                     )
 
-                    Button(
+                    CoffeeButton(
                         onClick = { viewModel.cancelSearch() },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.error
-                        )
-                    ) {
-                        Text("Suche abbrechen")
-                    }
+                        ),
+                        content = {
+                            Text("Suche abbrechen")
+                        }
+                    )
                 }
             }
         } else {
             // Spielzeit-Auswahl
-            Card(
+            CoffeeCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(
-                        text = "Spielzeit wählen:",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                    CoffeeText(
+                        text = "Spielzeit wählen:"
                     )
 
                     GameTime.entries.filter { it != GameTime.UNLIMITED }.forEach { gameTime ->
@@ -133,10 +128,9 @@ fun QuickMatchScreen(
                                 selected = selectedGameTime == gameTime,
                                 onClick = { selectedGameTime = gameTime }
                             )
-                            Text(
+                            CoffeeText(
                                 text = gameTime.displayName,
-                                modifier = Modifier.padding(start = 8.dp),
-                                style = MaterialTheme.typography.bodyLarge
+                                modifier = Modifier.padding(start = 8.dp)
                             )
                         }
                     }
@@ -145,16 +139,14 @@ fun QuickMatchScreen(
 
             // Fehleranzeige
             error?.let { errorMessage ->
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.errorContainer
-                    )
+                CoffeeCard(
+                    modifier = Modifier.fillMaxWidth(),
+                    // Optional: Farbe anpassen
                 ) {
-                    Text(
+                    CoffeeText(
                         text = errorMessage,
                         modifier = Modifier.padding(16.dp),
-                        color = MaterialTheme.colorScheme.onErrorContainer,
-                        style = MaterialTheme.typography.bodyMedium
+                        color = MaterialTheme.colorScheme.onErrorContainer
                     )
                 }
             }
@@ -162,20 +154,21 @@ fun QuickMatchScreen(
             Spacer(modifier = Modifier.weight(1f))
 
             // Spiel starten Button
-            Button(
+            CoffeeButton(
                 onClick = { viewModel.joinQuickMatch(selectedGameTime) },
                 modifier = Modifier.fillMaxWidth(),
-                enabled = !uiState.isLoading
-            ) {
-                if (uiState.isLoading) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(20.dp),
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
+                enabled = !uiState.isLoading,
+                content = {
+                    Text("Spiel suchen")
+                    if (uiState.isLoading) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(20.dp),
+                            color = MaterialTheme.colorScheme.onPrimary
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                    }
                 }
-                Text("Spiel suchen")
-            }
+            )
         }
     }
 }

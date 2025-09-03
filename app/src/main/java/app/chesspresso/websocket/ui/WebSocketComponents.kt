@@ -18,12 +18,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -31,10 +28,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
+import app.chesspresso.ui.theme.CoffeeCard
+import app.chesspresso.ui.theme.CoffeeText
 import app.chesspresso.websocket.WebSocketViewModel
 
 @Composable
@@ -62,18 +59,13 @@ fun WebSocketStatusIndicator(
                 .background(Color.White)
         )
 
-        Text(
-            text = viewModel.getConnectionStatusText(),
-            color = Color.White,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium
+        CoffeeText(
+            text = viewModel.getConnectionStatusText()
         )
 
         if (uiState.isConnected) {
-            Text(
-                text = "${uiState.onlinePlayerCount} online",
-                color = Color.White,
-                fontSize = 12.sp
+            CoffeeText(
+                text = "${uiState.onlinePlayerCount} online"
             )
         }
     }
@@ -86,9 +78,8 @@ fun OnlinePlayersCard(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    CoffeeCard(
+        modifier = modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
@@ -98,10 +89,9 @@ fun OnlinePlayersCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
+                CoffeeText(
                     text = "Online Spieler (${uiState.onlinePlayerCount})",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    style = MaterialTheme.typography.titleMedium
                 )
 
                 IconButton(
@@ -118,13 +108,13 @@ fun OnlinePlayersCard(
             Spacer(modifier = Modifier.height(8.dp))
 
             if (!uiState.isConnected) {
-                Text(
+                CoffeeText(
                     text = "Nicht verbunden",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.error
                 )
             } else if (uiState.onlinePlayers.isEmpty()) {
-                Text(
+                CoffeeText(
                     text = "Keine Online-Spieler",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -166,7 +156,7 @@ private fun OnlinePlayerItem(
             modifier = Modifier.size(16.dp)
         )
 
-        Text(
+        CoffeeText(
             text = playerName,
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -191,44 +181,41 @@ fun WebSocketDebugInfo(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    CoffeeCard(
+        modifier = modifier.fillMaxWidth()
     ) {
         Column(
             modifier = Modifier.padding(16.dp)
         ) {
-            Text(
+            CoffeeText(
                 text = "WebSocket Debug Info",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold
+                style = MaterialTheme.typography.titleSmall
             )
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            Text(
+            CoffeeText(
                 text = "Status: ${viewModel.getConnectionStatusText()}",
                 style = MaterialTheme.typography.bodySmall
             )
 
-            Text(
+            CoffeeText(
                 text = "Online Spieler: ${uiState.onlinePlayerCount}",
                 style = MaterialTheme.typography.bodySmall
             )
 
             if (uiState.recentMessages.isNotEmpty()) {
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(
+                CoffeeText(
                     text = "Letzte Nachrichten:",
-                    style = MaterialTheme.typography.bodySmall,
-                    fontWeight = FontWeight.Medium
+                    style = MaterialTheme.typography.bodySmall
                 )
 
                 LazyColumn(
                     modifier = Modifier.heightIn(max = 100.dp)
                 ) {
                     items(uiState.recentMessages.takeLast(5)) { message ->
-                        Text(
+                        CoffeeText(
                             text = message.take(100) + if (message.length > 100) "..." else "",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,

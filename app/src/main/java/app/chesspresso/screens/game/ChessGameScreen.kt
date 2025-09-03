@@ -1,7 +1,6 @@
 package app.chesspresso.screens.game
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,12 +17,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -35,15 +34,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavHostController
 import app.chesspresso.model.TeamColor
 import app.chesspresso.model.board.Board
 import app.chesspresso.model.lobby.GameStartResponse
 import app.chesspresso.viewmodel.ChessGameViewModel
-import androidx.navigation.NavHostController
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -91,13 +89,16 @@ fun ChessGameScreen(
         }
     }
 
-    Box(modifier = Modifier.fillMaxSize()) {
+    Box(modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
                 .padding(horizontal = 8.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
         ) {
             // Game Over UI direkt im Layout anzeigen
             if (showGameOverDialog && gameEndResult != null) {
@@ -127,7 +128,7 @@ fun ChessGameScreen(
                             isActive = activePlayer == TeamColor.WHITE
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        CapturedPieces(captured = viewModel.capturedBlackPieces.collectAsState().value)
+                        CapturedPieces(captured = viewModel.capturedBlackPieces.collectAsState().value, isActive = activePlayer == TeamColor.WHITE)
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     // Gegner (Schwarz) rechts
@@ -143,7 +144,7 @@ fun ChessGameScreen(
                             isActive = activePlayer == TeamColor.BLACK
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        CapturedPieces(captured = viewModel.capturedWhitePieces.collectAsState().value)
+                        CapturedPieces(captured = viewModel.capturedWhitePieces.collectAsState().value, isActive = activePlayer == TeamColor.BLACK)
                     }
                 } else if (myColor == TeamColor.BLACK) {
                     // Eigener Spieler (Schwarz) links
@@ -159,7 +160,7 @@ fun ChessGameScreen(
                             isActive = activePlayer == TeamColor.BLACK
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        CapturedPieces(captured = viewModel.capturedWhitePieces.collectAsState().value)
+                        CapturedPieces(captured = viewModel.capturedWhitePieces.collectAsState().value, isActive = activePlayer == TeamColor.BLACK)
                     }
                     Spacer(modifier = Modifier.width(16.dp))
                     // Gegner (Weiß) rechts
@@ -176,7 +177,7 @@ fun ChessGameScreen(
                             isActive = activePlayer == TeamColor.WHITE
                         )
                         Spacer(modifier = Modifier.height(8.dp))
-                        CapturedPieces(captured = viewModel.capturedBlackPieces.collectAsState().value)
+                        CapturedPieces(captured = viewModel.capturedBlackPieces.collectAsState().value, isActive = activePlayer == TeamColor.WHITE)
                     }
                 }
             }
@@ -317,6 +318,17 @@ fun PlayerClock(
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .then(
+                if (isActive) Modifier else Modifier
+            ),
+        colors = CardDefaults.cardColors(
+            containerColor = app.chesspresso.ui.theme.CoffeeCremeMid
+        ),
+        border = if (isActive) androidx.compose.foundation.BorderStroke(
+            width = 2.dp,
+            color = MaterialTheme.colorScheme.primary
+        ) else null,
+        shape = RoundedCornerShape(20.dp)
     ) {
         Column(
             modifier = Modifier
@@ -357,12 +369,20 @@ fun pieceToUnicode(piece: app.chesspresso.model.game.PieceInfo): String {
 }
 
 @Composable
-fun CapturedPieces(captured: List<app.chesspresso.model.game.PieceInfo>) {
+fun CapturedPieces(captured: List<app.chesspresso.model.game.PieceInfo>, isActive: Boolean) {
     if (captured.isEmpty()) return
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(50.dp)
+            .height(50.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = app.chesspresso.ui.theme.CoffeeCremeMid
+        ),
+        border = if (isActive) androidx.compose.foundation.BorderStroke(
+            width = 2.dp,
+            color = MaterialTheme.colorScheme.primary
+        ) else null,
+        shape = RoundedCornerShape(20.dp)
     ) {
         LazyRow(
             modifier = Modifier

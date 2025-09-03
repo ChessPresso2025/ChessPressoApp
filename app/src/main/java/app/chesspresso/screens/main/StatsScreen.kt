@@ -12,13 +12,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -26,11 +23,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
+import app.chesspresso.ui.theme.CoffeeCard
+import app.chesspresso.ui.theme.CoffeeText
 import app.chesspresso.viewmodel.GameViewModel
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -81,28 +78,23 @@ fun StatsScreen(
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Text(
+            CoffeeText(
                 text = "Statistiken",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // Stats Karte
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            CoffeeCard(
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
-                        text = "Meine Statistiken",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium
+                    CoffeeText(
+                        text = "Meine Statistiken"
                     )
 
                     Spacer(modifier = Modifier.height(16.dp))
@@ -120,7 +112,7 @@ fun StatsScreen(
                                 StatItem("Niederlagen", stats.losses.toString())
                                 StatItem("Unentschieden", stats.draws.toString())
                             }
-                        } ?: Text(
+                        } ?: CoffeeText(
                             text = "Keine Statistiken verfügbar",
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -132,10 +124,8 @@ fun StatsScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Game History Titel
-            Text(
+            CoffeeText(
                 text = "Letzte Spiele",
-                fontSize = 20.sp,
-                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.padding(bottom = 8.dp)
             )
@@ -149,7 +139,7 @@ fun StatsScreen(
                 }
                 uiState.gameHistory.isNullOrEmpty() -> {
                      Box(modifier = Modifier.fillMaxWidth().weight(1f), contentAlignment = Alignment.Center) {
-                        Text(
+                        CoffeeText(
                             text = "Keine Spiele gefunden.",
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -163,24 +153,20 @@ fun StatsScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         items(uiState.gameHistory!!) { game ->
-                            Card(
+                            CoffeeCard(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable { navController.navigate("game_detail/${game.id}") },
-                                elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+                                    .clickable { navController.navigate("game_detail/${game.id}") }
                             ) {
                                 Column(modifier = Modifier.padding(12.dp)) {
-                                    Text(
-                                        text = "Datum: " + (game.startedAt.takeIf { it.isNotBlank() }?.let { formatDate(it) } ?: "Unbekannt"),
-                                        style = MaterialTheme.typography.bodyMedium
+                                    CoffeeText(
+                                        text = "Datum: " + (game.startedAt.takeIf { it.isNotBlank() }?.let { formatDate(it) } ?: "Unbekannt")
                                     )
-                                    Text(
-                                        text = "Ergebnis: ${game.result ?: "Unbekannt"}",
-                                        style = MaterialTheme.typography.bodyMedium
+                                    CoffeeText(
+                                        text = "Ergebnis: ${game.result ?: "Unbekannt"}"
                                     )
-                                    Text(
-                                        text = "Züge: ${game.moves.size}",
-                                        style = MaterialTheme.typography.bodySmall
+                                    CoffeeText(
+                                        text = "Züge: ${game.moves.size}"
                                     )
                                 }
                             }
@@ -202,15 +188,12 @@ private fun StatItem(label: String, value: String) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
+        CoffeeText(
             text = value,
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold,
             color = MaterialTheme.colorScheme.primary
         )
-        Text(
+        CoffeeText(
             text = label,
-            fontSize = 12.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
@@ -227,4 +210,3 @@ private fun formatDate(dateString: String): String {
         dateString
     }
 }
-

@@ -10,10 +10,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -29,13 +26,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import app.chesspresso.auth.presentation.AuthViewModel
+import app.chesspresso.ui.theme.CoffeeButton
+import app.chesspresso.ui.theme.CoffeeCard
+import app.chesspresso.ui.theme.CoffeeText
 
 @Composable
 fun ProfileScreen(
@@ -97,19 +95,16 @@ fun ProfileScreen(
                 .padding(bottom = 16.dp), // Extra padding at the bottom if content is long
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Text(
+            CoffeeText(
                 text = "Profil",
-                fontSize = 24.sp,
-                fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.primary
             )
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // User Profile Info Card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            CoffeeCard(
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
                     modifier = Modifier
@@ -117,24 +112,22 @@ fun ProfileScreen(
                         .fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
+                    CoffeeText(
                         text = "Meine Informationen",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
                     val userProfileState = viewModel.userProfileState.collectAsState().value
                     when (userProfileState) {
                         is UserProfileUiState.Loading -> CircularProgressIndicator()
-                        is UserProfileUiState.Error -> Text(
+                        is UserProfileUiState.Error -> CoffeeText(
                             "Fehler: " + userProfileState.message,
                             color = MaterialTheme.colorScheme.error
                         )
                         is UserProfileUiState.Success -> {
                             val profile = userProfileState.profile
-                            Text("Name: ${profile.username}", style = MaterialTheme.typography.bodyLarge)
+                            CoffeeText("Name: ${profile.username}")
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text("E-Mail: ${profile.email}", style = MaterialTheme.typography.bodyLarge)
+                            CoffeeText("E-Mail: ${profile.email}")
                         }
                     }
                 }
@@ -143,9 +136,8 @@ fun ProfileScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Change Username Card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            CoffeeCard(
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
                     modifier = Modifier
@@ -153,27 +145,26 @@ fun ProfileScreen(
                         .fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
+                    CoffeeText(
                         text = "Benutzernamen ändern",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
                     OutlinedTextField(
                         value = newUsername,
                         onValueChange = { newUsername = it },
-                        label = { Text("Neuer Benutzername") },
+                        label = { CoffeeText("Neuer Benutzername") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Button(
+                    CoffeeButton(
                         onClick = { showUsernameConfirmDialog = true },
                         enabled = usernameChangeState !is UsernameChangeState.Loading && newUsername.length in 3..32,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Benutzernamen ändern")
-                    }
+                        modifier = Modifier.fillMaxWidth(),
+                        content = {
+                            Text("Benutzernamen ändern")
+                        }
+                    )
                     when (val state = usernameChangeState) {
                         is UsernameChangeState.Loading -> {
                             Spacer(modifier = Modifier.height(8.dp))
@@ -184,7 +175,7 @@ fun ProfileScreen(
                         }
                         is UsernameChangeState.Error -> {
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text(state.message, color = MaterialTheme.colorScheme.error)
+                            CoffeeText(state.message, color = MaterialTheme.colorScheme.error)
                         }
                         else -> {}
                     }
@@ -194,9 +185,8 @@ fun ProfileScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Change Password Card
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+            CoffeeCard(
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
                     modifier = Modifier
@@ -204,16 +194,14 @@ fun ProfileScreen(
                         .fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
+                    CoffeeText(
                         text = "Passwort ändern",
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Medium,
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
                     OutlinedTextField(
                         value = oldPassword,
                         onValueChange = { oldPassword = it },
-                        label = { Text("Altes Passwort") },
+                        label = { CoffeeText("Altes Passwort") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation()
@@ -222,34 +210,32 @@ fun ProfileScreen(
                     OutlinedTextField(
                         value = newPassword,
                         onValueChange = { newPassword = it },
-                        label = { Text("Neues Passwort") },
+                        label = { CoffeeText("Neues Passwort") },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
                         visualTransformation = PasswordVisualTransformation()
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Button(
+                    CoffeeButton(
                         onClick = { showPasswordConfirmDialog = true },
                         enabled = passwordChangeState !is PasswordChangeState.Loading && oldPassword.length >= 4 && newPassword.length in 4..64,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        Text("Passwort ändern")
-                    }
+                        modifier = Modifier.fillMaxWidth(),
+                        content = {
+                            Text("Passwort ändern")
+                        }
+                    )
                     when (val state = passwordChangeState) {
                         is PasswordChangeState.Loading -> {
                             Spacer(modifier = Modifier.height(8.dp))
                             CircularProgressIndicator()
                         }
-
                         is PasswordChangeState.Success -> {
                             // Message handled by logout navigation
                         }
-
                         is PasswordChangeState.Error -> {
                             Spacer(modifier = Modifier.height(8.dp))
-                            Text(state.message, color = MaterialTheme.colorScheme.error)
+                            CoffeeText(state.message, color = MaterialTheme.colorScheme.error)
                         }
-
                         else -> {}
                     }
                 }
@@ -257,7 +243,7 @@ fun ProfileScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Button(
+            CoffeeButton(
                 onClick = onLogout,
                 modifier = Modifier
                     .fillMaxWidth()
@@ -265,14 +251,11 @@ fun ProfileScreen(
                     .padding(horizontal = 32.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = MaterialTheme.colorScheme.error
-                )
-
-            ) {
-                Text(
-                    text = "Abmelden",
-                    color = Color.White
-                )
-            }
+                ),
+                content = {
+                    Text("Abmelden")
+                }
+            )
 
         }
     }
@@ -281,16 +264,16 @@ fun ProfileScreen(
     if (showUsernameConfirmDialog) {
         AlertDialog(
             onDismissRequest = { showUsernameConfirmDialog = false },
-            title = { Text("Benutzernamen ändern") },
-            text = { Text("Um den Benutzernamen zu ändern, musst du dich neu anmelden. Bist du sicher, dass du fortfahren möchtest?") },
+            title = { CoffeeText("Benutzernamen ändern") },
+            text = { CoffeeText("Um den Benutzernamen zu ändern, musst du dich neu anmelden. Bist du sicher, dass du fortfahren möchtest?") },
             confirmButton = {
                 TextButton(onClick = {
                     showUsernameConfirmDialog = false
                     viewModel.changeUsername(newUsername)
-                }) { Text("Ja, ändern") }
+                }) { CoffeeText("Ja, ändern") }
             },
             dismissButton = {
-                TextButton(onClick = { showUsernameConfirmDialog = false }) { Text("Abbrechen") }
+                TextButton(onClick = { showUsernameConfirmDialog = false }) { CoffeeText("Abbrechen") }
             }
         )
     }
@@ -298,16 +281,16 @@ fun ProfileScreen(
     if (showPasswordConfirmDialog) {
         AlertDialog(
             onDismissRequest = { showPasswordConfirmDialog = false },
-            title = { Text("Passwort ändern") },
-            text = { Text("Um das Passwort zu ändern, musst du dich neu anmelden. Bist du sicher, dass du fortfahren möchtest?") },
+            title = { CoffeeText("Passwort ändern") },
+            text = { CoffeeText("Um das Passwort zu ändern, musst du dich neu anmelden. Bist du sicher, dass du fortfahren möchtest?") },
             confirmButton = {
                 TextButton(onClick = {
                     showPasswordConfirmDialog = false
                     viewModel.changePassword(oldPassword, newPassword)
-                }) { Text("Ja, ändern") }
+                }) { CoffeeText("Ja, ändern") }
             },
             dismissButton = {
-                TextButton(onClick = { showPasswordConfirmDialog = false }) { Text("Abbrechen") }
+                TextButton(onClick = { showPasswordConfirmDialog = false }) { CoffeeText("Abbrechen") }
             }
         )
     }

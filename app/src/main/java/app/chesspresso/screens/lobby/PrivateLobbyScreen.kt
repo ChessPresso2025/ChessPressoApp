@@ -13,9 +13,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -28,7 +25,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
@@ -36,6 +32,9 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.chesspresso.ui.components.LobbyCreatorControls
 import app.chesspresso.ui.components.QRScannerButton
+import app.chesspresso.ui.theme.CoffeeButton
+import app.chesspresso.ui.theme.CoffeeCard
+import app.chesspresso.ui.theme.CoffeeText
 import app.chesspresso.viewmodel.PrivateLobbyViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -80,38 +79,36 @@ fun PrivateLobbyScreen(
     ) {
 
         // Lobby erstellen
-        Card(
+        CoffeeCard(
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    text = "Neue Lobby erstellen",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                CoffeeText(
+                    text = "Neue Lobby erstellen"
                 )
-                Text(
+                CoffeeText(
                     text = "Erstelle eine private Lobby und teile den Code mit deinem Freund.",
-                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                Button(
+                CoffeeButton(
                     onClick = { viewModel.createPrivateLobby() },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !uiState.isLoading
-                ) {
-                    if (uiState.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
+                    enabled = !uiState.isLoading,
+                    content = {
+                        if (uiState.isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+                        Text("Lobby erstellen")
                     }
-                    Text("Lobby erstellen")
-                }
+                )
             }
         }
 
@@ -132,11 +129,10 @@ fun PrivateLobbyScreen(
                     .weight(1f)
                     .align(Alignment.CenterVertically)
             )
-            Text(
+            CoffeeText(
                 text = "ODER",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 8.dp)
+                modifier = Modifier.padding(horizontal = 8.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             HorizontalDivider(
                 modifier = Modifier
@@ -146,29 +142,26 @@ fun PrivateLobbyScreen(
         }
 
         // Lobby beitreten
-        Card(
+        CoffeeCard(
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    text = "Lobby beitreten",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                CoffeeText(
+                    text = "Lobby beitreten"
                 )
-                Text(
+                CoffeeText(
                     text = "Gib den 6-stelligen Lobby-Code ein, den du von deinem Freund erhalten hast.",
-                    style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 OutlinedTextField(
                     value = uiState.joinCode,
                     onValueChange = viewModel::updateJoinCode,
-                    label = { Text("Lobby-Code") },
-                    placeholder = { Text("ABC123") },
+                    label = { CoffeeText("Lobby-Code") },
+                    placeholder = { CoffeeText("ABC123") },
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !uiState.isLoading,
                     singleLine = true,
@@ -185,11 +178,11 @@ fun PrivateLobbyScreen(
                         }
                     ),
                     supportingText = {
-                        Text("${uiState.joinCode.length}/6 Zeichen")
+                        CoffeeText("${uiState.joinCode.length}/6 Zeichen")
                     }
                 )
 
-                Button(
+                CoffeeButton(
                     onClick = {
                         keyboardController?.hide()
                         viewModel.joinPrivateLobby(uiState.joinCode)
@@ -204,7 +197,7 @@ fun PrivateLobbyScreen(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                     }
-                    Text("Lobby beitreten")
+                    CoffeeText("Lobby beitreten")
                 }
             }
         }
@@ -221,33 +214,27 @@ fun PrivateLobbyScreen(
 
         // Fehleranzeige
         error?.let { errorMessage ->
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                ),
+            CoffeeCard(
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+                contentColor = MaterialTheme.colorScheme.onErrorContainer,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
+                CoffeeText(
                     text = errorMessage,
                     modifier = Modifier.padding(16.dp),
-                    color = MaterialTheme.colorScheme.onErrorContainer,
-                    style = MaterialTheme.typography.bodyMedium
+                    color = MaterialTheme.colorScheme.onErrorContainer
                 )
             }
         }
 
         uiState.error?.let { errorMessage ->
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                ),
+            CoffeeCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
+                CoffeeText(
                     text = errorMessage,
                     modifier = Modifier.padding(16.dp),
-                    color = MaterialTheme.colorScheme.onErrorContainer,
-                    style = MaterialTheme.typography.bodyMedium
+                    color = MaterialTheme.colorScheme.onErrorContainer
                 )
             }
         }

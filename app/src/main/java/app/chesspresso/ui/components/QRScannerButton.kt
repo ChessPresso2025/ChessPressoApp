@@ -8,15 +8,10 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -30,10 +25,11 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
+import app.chesspresso.ui.theme.CoffeeButton
+import app.chesspresso.ui.theme.CoffeeCard
+import app.chesspresso.ui.theme.CoffeeText
 import app.chesspresso.utils.QRCodeGenerator
 
 @Composable
@@ -108,44 +104,37 @@ fun QRScannerButton(
         }
     }
 
-    Card(
-        modifier = modifier.fillMaxWidth(),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
-        shape = RoundedCornerShape(12.dp)
+    CoffeeCard(
+        modifier = modifier.fillMaxWidth()
     ) {
         Column(
-            modifier = Modifier.padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(16.dp)
         ) {
-            Text(
-                text = "Lobby via QR-Code beitreten",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold
+            CoffeeText(
+                text = "Lobby via QR-Code beitreten"
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            Text(
+            CoffeeText(
                 text = "Scanne den QR-Code einer privaten Lobby mit der Kamera",
-                fontSize = 14.sp,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            Button(
+            CoffeeButton(
                 onClick = { startQRScanner() },
                 enabled = enabled,
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(8.dp)
+                modifier = Modifier.fillMaxWidth()
             ) {
                 Icon(
                     imageVector = Icons.Default.Settings,
-                    contentDescription = "Kamera für QR-Code scannen",
-                    modifier = Modifier.size(24.dp)
+                    contentDescription = "QR-Code scannen"
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Kamera öffnen")
+                Text("QR-Code scannen")
             }
         }
     }
@@ -154,9 +143,9 @@ fun QRScannerButton(
     if (showPermissionDialog) {
         AlertDialog(
             onDismissRequest = { showPermissionDialog = false },
-            title = { Text("Kamera-Berechtigung erforderlich") },
+            title = { CoffeeText("Kamera-Berechtigung erforderlich") },
             text = {
-                Text("Diese App benötigt Zugriff auf die Kamera, um QR-Codes zu scannen. Bitte erteile die Berechtigung in den App-Einstellungen.")
+                CoffeeText("Diese App benötigt Zugriff auf die Kamera, um QR-Codes zu scannen. Bitte erteile die Berechtigung in den App-Einstellungen.")
             },
             confirmButton = {
                 TextButton(
@@ -169,14 +158,14 @@ fun QRScannerButton(
                         context.startActivity(intent)
                     }
                 ) {
-                    Text("Einstellungen")
+                    CoffeeText(text = "Einstellungen")
                 }
             },
             dismissButton = {
                 TextButton(
                     onClick = { showPermissionDialog = false }
                 ) {
-                    Text("Abbrechen")
+                    CoffeeText(text = "Abbrechen")
                 }
             }
         )
@@ -191,16 +180,13 @@ fun QRScannerButton(
         }
 
         Spacer(modifier = Modifier.height(8.dp))
-        Card(
-            colors = CardDefaults.cardColors(
-                containerColor = MaterialTheme.colorScheme.errorContainer
-            )
+        CoffeeCard(
+            modifier = Modifier.padding(16.dp)
         ) {
-            Text(
+            CoffeeText(
                 text = error,
                 modifier = Modifier.padding(12.dp),
-                color = MaterialTheme.colorScheme.onErrorContainer,
-                style = MaterialTheme.typography.bodySmall
+                color = MaterialTheme.colorScheme.onErrorContainer
             )
         }
     }

@@ -12,12 +12,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -26,6 +23,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
+import app.chesspresso.ui.theme.CoffeeCard
+import app.chesspresso.ui.theme.CoffeeText
 import app.chesspresso.viewmodel.GameViewModel
 import java.text.SimpleDateFormat
 import java.util.Locale
@@ -48,23 +47,20 @@ fun GameDetailScreen(
                 modifier = Modifier.align(Alignment.Center),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
+                CoffeeText(
                     text = "Spiel nicht gefunden.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Übergebene gameId: $gameId",
-                    style = MaterialTheme.typography.bodySmall
+                CoffeeText(
+                    text = "Übergebene gameId: $gameId"
                 )
-                Text(
-                    text = "Vorhandene IDs:",
-                    style = MaterialTheme.typography.bodySmall
+                CoffeeText(
+                    text = "Vorhandene IDs:"
                 )
                 uiState.gameHistory?.forEach {
-                    Text(
-                        text = it.id.toString(),
-                        style = MaterialTheme.typography.bodySmall
+                    CoffeeText(
+                        text = it.id.toString()
                     )
                 }
             }
@@ -75,49 +71,41 @@ fun GameDetailScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(
-                    text = "Partiedetails",
-                    style = MaterialTheme.typography.titleLarge
+                CoffeeText(
+                    text = "Partiedetails"
                 )
-                Text(
-                    text = "Datum: " + (game.startedAt.takeIf { it.isNotBlank() }?.let { formatDate(it) } ?: "Unbekannt"),
-                    style = MaterialTheme.typography.bodyMedium
+                CoffeeText(
+                    text = "Datum: " + (game.startedAt.takeIf { it.isNotBlank() }?.let { formatDate(it) } ?: "Unbekannt")
                 )
-                Text(
-                    text = "Ergebnis: ${game.result ?: "Unbekannt"}",
-                    style = MaterialTheme.typography.bodyMedium
+                CoffeeText(
+                    text = "Ergebnis: ${game.result ?: "Unbekannt"}"
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Züge:",
-                    style = MaterialTheme.typography.titleMedium
+                CoffeeText(
+                    text = "Züge:"
                 )
                 LazyColumn(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     items(game.moves) { move ->
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                        CoffeeCard(
+                            modifier = Modifier.fillMaxWidth()
                         ) {
                             Row(
                                 modifier = Modifier.padding(8.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                Text(
+                                CoffeeText(
                                     text = "${move.moveNumber}.",
-                                    style = MaterialTheme.typography.bodySmall,
                                     modifier = Modifier.width(32.dp)
                                 )
-                                Text(
-                                    text = move.moveNotation,
-                                    style = MaterialTheme.typography.bodyMedium
+                                CoffeeText(
+                                    text = move.moveNotation
                                 )
                                 Spacer(modifier = Modifier.weight(1f))
-                                Text(
-                                    text = move.createdAt.takeIf { it.isNotBlank() }?.let { formatDate(it) } ?: "",
-                                    style = MaterialTheme.typography.bodySmall
+                                CoffeeText(
+                                    text = move.createdAt.takeIf { it.isNotBlank() }?.let { formatDate(it) } ?: ""
                                 )
                             }
                         }
