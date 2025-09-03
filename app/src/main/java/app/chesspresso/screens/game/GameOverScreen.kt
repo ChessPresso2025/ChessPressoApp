@@ -23,6 +23,7 @@ import app.chesspresso.model.TeamColor
 import app.chesspresso.model.lobby.GameEndResponse
 import app.chesspresso.screens.main.NavRoutes
 import app.chesspresso.ui.theme.CoffeeButton
+import app.chesspresso.ui.theme.CoffeeHeadlineText
 import app.chesspresso.ui.theme.CoffeeText
 import app.chesspresso.viewmodel.ChessGameViewModel
 import app.chesspresso.viewmodel.RematchDialogState
@@ -163,7 +164,7 @@ fun GameOverResultInfo(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier.fillMaxWidth()
     ) {
-        CoffeeText(
+        CoffeeHeadlineText(
             text = ergebnisText,
             color = when (ergebnisText) {
                 "Sieg" -> Color(0xFF4CAF50)

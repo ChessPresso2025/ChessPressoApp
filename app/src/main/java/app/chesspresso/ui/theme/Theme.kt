@@ -36,7 +36,7 @@ fun ChessPressoAppTheme(
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
     MaterialTheme(
         colorScheme = colorScheme,
-        typography = Typography,
+        typography = CoffeeTypography,
         content = content
     )
 }

@@ -20,6 +20,8 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontWeight
 
 @Composable
 fun CoffeeButton(
@@ -114,10 +116,37 @@ fun CoffeeText(
     Text(
         text = text,
         modifier = modifier,
-        style = style,
+        style = style.copy(fontFamily = Montserrat),
         color = color,
         maxLines = maxLines,
         overflow = overflow,
-        textAlign = textAlign
+        textAlign = textAlign,
+        fontSize = 20.sp
+    )
+}
+
+@Composable
+fun CoffeeHeadlineText(
+    text: String,
+    modifier: Modifier = Modifier,
+    fontSizeSp: Int = 28,
+    fontWeight: FontWeight = FontWeight.Bold,
+    color: Color = MaterialTheme.colorScheme.onSurface,
+    textAlign: TextAlign? = null,
+    maxLines: Int = Int.MAX_VALUE,
+    overflow: TextOverflow = TextOverflow.Clip
+) {
+    Text(
+        text = text,
+        modifier = modifier,
+        style = TextStyle(
+            fontFamily = Montserrat,
+            fontWeight = fontWeight,
+            fontSize = fontSizeSp.sp
+        ),
+        color = color,
+        textAlign = textAlign,
+        maxLines = maxLines,
+        overflow = overflow
     )
 }
