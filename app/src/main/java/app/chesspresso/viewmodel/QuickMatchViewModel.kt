@@ -15,15 +15,11 @@ import javax.inject.Inject
 
 @HiltViewModel
 class QuickMatchViewModel @Inject constructor(
-    private val lobbyService: LobbyService,
-    private val webSocketService: StompWebSocketService
+    private val lobbyService: LobbyService, private val webSocketService: StompWebSocketService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(QuickMatchUiState())
     val uiState: StateFlow<QuickMatchUiState> = _uiState.asStateFlow()
-
-    private val _rematchDialogState = MutableStateFlow<RematchDialogState>(RematchDialogState.None)
-    val rematchDialogState: StateFlow<RematchDialogState> = _rematchDialogState.asStateFlow()
 
     val isWaitingForMatch = lobbyService.isWaitingForMatch
     val lobbyError = lobbyService.lobbyError
@@ -72,24 +68,6 @@ class QuickMatchViewModel @Inject constructor(
         cancelSearch()
         lobbyService.forceResetWaitingState()
         _uiState.value = QuickMatchUiState()
-    }
-
-    fun requestRematch() {
-        _rematchDialogState.value = RematchDialogState.WaitingForResponse
-        _uiState.value.lobbyId?.let { lobbyId ->
-            webSocketService.sendRematchRequest(lobbyId)
-        }
-    }
-
-    fun respondRematch(accept: Boolean) {
-        _uiState.value.lobbyId?.let { lobbyId ->
-            webSocketService.sendRematchResponse(lobbyId, if (accept) "accepted" else "declined")
-            _rematchDialogState.value = RematchDialogState.WaitingForResult
-        }
-    }
-
-    fun clearRematchDialog() {
-        _rematchDialogState.value = RematchDialogState.None
     }
 }
 

@@ -1,6 +1,7 @@
 package app.chesspresso.websocket
 
 import android.util.Log
+import androidx.lifecycle.viewmodel.compose.viewModel
 import app.chesspresso.data.storage.TokenStorage
 import app.chesspresso.model.game.GameMoveMessage
 import app.chesspresso.model.game.GameMoveResponse
@@ -633,16 +634,6 @@ class StompWebSocketService @Inject constructor(
                 append("\n")
                 append(MESSAGE_END)
             }
-
-            Log.d(
-                TAG,
-                "Sending STOMP unsubscribe frame: ${
-                    unsubscribeFrame.replace(
-                        MESSAGE_END,
-                        "[NULL]"
-                    )
-                }"
-            )
             webSocket?.send(unsubscribeFrame)
             Log.d(TAG, "Unsubscribed from lobby: $lobbyId")
         }

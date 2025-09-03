@@ -69,7 +69,8 @@ fun RematchDialogsHandler(viewModel: ChessGameViewModel, gameEndResponse: GameEn
                 title = "Rematch angefragt",
                 text = "Warte auf Antwort des Gegners...",
                 confirmButtonText = "Abbrechen",
-                onConfirm = { viewModel.clearRematchDialog() }
+                onConfirm = {
+                    viewModel.clearRematchDialog() }
             )
         }
         is RematchDialogState.OfferReceived -> {
@@ -91,7 +92,8 @@ fun RematchDialogsHandler(viewModel: ChessGameViewModel, gameEndResponse: GameEn
                 title = "Antwort gesendet",
                 text = "Warte auf Bestätigung...",
                 confirmButtonText = "Schließen",
-                onConfirm = { viewModel.clearRematchDialog() }
+                onConfirm = {
+                    viewModel.clearRematchDialog() }
             )
         }
         is RematchDialogState.Accepted -> {
@@ -132,6 +134,8 @@ fun RematchDialogsHandler(viewModel: ChessGameViewModel, gameEndResponse: GameEn
                 text = "Der Gegner hat das Rematch abgelehnt.",
                 confirmButtonText = "OK",
                 onConfirm = {
+                    viewModel.unsubscribeFromLobbyAndGame()
+                    viewModel.resetGameState()
                     viewModel.clearRematchDialog()
                     navController!!.navigate(NavRoutes.HOME) {
                         popUpTo(0) { inclusive = true }
