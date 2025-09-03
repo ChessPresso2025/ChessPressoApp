@@ -99,7 +99,6 @@ class ChessGameViewModel @Inject constructor(
     init {
         viewModelScope.launch {
             webSocketService.gameStartedEvent.collect { event ->
-                resetViewModel()
                 event?.let { initializeGame(it) }
             }
         }
@@ -209,7 +208,32 @@ class ChessGameViewModel @Inject constructor(
         }
     }
 
+    fun resetGameState() {
+        _currentGameState.value = null
+        _initialGameData.value = null
+        _currentBoard.value = emptyMap()
+        _currentPlayer.value = null
+        _whiteTime.value = 0
+        _blackTime.value = 0
+        _myColor.value = null
+        _possibleMoves.value = emptyList()
+        _capturedWhitePieces.value = emptyList()
+        _capturedBlackPieces.value = emptyList()
+        _promotionRequest.value = null
+        _gameEndEvent.value = null
+        _moveHistory.value = emptyList()
+        timerJob?.cancel()
+        timerJob = null
+        lastActivePlayer = null
+        timeoutSent = false
+        _rematchDialogState.value = RematchDialogState.None
+        _rematchResult.value = null
+        _fieldHighlights.value = emptyMap()
+        _pendingRemisRequest.value = null
+    }
+
     fun initializeGame(gameStartResponse: GameStartResponse) {
+        resetGameState()
         viewModelScope.launch {
             // Warte, bis playerId gesetzt ist
             var myId = webSocketService.playerId
@@ -221,7 +245,7 @@ class ChessGameViewModel @Inject constructor(
             }
             if (myId == null) {
                 // Fehlerfall: ID konnte nicht ermittelt werden
-                android.util.Log.e(
+                Log.e(
                     "ChessGameViewModel",
                     "playerId ist nach 5 Sekunden immer noch null!"
                 )
@@ -354,8 +378,6 @@ class ChessGameViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         timerJob?.cancel()
-        webSocketService.unsubscribeFromGame()
-        webSocketService.resetGameFlows()
     }
 
     fun offerDraw(lobbyId: String, player: TeamColor) {
@@ -381,28 +403,14 @@ class ChessGameViewModel @Inject constructor(
     }
 
     fun resetViewModel(){
-        _currentGameState.value = null
-        _initialGameData.value = null
-        _currentBoard.value = emptyMap()
-        _currentPlayer.value = null
-        _whiteTime.value = 0
-        _blackTime.value = 0
-        _myColor.value = null
-        _possibleMoves.value = emptyList()
-        _capturedWhitePieces.value = emptyList()
-        _capturedBlackPieces.value = emptyList()
-        _promotionRequest.value = null
-        _gameEndEvent.value = null
-        _moveHistory.value = emptyList()
-        timerJob?.cancel()
-        timerJob = null
-        lastActivePlayer = null
-        timeoutSent = false
-        _rematchDialogState.value = RematchDialogState.None
-        _rematchResult.value = null
-        _fieldHighlights.value = emptyMap()
-        _pendingRemisRequest.value = null
-
+        resetGameState()
+        webSocketService.unsubscribeFromGame()
+        webSocketService.resetGameFlows()
         Log.d("ChessGameViewModel", "ViewModel wurde zurückgesetzt.")
+    }
+
+    fun unsubscribeFromLobbyAndGame() {
+        webSocketService.unsubscribeFromLobby()
+        webSocketService.unsubscribeFromGame()
     }
 }

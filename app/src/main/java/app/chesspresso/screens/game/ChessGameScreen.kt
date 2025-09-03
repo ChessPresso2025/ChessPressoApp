@@ -84,6 +84,10 @@ fun ChessGameScreen(
             onGameEnd?.invoke()
             gameEndResult = gameEndEvent
             showGameOverDialog = true
+        } else {
+            // Overlay ausblenden, wenn ein neues Spiel startet
+            showGameOverDialog = false
+            gameEndResult = null
         }
     }
 
