@@ -1,8 +1,11 @@
 package app.chesspresso.ui.theme
 
+import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
@@ -26,7 +29,7 @@ import androidx.compose.ui.text.font.FontWeight
 @Composable
 fun CoffeeButton(
     onClick: () -> Unit,
-    modifier: Modifier = Modifier,
+    @SuppressLint("ModifierParameter") modifier: Modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
     enabled: Boolean = true,
     colors: ButtonColors = ButtonDefaults.buttonColors(
         containerColor = CoffeeBrownSoft, // Noch etwas kräftigerer, aber weicher Braunton für Buttons
@@ -121,7 +124,7 @@ fun CoffeeText(
         maxLines = maxLines,
         overflow = overflow,
         textAlign = textAlign,
-        fontSize = 20.sp
+        fontSize = 24.sp
     )
 }
 
