@@ -21,25 +21,28 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import app.chesspresso.ui.theme.CoffeeCard
+import app.chesspresso.ui.theme.CoffeeHeadlineText
 import app.chesspresso.ui.theme.CoffeeText
 import app.chesspresso.viewmodel.GameViewModel
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.UUID
 
 @Composable
 fun GameDetailScreen(
-    navController: NavController, // bleibt für Navigationserweiterung
+    navController: NavController,
     gameId: String,
-    gameViewModel: GameViewModel // kein Default mehr!
+    gameViewModel: GameViewModel
 ) {
     val uiState by gameViewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Hole das Spiel aus der Historie (direkter Vergleich, kein .toString())
-    val game = uiState.gameHistory?.find { it.id.toString() == gameId }
+    // Hole das Spiel aus der Historie (Vergleich als UUID)
+    val game = uiState.gameHistory?.find { it.id == runCatching { UUID.fromString(gameId) }.getOrNull() }
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (game == null) {
@@ -69,10 +72,12 @@ fun GameDetailScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                CoffeeText(
-                    text = "Partiedetails"
+                CoffeeHeadlineText(
+                    text = "Partiedetails",
+                    textAlign = TextAlign.Center
                 )
                 CoffeeText(
                     text = "Datum: " + (game.startedAt.takeIf { it.isNotBlank() }?.let { formatDate(it) } ?: "Unbekannt")

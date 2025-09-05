@@ -276,9 +276,6 @@ fun MainScaffoldScreen(
                     composable(NavRoutes.STATS) { backStackEntry ->
                         StatsScreen(navController = innerNavController)
                     }
-                    composable("game_history") { backStackEntry ->
-                        GameHistoryScreen(navController = innerNavController, gameViewModel = gameViewModel)
-                    }
                     composable("game_detail/{gameId}") { backStackEntry ->
                         val gameId = backStackEntry.arguments?.getString("gameId") ?: ""
                         GameDetailScreen(navController = innerNavController, gameId = gameId, gameViewModel = gameViewModel)
@@ -458,13 +455,8 @@ fun MainScaffoldScreen(
                         chessGameViewModel = chessGameViewModel
                     )
                 }
-
-                // Bestehende Screens
                 composable(NavRoutes.STATS) { backStackEntry ->
                     StatsScreen(navController = innerNavController)
-                }
-                composable("game_history") { backStackEntry ->
-                    GameHistoryScreen(navController = innerNavController, gameViewModel = gameViewModel)
                 }
                 composable("game_detail/{gameId}") { backStackEntry ->
                     val gameId = backStackEntry.arguments?.getString("gameId") ?: ""
@@ -486,8 +478,6 @@ fun MainScaffoldScreen(
                     SettingsScreen()
                 }
 
-
-                // Spiel-Screen
                 composable("game/{lobbyId}") { backStackEntry ->
                     val lobbyId = backStackEntry.arguments?.getString("lobbyId") ?: ""
                     val gameStartResponse by chessGameViewModel.initialGameData.collectAsState()
