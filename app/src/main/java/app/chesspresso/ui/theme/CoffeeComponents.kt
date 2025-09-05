@@ -1,6 +1,7 @@
 package app.chesspresso.ui.theme
 
 import android.annotation.SuppressLint
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -25,6 +26,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.VisualTransformation
 
 @Composable
 fun CoffeeButton(
@@ -74,16 +76,23 @@ fun CoffeeTextField(
     label: String? = null,
     isError: Boolean = false,
     singleLine: Boolean = true,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    visualTransformation: VisualTransformation = VisualTransformation.None,
+    leadingIcon: (@Composable (() -> Unit))? = null,
+    trailingIcon: (@Composable (() -> Unit))? = null
 ) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        modifier = modifier,
-        label = label?.let { { Text(it) } },
+        modifier = modifier.fillMaxWidth(),
+        label = label?.let { { Text(it, fontSize = 20.sp) } },
+        textStyle = TextStyle(fontSize = 20.sp),
         singleLine = singleLine,
         enabled = enabled,
         isError = isError,
+        visualTransformation = visualTransformation,
+        leadingIcon = leadingIcon,
+        trailingIcon = trailingIcon,
         shape = RoundedCornerShape(12.dp),
         colors = TextFieldDefaults.colors(
             focusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -114,7 +123,8 @@ fun CoffeeText(
     color: Color = MaterialTheme.colorScheme.onSurface,
     maxLines: Int = Int.MAX_VALUE,
     overflow: TextOverflow = TextOverflow.Clip,
-    textAlign: TextAlign? = null
+    textAlign: TextAlign? = null,
+    fontSizeSp: Int = 20
 ) {
     Text(
         text = text,
@@ -124,7 +134,7 @@ fun CoffeeText(
         maxLines = maxLines,
         overflow = overflow,
         textAlign = textAlign,
-        fontSize = 24.sp
+        fontSize = fontSizeSp.sp
     )
 }
 

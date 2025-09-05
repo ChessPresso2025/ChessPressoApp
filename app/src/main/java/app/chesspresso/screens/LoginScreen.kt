@@ -1,5 +1,6 @@
 package app.chesspresso.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -8,12 +9,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -34,6 +31,18 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import app.chesspresso.auth.presentation.AuthState
 import app.chesspresso.auth.presentation.AuthViewModel
+import app.chesspresso.ui.theme.CoffeeButton
+import app.chesspresso.ui.theme.CoffeeCard
+import app.chesspresso.ui.theme.CoffeeHeadlineText
+import app.chesspresso.ui.theme.CoffeeText
+import app.chesspresso.ui.theme.CoffeeTextField
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import androidx.lint.kotlin.metadata.Visibility
 
 @Composable
 fun LoginScreen(
@@ -47,6 +56,7 @@ fun LoginScreen(
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
+    var passwordVisible by remember { mutableStateOf(false) }
 
     // Vorausgefüllter Benutzername, falls vorhanden
     val storedUsername = remember { authViewModel.getStoredUsername() }
@@ -75,60 +85,69 @@ fun LoginScreen(
     }
 
     Box(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
         contentAlignment = Alignment.Center
     ) {
-        Card(
+        CoffeeCard(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(32.dp),
-            elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
+                .padding(32.dp)
         ) {
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.padding(24.dp)
             ) {
-                Text(
+                CoffeeHeadlineText(
                     text = if (isRegistering) "Registrierung" else "Anmeldung",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
+                    fontSizeSp = 24
                 )
 
-                OutlinedTextField(
+                CoffeeTextField(
                     value = username,
                     onValueChange = { username = it },
-                    label = { Text("Benutzername") },
+                    label = "Benutzername",
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    enabled = authState !is AuthState.Loading
+                    enabled = authState !is AuthState.Loading,
+                    leadingIcon = { androidx.compose.material3.Icon(Icons.Filled.Person, contentDescription = "Benutzername") }
                 )
 
                 if (isRegistering) {
-                    OutlinedTextField(
+                    CoffeeTextField(
                         value = email,
                         onValueChange = { email = it },
-                        label = { Text("E-Mail") },
+                        label = "E-Mail",
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        enabled = authState !is AuthState.Loading
+                        enabled = authState !is AuthState.Loading,
+                        leadingIcon = { androidx.compose.material3.Icon(Icons.Filled.Email, contentDescription = "E-Mail") }
                     )
                 }
 
-                OutlinedTextField(
+                CoffeeTextField(
                     value = password,
                     onValueChange = { password = it },
-                    label = { Text("Passwort") },
-                    visualTransformation = PasswordVisualTransformation(),
+                    label = "Passwort",
                     modifier = Modifier.fillMaxWidth(),
                     singleLine = true,
-                    enabled = authState !is AuthState.Loading
+                    enabled = authState !is AuthState.Loading,
+                    visualTransformation = if (passwordVisible) androidx.compose.ui.text.input.VisualTransformation.None else PasswordVisualTransformation(),
+                    leadingIcon = { androidx.compose.material3.Icon(Icons.Filled.Lock, contentDescription = "Passwort") },
+                    trailingIcon = {
+                        val image = if (passwordVisible) Icons.Filled.VisibilityOff else Icons.Filled.Visibility
+                        val desc = if (passwordVisible) "Passwort verbergen" else "Passwort anzeigen"
+                        androidx.compose.material3.IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            androidx.compose.material3.Icon(image, contentDescription = desc)
+                        }
+                    }
                 )
 
                 Spacer(modifier = Modifier.height(8.dp))
 
-                Button(
+                CoffeeButton(
                     onClick = {
                         if (isRegistering) {
                             if (username.isNotBlank() && password.isNotBlank() && email.isNotBlank()) {
@@ -145,55 +164,50 @@ fun LoginScreen(
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = authState !is AuthState.Loading
-                ) {
-                    if (authState is AuthState.Loading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.padding(end = 8.dp)
-                        )
+                    enabled = authState !is AuthState.Loading,
+                    content = {
+                        if (authState is AuthState.Loading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.padding(end = 8.dp)
+                            )
+                        }
+                        Text(text = if (isRegistering) "Registrieren" else "Anmelden")
                     }
-                    Text(if (isRegistering) "Registrieren" else "Anmelden")
-                }
+                )
 
                 Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(top = 20.dp)
                 ) {
-                    Text(
-                        text = if (isRegistering) "Bereits ein Konto?" else "Noch kein Konto?",
-                        color = MaterialTheme.colorScheme.onSurface
+                    CoffeeText(
+                        text = if (isRegistering) "Bereits ein Konto?" else "Noch kein Konto?"
                     )
 
                     TextButton(
-                        modifier = Modifier.padding(top = 8.dp),
                         onClick = {
                             isRegistering = !isRegistering
                             email = ""
                         },
-                        enabled = authState !is AuthState.Loading
-                    ) {
-                        Text(if (isRegistering) "Anmelden" else "Registrieren")
-                    }
+                        enabled = authState !is AuthState.Loading,
+                        content = {
+                            Text(text = if (isRegistering) "Anmelden" else "Registrieren", fontSize = 20.sp)
+                        }
+                    )
                 }
 
                 when (val state = authState) {
-                    is AuthState.Loading -> Text(
-                        text = if (isRegistering) "Registrierung läuft..." else "Anmeldung läuft...",
-                        color = MaterialTheme.colorScheme.primary
+                    is AuthState.Loading -> CoffeeText(
+                        text = if (isRegistering) "Registrierung läuft..." else "Anmeldung läuft..."
                     )
-
-                    is AuthState.Success -> Text(
-                        text = "Willkommen ${state.response.name}!",
-                        color = MaterialTheme.colorScheme.primary
+                    is AuthState.Success -> CoffeeText(
+                        text = "Willkommen ${state.response.name}!"
                     )
-
-                    is AuthState.Error -> Text(
+                    is AuthState.Error -> CoffeeText(
                         text = "Fehler: ${state.message}",
                         color = MaterialTheme.colorScheme.error
                     )
-
-                    AuthState.Idle -> Text(
-                        text = "Bereit zur Anmeldung",
-                        color = MaterialTheme.colorScheme.onSurface
+                    AuthState.Idle -> CoffeeText(
+                        text = "Bereit zur Anmeldung"
                     )
                 }
             }

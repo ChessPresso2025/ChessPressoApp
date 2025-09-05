@@ -77,7 +77,8 @@ fun WelcomeScreen(
 
             CoffeeText(
                 text = "Schach für Kaffeeliebhaber",
-                modifier = Modifier.padding(32.dp)
+                modifier = Modifier.padding(32.dp),
+                fontSizeSp = 24
             )
 
             // Login Button

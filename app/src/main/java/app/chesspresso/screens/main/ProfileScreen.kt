@@ -13,6 +13,8 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -34,6 +36,12 @@ import app.chesspresso.auth.presentation.AuthViewModel
 import app.chesspresso.ui.theme.CoffeeButton
 import app.chesspresso.ui.theme.CoffeeCard
 import app.chesspresso.ui.theme.CoffeeText
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
+import app.chesspresso.ui.theme.CoffeeTextField
 
 @Composable
 fun ProfileScreen(
@@ -49,6 +57,8 @@ fun ProfileScreen(
     var newPassword by remember { mutableStateOf("") }
     var showUsernameConfirmDialog by remember { mutableStateOf(false) }
     var showPasswordConfirmDialog by remember { mutableStateOf(false) }
+    var oldPasswordVisible by remember { mutableStateOf(false) }
+    var newPasswordVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         viewModel.loadUserProfile()
@@ -149,12 +159,13 @@ fun ProfileScreen(
                         text = "Benutzernamen ändern",
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
-                    OutlinedTextField(
+                    CoffeeTextField(
                         value = newUsername,
                         onValueChange = { newUsername = it },
-                        label = { CoffeeText("Neuer Benutzername") },
+                        label = "Neuer Benutzername",
                         modifier = Modifier.fillMaxWidth(),
-                        singleLine = true
+                        singleLine = true,
+                        leadingIcon = { Icon(Icons.Default.Person, contentDescription = "Benutzername") }
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     CoffeeButton(
@@ -198,22 +209,38 @@ fun ProfileScreen(
                         text = "Passwort ändern",
                         modifier = Modifier.padding(bottom = 16.dp)
                     )
-                    OutlinedTextField(
+                    CoffeeTextField(
                         value = oldPassword,
                         onValueChange = { oldPassword = it },
-                        label = { CoffeeText("Altes Passwort") },
+                        label = "Altes Passwort",
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        visualTransformation = PasswordVisualTransformation()
+                        visualTransformation = if (oldPasswordVisible) androidx.compose.ui.text.input.VisualTransformation.None else PasswordVisualTransformation(),
+                        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = "Altes Passwort") },
+                        trailingIcon = {
+                            val image = if (oldPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility
+                            val desc = if (oldPasswordVisible) "Passwort verbergen" else "Passwort anzeigen"
+                            IconButton(onClick = { oldPasswordVisible = !oldPasswordVisible }) {
+                                Icon(image, contentDescription = desc)
+                            }
+                        }
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
+                    CoffeeTextField(
                         value = newPassword,
                         onValueChange = { newPassword = it },
-                        label = { CoffeeText("Neues Passwort") },
+                        label = "Neues Passwort",
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
-                        visualTransformation = PasswordVisualTransformation()
+                        visualTransformation = if (newPasswordVisible) androidx.compose.ui.text.input.VisualTransformation.None else PasswordVisualTransformation(),
+                        leadingIcon = { Icon(Icons.Default.Lock, contentDescription = "Neues Passwort") },
+                        trailingIcon = {
+                            val image = if (newPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility
+                            val desc = if (newPasswordVisible) "Passwort verbergen" else "Passwort anzeigen"
+                            IconButton(onClick = { newPasswordVisible = !newPasswordVisible }) {
+                                Icon(image, contentDescription = desc)
+                            }
+                        }
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     CoffeeButton(
