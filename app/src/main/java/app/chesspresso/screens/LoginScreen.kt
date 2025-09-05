@@ -24,6 +24,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -58,6 +62,19 @@ fun LoginScreen(
     var email by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
 
+    // FocusRequester für Autofokus auf Benutzername
+    val usernameFocusRequester = remember { FocusRequester() }
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val currentIsRegistering = rememberUpdatedState(isRegistering)
+
+    // Autofokus beim ersten Anzeigen (und wenn von Registrierung zurück zu Login gewechselt wird)
+    LaunchedEffect(lifecycleOwner, currentIsRegistering.value) {
+        if (!currentIsRegistering.value) {
+            // Nur im Login-Modus
+            usernameFocusRequester.requestFocus()
+        }
+    }
+
     // Vorausgefüllter Benutzername, falls vorhanden
     val storedUsername = remember { authViewModel.getStoredUsername() }
     if (username.isEmpty() && storedUsername != null) {
@@ -73,13 +90,15 @@ fun LoginScreen(
         }
     }
 
-    // Snackbar für Fehler
+    // Snackbar für Fehler und Erfolg
     LaunchedEffect(authState) {
         when (val state = authState) {
             is AuthState.Error -> {
                 snackbarHostState.showSnackbar(state.message)
             }
-
+            is AuthState.Success -> {
+                snackbarHostState.showSnackbar("Willkommen ${state.response.name}!")
+            }
             else -> {}
         }
     }
@@ -109,7 +128,7 @@ fun LoginScreen(
                     value = username,
                     onValueChange = { username = it },
                     label = "Benutzername",
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier.fillMaxWidth().focusRequester(usernameFocusRequester),
                     singleLine = true,
                     enabled = authState !is AuthState.Loading,
                     leadingIcon = { androidx.compose.material3.Icon(Icons.Filled.Person, contentDescription = "Benutzername") }
@@ -192,22 +211,6 @@ fun LoginScreen(
                         content = {
                             Text(text = if (isRegistering) "Anmelden" else "Registrieren", fontSize = 20.sp)
                         }
-                    )
-                }
-
-                when (val state = authState) {
-                    is AuthState.Loading -> CoffeeText(
-                        text = if (isRegistering) "Registrierung läuft..." else "Anmeldung läuft..."
-                    )
-                    is AuthState.Success -> CoffeeText(
-                        text = "Willkommen ${state.response.name}!"
-                    )
-                    is AuthState.Error -> CoffeeText(
-                        text = "Fehler: ${state.message}",
-                        color = MaterialTheme.colorScheme.error
-                    )
-                    AuthState.Idle -> CoffeeText(
-                        text = "Bereit zur Anmeldung"
                     )
                 }
             }
