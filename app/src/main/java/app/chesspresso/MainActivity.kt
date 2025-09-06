@@ -9,7 +9,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import app.chesspresso.data.storage.ThemeStorage
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -17,10 +16,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import app.chesspresso.auth.presentation.AuthState
 import app.chesspresso.auth.presentation.AuthViewModel
+import app.chesspresso.data.storage.ThemeStorage
 import app.chesspresso.screens.LoginScreen
+import app.chesspresso.screens.SplashScreen
 import app.chesspresso.screens.WelcomeScreen
 import app.chesspresso.screens.main.MainScaffoldScreen
-import app.chesspresso.screens.SplashScreen
 import app.chesspresso.ui.theme.ChessPressoAppTheme
 import app.chesspresso.websocket.StompWebSocketService
 import dagger.hilt.android.AndroidEntryPoint

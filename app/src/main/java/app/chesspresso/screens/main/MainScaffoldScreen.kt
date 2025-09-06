@@ -22,10 +22,6 @@ import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DividerDefaults
 import androidx.compose.material3.DrawerValue
@@ -68,6 +64,10 @@ import app.chesspresso.screens.game.ChessGameScreen
 import app.chesspresso.screens.lobby.LobbyWaitingScreen
 import app.chesspresso.screens.lobby.PrivateLobbyScreen
 import app.chesspresso.screens.lobby.QuickMatchScreen
+import app.chesspresso.ui.theme.CoffeeButton
+import app.chesspresso.ui.theme.CoffeeCard
+import app.chesspresso.ui.theme.CoffeeHeadlineText
+import app.chesspresso.ui.theme.CoffeeText
 import app.chesspresso.viewmodel.ChessGameViewModel
 import app.chesspresso.viewmodel.GameViewModel
 import app.chesspresso.viewmodel.QuickMatchViewModel
@@ -89,6 +89,7 @@ fun MainScaffoldScreen(
     val isLobbyScreen =
         selectedRoute == NavRoutes.QUICK_MATCH || selectedRoute == NavRoutes.PRIVATE_LOBBY
     val isGameScreen = selectedRoute.startsWith("game/")
+    val isGameDetailScreen = selectedRoute.startsWith("game_detail/")
     val chessGameViewModel: ChessGameViewModel = hiltViewModel()
 
     ModalNavigationDrawer(
@@ -100,13 +101,14 @@ fun MainScaffoldScreen(
                 val myColor by chessGameViewModel.myColor.collectAsState()
                 val initialGameData by chessGameViewModel.initialGameData.collectAsState()
                 val moveHistory by chessGameViewModel.moveHistory.collectAsState()
+                val lobbyId = initialGameData?.lobbyId ?: ""
                 ModalDrawerSheet(
-                    modifier = Modifier.background(app.chesspresso.ui.theme.CoffeeCremeLight)
+                    modifier = Modifier.background(MaterialTheme.colorScheme.surface)
                 ) {
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(app.chesspresso.ui.theme.CoffeeCremeLight)
+                            .background(MaterialTheme.colorScheme.background)
                             .padding(16.dp)
                     ) {
                         Spacer(modifier = Modifier.height(32.dp))
@@ -115,12 +117,12 @@ fun MainScaffoldScreen(
                             moves = moveHistory,
                             onResign = {
                                 if (myColor != null) {
-                                    chessGameViewModel.resignGame(myColor!!, "")
+                                    chessGameViewModel.resignGame(myColor!!, lobbyId)
                                 }
                             },
                             onOfferDraw = {
                                 if (myColor != null) {
-                                    chessGameViewModel.offerDraw("", myColor!!)
+                                    chessGameViewModel.offerDraw(lobbyId, myColor!!)
                                 }
                             }
                         )
@@ -134,6 +136,7 @@ fun MainScaffoldScreen(
                 MainTopAppBar(
                     isGameScreen = isGameScreen,
                     isLobbyScreen = isLobbyScreen,
+                    isGameDetailScreen = isGameDetailScreen,
                     onMenuClick = { scope.launch { drawerState.open() } },
                     onBackClick = { innerNavController.navigateUp() }
                 )
@@ -187,9 +190,8 @@ fun GameDrawerContent(
             .fillMaxSize(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            "Spielverlauf",
-            style = MaterialTheme.typography.titleLarge
+        CoffeeHeadlineText(
+            "Spielverlauf"
         )
         Spacer(modifier = Modifier.height(16.dp))
 
@@ -205,22 +207,22 @@ fun GameDrawerContent(
             }
         }
 
-        Button(
+        CoffeeButton(
             onClick = onResign,
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.error
-            ),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Aufgeben")
-        }
+            modifier = Modifier.fillMaxWidth(),
+            error = true,
+            content = {
+                Text("Aufgeben")
+            }
+        )
         Spacer(modifier = Modifier.height(8.dp))
-        Button(
+        CoffeeButton(
             onClick = onOfferDraw,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Text("Remis anbieten")
-        }
+            modifier = Modifier.fillMaxWidth(),
+            content = {
+                Text("Remis anbieten")
+            }
+        )
         HorizontalDivider(
             modifier = Modifier.padding(vertical = 16.dp),
             thickness = DividerDefaults.Thickness,
@@ -228,10 +230,10 @@ fun GameDrawerContent(
         )
 
         // Anzeige der getätigten Züge
-        Text("Getätigte Züge:", style = MaterialTheme.typography.titleMedium, color = MaterialTheme.colorScheme.primary)
+        CoffeeText("Getätigte Züge:", style = MaterialTheme.typography.titleMedium)
         Spacer(modifier = Modifier.height(8.dp))
         if (moves.isEmpty()) {
-            Text("Noch keine Züge.", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurface)
+            CoffeeText("Noch keine Züge.", style = MaterialTheme.typography.bodySmall)
         } else {
             LazyColumn(
                 modifier = Modifier.weight(1f),
@@ -241,47 +243,43 @@ fun GameDrawerContent(
                     val color = getMoveColor(index)
                     val pieceUnicode = getPieceUnicode(move.move.piece, color)
                     val pieceColor = if (color == TeamColor.WHITE) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
-                    Card(
+                    CoffeeCard(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .background(app.chesspresso.ui.theme.CoffeeCremeLight),
-                        colors = CardDefaults.cardColors(
-                            containerColor = app.chesspresso.ui.theme.CoffeeCremeMid
-                        ),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = "${index + 1}.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.width(32.dp)
-                            )
-                            Text(
-                                text = pieceUnicode + ": ",
-                                color = pieceColor,
-                                style = MaterialTheme.typography.bodyLarge,
-                                modifier = Modifier.width(28.dp)
-                            )
-                            Text(
-                                text = "${move.move.start} -> ${move.move.end}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                modifier = Modifier.padding(start = 8.dp)
-                            )
-                            Spacer(modifier = Modifier.weight(1f))
-                            if (move.move.specialMove != null) {
+                            .fillMaxWidth(),
+                        content = {
+                            Row(
+                                modifier = Modifier.padding(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
                                 Text(
-                                    text = move.move.specialMove.toString(),
+                                    text = "${index + 1}.",
                                     style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.secondary
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.width(32.dp)
                                 )
+                                Text(
+                                    text = "$pieceUnicode: ",
+                                    color = pieceColor,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    modifier = Modifier.width(28.dp)
+                                )
+                                Text(
+                                    text = "${move.move.start} -> ${move.move.end}",
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    modifier = Modifier.padding(start = 8.dp)
+                                )
+                                Spacer(modifier = Modifier.weight(1f))
+                                if (move.move.specialMove != null) {
+                                    Text(
+                                        text = move.move.specialMove.toString(),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.secondary
+                                    )
+                                }
                             }
                         }
-                    }
+                    )
                 }
             }
         }
@@ -323,6 +321,7 @@ object NavRoutes {
 fun MainTopAppBar(
     isGameScreen: Boolean,
     isLobbyScreen: Boolean,
+    isGameDetailScreen: Boolean = false,
     onMenuClick: () -> Unit,
     onBackClick: () -> Unit
 ) {
@@ -337,7 +336,7 @@ fun MainTopAppBar(
                         )
                     }
                 }
-                isLobbyScreen -> {
+                isLobbyScreen || isGameDetailScreen -> {
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,

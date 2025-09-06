@@ -95,25 +95,26 @@ fun GameDetailScreen(
                 ) {
                     items(game.moves) { move ->
                         CoffeeCard(
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                CoffeeText(
-                                    text = "${move.moveNumber}.",
-                                    modifier = Modifier.width(32.dp)
-                                )
-                                CoffeeText(
-                                    text = move.moveNotation
-                                )
-                                Spacer(modifier = Modifier.weight(1f))
-                                CoffeeText(
-                                    text = move.createdAt.takeIf { it.isNotBlank() }?.let { formatDate(it) } ?: ""
-                                )
-                            }
-                        }
+                            modifier = Modifier.fillMaxWidth(),
+                            content = {
+                                Row(
+                                    modifier = Modifier.padding(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    CoffeeText(
+                                        text = "${move.moveNumber}.",
+                                        modifier = Modifier.width(32.dp)
+                                    )
+                                    CoffeeText(
+                                        text = move.moveNotation
+                                    )
+                                    Spacer(modifier = Modifier.weight(1f))
+                                    CoffeeText(
+                                        text = move.createdAt.takeIf { it.isNotBlank() }?.let { formatDate(it) } ?: ""
+                                    )
+                                }
+                            },
+                        )
                     }
                 }
             }

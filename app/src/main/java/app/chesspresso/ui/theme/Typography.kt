@@ -1,12 +1,12 @@
 package app.chesspresso.ui.theme
 
-import androidx.compose.material3.Typography as MaterialTypography
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.Font
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import app.chesspresso.R
+import androidx.compose.material3.Typography as MaterialTypography
 
 val Montserrat = FontFamily(
     Font(R.font.montserrat_thin, FontWeight.Thin),

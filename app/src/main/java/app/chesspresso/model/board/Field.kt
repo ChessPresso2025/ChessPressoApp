@@ -19,6 +19,7 @@ import app.chesspresso.R
 import app.chesspresso.model.PieceType
 import app.chesspresso.model.TeamColor
 import app.chesspresso.model.game.PieceInfo
+import app.chesspresso.ui.theme.LocalAppDarkTheme
 
 class Field(
     val name: String,
@@ -36,13 +37,16 @@ class Field(
         isValidMove: Boolean = false,
         onFieldClick: () -> Unit = {}
     ) {
+        val isDark = LocalAppDarkTheme.current
+        val lightSquareColor = app.chesspresso.ui.theme.CoffeeCremeMid
+        val darkSquareColor = app.chesspresso.ui.theme.CoffeeBrownLight
         val backgroundColor = when {
             isCheckmate -> app.chesspresso.ui.theme.CoffeeRedMate.copy(alpha = 0.7f)
             isCheck -> app.chesspresso.ui.theme.CoffeeRedCheck.copy(alpha = 0.7f)
             isFieldSelected -> app.chesspresso.ui.theme.CoffeeOrange.copy(alpha = 0.35f)
             isValidMove -> app.chesspresso.ui.theme.CoffeeGreen.copy(alpha = 0.3f)
-            isLightSquare -> app.chesspresso.ui.theme.CoffeeCremeMid
-            else -> app.chesspresso.ui.theme.CoffeeBrownLight
+            isLightSquare -> lightSquareColor
+            else -> darkSquareColor
         }
 
         Box(

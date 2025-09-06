@@ -17,7 +17,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -86,35 +85,36 @@ fun PrivateLobbyScreen(
         )
         // Lobby erstellen
         CoffeeCard(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
+            modifier = Modifier.fillMaxWidth(),
+            content = {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
 
-                CoffeeText(
-                    text = "Erstelle eine private Lobby und teile den Code mit deinem Freund.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                    CoffeeText(
+                        text = "Erstelle eine private Lobby und teile den Code mit deinem Freund.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
 
-                CoffeeButton(
-                    onClick = { viewModel.createPrivateLobby() },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !uiState.isLoading,
-                    content = {
-                        if (uiState.isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                color = MaterialTheme.colorScheme.onPrimary
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
+                    CoffeeButton(
+                        onClick = { viewModel.createPrivateLobby() },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !uiState.isLoading,
+                        content = {
+                            if (uiState.isLoading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                            }
+                            Text("Lobby erstellen")
                         }
-                        Text("Lobby erstellen")
-                    }
-                )
-            }
-        }
+                    )
+                }
+            },
+        )
 
         // QR-Code für erstellte Lobby anzeigen
         uiState.createdLobbyCode?.let { lobbyCode ->
@@ -152,62 +152,63 @@ fun PrivateLobbyScreen(
 
         // Lobby beitreten
         CoffeeCard(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
+            modifier = Modifier.fillMaxWidth(),
+            content = {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
 
-                CoffeeText(
-                    text = "Gib den 6-stelligen Lobby-Code ein, den du von deinem Freund erhalten hast.",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                    CoffeeText(
+                        text = "Gib den 6-stelligen Lobby-Code ein, den du von deinem Freund erhalten hast.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
 
-                CoffeeTextField(
-                    value = uiState.joinCode,
-                    onValueChange = viewModel::updateJoinCode,
-                    label = "Lobby-Code",
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !uiState.isLoading,
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(
-                        capitalization = KeyboardCapitalization.Characters,
-                        imeAction = ImeAction.Go
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onGo = {
-                            if (uiState.joinCode.length == 6) {
-                                keyboardController?.hide()
-                                viewModel.joinPrivateLobby(uiState.joinCode)
+                    CoffeeTextField(
+                        value = uiState.joinCode,
+                        onValueChange = viewModel::updateJoinCode,
+                        label = "Lobby-Code",
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !uiState.isLoading,
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Characters,
+                            imeAction = ImeAction.Go
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onGo = {
+                                if (uiState.joinCode.length == 6) {
+                                    keyboardController?.hide()
+                                    viewModel.joinPrivateLobby(uiState.joinCode)
+                                }
                             }
+                        ),
+                        supportingText = {
+                            CoffeeText("${uiState.joinCode.length}/6 Zeichen")
                         }
-                    ),
-                    supportingText = {
-                        CoffeeText("${uiState.joinCode.length}/6 Zeichen")
-                    }
-                )
+                    )
 
-                CoffeeButton(
-                    onClick = {
-                        keyboardController?.hide()
-                        viewModel.joinPrivateLobby(uiState.joinCode)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !uiState.isLoading && uiState.joinCode.length == 6,
-                    content = {
-                        if (uiState.isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                color = MaterialTheme.colorScheme.onPrimary
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
+                    CoffeeButton(
+                        onClick = {
+                            keyboardController?.hide()
+                            viewModel.joinPrivateLobby(uiState.joinCode)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !uiState.isLoading && uiState.joinCode.length == 6,
+                        content = {
+                            if (uiState.isLoading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                            }
+                            Text("Lobby beitreten")
                         }
-                        Text("Lobby beitreten")
-                    }
-                )
-            }
-        }
+                    )
+                }
+            },
+        )
 
         // QR-Code Scanner für Lobby beitreten
         QRScannerButton(
@@ -222,28 +223,30 @@ fun PrivateLobbyScreen(
         // Fehleranzeige
         error?.let { errorMessage ->
             CoffeeCard(
+                modifier = Modifier.fillMaxWidth(),
                 containerColor = MaterialTheme.colorScheme.errorContainer,
                 contentColor = MaterialTheme.colorScheme.onErrorContainer,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                CoffeeText(
-                    text = errorMessage,
-                    modifier = Modifier.padding(16.dp),
-                    color = MaterialTheme.colorScheme.onErrorContainer
-                )
-            }
+                {
+                    CoffeeText(
+                        text = errorMessage,
+                        modifier = Modifier.padding(16.dp),
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                },
+            )
         }
 
         uiState.error?.let { errorMessage ->
             CoffeeCard(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                CoffeeText(
-                    text = errorMessage,
-                    modifier = Modifier.padding(16.dp),
-                    color = MaterialTheme.colorScheme.onErrorContainer
-                )
-            }
+                modifier = Modifier.fillMaxWidth(),
+                content = {
+                    CoffeeText(
+                        text = errorMessage,
+                        modifier = Modifier.padding(16.dp),
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                },
+            )
         }
     }
 }

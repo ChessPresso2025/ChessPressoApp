@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -15,7 +14,6 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavHostController
@@ -23,7 +21,6 @@ import app.chesspresso.model.TeamColor
 import app.chesspresso.model.lobby.GameEndResponse
 import app.chesspresso.screens.main.NavRoutes
 import app.chesspresso.ui.theme.CoffeeButton
-import app.chesspresso.ui.theme.CoffeeGreen
 import app.chesspresso.ui.theme.CoffeeGreenLight
 import app.chesspresso.ui.theme.CoffeeHeadlineText
 import app.chesspresso.ui.theme.CoffeeRedCheck
@@ -193,8 +190,7 @@ fun GameOverActions(
 ) {
     Row(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 24.dp),
+            .fillMaxWidth().padding(bottom = 36.dp),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically
     ) {

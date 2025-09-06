@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -77,32 +76,33 @@ fun QuickMatchScreen(
         if (isWaiting) {
             // Wartezustand
             CoffeeCard(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier
-                        .padding(24.dp)
-                        .fillMaxWidth(),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    CircularProgressIndicator()
-                    CoffeeText(
-                        text = "Suche nach Gegner..."
-                    )
-                    CoffeeText(
-                        text = "Spielzeit: ${selectedGameTime.displayName}"
-                    )
+                modifier = Modifier.fillMaxWidth(),
+                content = {
+                    Column(
+                        modifier = Modifier
+                            .padding(24.dp)
+                            .fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        CircularProgressIndicator()
+                        CoffeeText(
+                            text = "Suche nach Gegner..."
+                        )
+                        CoffeeText(
+                            text = "Spielzeit: ${selectedGameTime.displayName}"
+                        )
 
-                    CoffeeButton(
-                        onClick = { viewModel.cancelSearch() },
-                        error = true,
-                        content = {
-                            Text("Suche abbrechen")
-                        }
-                    )
-                }
-            }
+                        CoffeeButton(
+                            onClick = { viewModel.cancelSearch() },
+                            error = true,
+                            content = {
+                                Text("Suche abbrechen")
+                            }
+                        )
+                    }
+                },
+            )
         } else {
             CoffeeHeadlineText(
                 text = "Quick Match",
@@ -111,35 +111,36 @@ fun QuickMatchScreen(
             )
             // Spielzeit-Auswahl
             CoffeeCard(
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    CoffeeText(
-                        text = "Spielzeit wählen:"
-                    )
-                    GameTimeSelectionRow(
-                        selectedGameTime = selectedGameTime,
-                        onGameTimeSelected = { selectedGameTime = it }
-                    )
-                }
-            }
+                modifier = Modifier.fillMaxWidth(),
+                content = {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        CoffeeText(
+                            text = "Spielzeit wählen:"
+                        )
+                        GameTimeSelectionRow(
+                            selectedGameTime = selectedGameTime,
+                            onGameTimeSelected = { selectedGameTime = it }
+                        )
+                    }
+                },
+            )
 
             // Fehleranzeige
             error?.let { errorMessage ->
                 CoffeeCard(
                     modifier = Modifier.fillMaxWidth(),
-                    // Optional: Farbe anpassen
-                ) {
-                    CoffeeText(
-                        text = errorMessage,
-                        modifier = Modifier.padding(16.dp),
-                        color = MaterialTheme.colorScheme.onErrorContainer
-                    )
-                }
+                    content = {
+                        CoffeeText(
+                            text = errorMessage,
+                            modifier = Modifier.padding(16.dp),
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }, // Optional: Farbe anpassen
+                )
             }
 
             Spacer(modifier = Modifier.weight(1f))

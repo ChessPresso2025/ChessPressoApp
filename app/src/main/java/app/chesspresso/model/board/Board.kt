@@ -3,6 +3,7 @@ package app.chesspresso.model.board
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -207,11 +208,14 @@ class Board {
                         val isLightSquare = (row + col) % 2 == 0
                         field.isLightSquare = isLightSquare
                         val highlight = fieldHighlights[field.name] ?: app.chesspresso.viewmodel.ChessGameViewModel.FieldHighlight.NONE
+                        val isDark = isSystemInDarkTheme()
+                        val lightSquareColor = if (isDark) app.chesspresso.ui.theme.CoffeeBrownLight else app.chesspresso.ui.theme.CoffeeCremeMid
+                        val darkSquareColor = if (isDark) app.chesspresso.ui.theme.CoffeeBrownContrast else app.chesspresso.ui.theme.CoffeeBrownSoft
                         val backgroundColor = when (highlight) {
                             app.chesspresso.viewmodel.ChessGameViewModel.FieldHighlight.CHECKMATE_KING -> Color(colorResource(id = app.chesspresso.R.color.checkmate_king).value)
                             app.chesspresso.viewmodel.ChessGameViewModel.FieldHighlight.CHECKMATE_ATTACKER, 
                             app.chesspresso.viewmodel.ChessGameViewModel.FieldHighlight.CHECK_KING -> Color(colorResource(id = app.chesspresso.R.color.checkmate_attacker).value)
-                            else -> if (isLightSquare) app.chesspresso.ui.theme.CoffeeCremeMid else app.chesspresso.ui.theme.CoffeeBrownSoft
+                            else -> if (isLightSquare) lightSquareColor else darkSquareColor
                         }
                         Box(
                             modifier = Modifier.weight(1f)
