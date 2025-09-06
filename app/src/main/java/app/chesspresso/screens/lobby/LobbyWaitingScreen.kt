@@ -1,5 +1,7 @@
 package app.chesspresso.screens.lobby
 
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,14 +16,12 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.Button
+import androidx.compose.material.icons.filled.Casino
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -32,14 +32,26 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.modifier.modifierLocalConsumer
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.chesspresso.model.lobby.GameTime
 import app.chesspresso.ui.components.LobbyCreatorControls
+import app.chesspresso.ui.theme.CoffeeButton
+import app.chesspresso.ui.theme.CoffeeCard
+import app.chesspresso.ui.theme.CoffeeHeadlineText
+import app.chesspresso.ui.theme.CoffeeText
 import app.chesspresso.viewmodel.PrivateLobbyViewModel
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.graphics.Color
 
 @Composable
 fun LobbyWaitingScreen(
@@ -59,6 +71,10 @@ fun LobbyWaitingScreen(
     var selectedGameTime by remember { mutableStateOf(GameTime.MIDDLE) }
     var selectedWhitePlayer by remember { mutableStateOf("") }
     var randomColors by remember { mutableStateOf(true) }
+
+    // Farbauswahl-State auf Composable-Ebene
+    var colorChoice by remember { mutableStateOf("random") } // Werte: "black", "white", "random"
+
 
 
     // Navigation nach Home wenn Lobby verlassen wurde
@@ -104,34 +120,26 @@ fun LobbyWaitingScreen(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                text = "Deine Lobby: $lobbyCode",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold
-            )
-        }
+        CoffeeHeadlineText(
+            text = "Deine Lobby: $lobbyCode",
+
+        )
 
         // nur wenn nur ein Spieler in der Lobby ist
         if (currentLobby?.players?.size != 2) {
-            Card(
+            CoffeeCard(
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Column(
                     modifier = Modifier.padding(16.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text(
+                    CoffeeText(
                         text = "Teile diesen Code mit deinem Freund",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        textAlign = TextAlign.Center
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -145,17 +153,15 @@ fun LobbyWaitingScreen(
         }
 
         // Spieler-Status
-        Card(
+        CoffeeCard(
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                Text(
-                    text = "Spieler (${currentLobby?.players?.size ?: 1}/2):",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                CoffeeText(
+                    text = "Spieler (${currentLobby?.players?.size ?: 1}/2):"
                 )
 
                 currentLobby?.let { lobby ->
@@ -169,10 +175,9 @@ fun LobbyWaitingScreen(
                                 contentDescription = null,
                                 tint = MaterialTheme.colorScheme.primary
                             )
-                            Text(
+                            CoffeeText(
                                 text = "${player}${if (player == lobby.creator) " (Ersteller)" else ""}",
-                                modifier = Modifier.padding(start = 8.dp),
-                                style = MaterialTheme.typography.bodyLarge
+                                modifier = Modifier.padding(start = 8.dp)
                             )
                         }
                     }
@@ -186,10 +191,9 @@ fun LobbyWaitingScreen(
                                 modifier = Modifier.size(24.dp),
                                 strokeWidth = 2.dp
                             )
-                            Text(
+                            CoffeeText(
                                 text = "Warte auf zweiten Spieler...",
                                 modifier = Modifier.padding(start = 8.dp),
-                                style = MaterialTheme.typography.bodyLarge,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
@@ -197,137 +201,143 @@ fun LobbyWaitingScreen(
                 }
             }
         }
+        CoffeeHeadlineText(
+            text = "Spiel-Einstellungen",
+            fontSizeSp = 24
+        )
 
         // Spieleinstellungen Card (nur für Ersteller)
         currentLobby?.let { lobby ->
             if (isCreator) {
-                Card(
+                CoffeeCard(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text(
-                            text = "Spiel-Einstellungen",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold
-                        )
 
-                        // Spielzeit-Auswahl
-                        Text(
-                            text = "Spielzeit:",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Medium
+                        CoffeeText(
+                            text = "Spielzeit:"
                         )
-
-                        GameTime.entries.forEach { gameTime ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .selectable(
-                                        selected = selectedGameTime == gameTime,
-                                        onClick = { selectedGameTime = gameTime }
-                                    )
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                RadioButton(
-                                    selected = selectedGameTime == gameTime,
-                                    onClick = { selectedGameTime = gameTime }
-                                )
-                                Text(
-                                    text = gameTime.displayName,
-                                    modifier = Modifier.padding(start = 8.dp),
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
-                        }
+                        GameTimeSelectionRow(
+                            selectedGameTime = selectedGameTime,
+                            onGameTimeSelected = { selectedGameTime = it },
+                            allowedTimes = GameTime.entries.toList()
+                        )
                     }
                 }
 
                 // Farbauswahl Card (nur wenn beide Spieler da sind)
                 if (lobby.players.size == 2) {
-                    Card(
+                    CoffeeCard(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Column(
                             modifier = Modifier.padding(16.dp),
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            Text(
-                                text = "Farbauswahl",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold
+                            CoffeeText(
+                                text = "Farbauswahl:"
                             )
 
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .selectable(
-                                        selected = randomColors,
-                                        onClick = { randomColors = true }
-                                    )
-                                    .padding(vertical = 4.dp),
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                RadioButton(
-                                    selected = randomColors,
-                                    onClick = { randomColors = true }
-                                )
-                                Text(
-                                    text = "Zufällig",
-                                    modifier = Modifier.padding(start = 8.dp),
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
+                                val iconSize: Dp = 56.dp
+                                val cardSize: Dp = 80.dp
+                                val borderWidth = 3.dp
+                                val defaultBorderColor = MaterialTheme.colorScheme.primary
+                                val selectedBorderColor = MaterialTheme.colorScheme.secondary
+                                val cardShape = RoundedCornerShape(16.dp)
 
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .selectable(
-                                        selected = !randomColors,
-                                        onClick = { randomColors = false }
-                                    )
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                RadioButton(
-                                    selected = !randomColors,
-                                    onClick = { randomColors = false }
+                                // Helper für Card
+                                fun cardBorder(selected: Boolean) = BorderStroke(
+                                    borderWidth,
+                                    if (selected) selectedBorderColor else defaultBorderColor
                                 )
-                                Text(
-                                    text = "Manuell auswählen",
-                                    modifier = Modifier.padding(start = 8.dp),
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                            }
 
-                            if (!randomColors) {
-                                Text(
-                                    text = "Weiß spielt:",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                lobby.players.forEachIndexed { index, player ->
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .selectable(
-                                                selected = selectedWhitePlayer == player,
-                                                onClick = { selectedWhitePlayer = player }
-                                            )
-                                            .padding(vertical = 2.dp),
-                                        verticalAlignment = Alignment.CenterVertically
+
+                                // Weiß-Icon (Bauer)
+                                Card(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(8.dp)
+                                        .size(cardSize)
+                                        .clickable {
+                                            colorChoice = "white"
+                                            randomColors = false},
+                                    shape = cardShape,
+                                    border = cardBorder(colorChoice == "white"),
+                                    elevation = CardDefaults.cardElevation(8.dp),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                                ) {
+                                    Column(
+                                        modifier = Modifier.fillMaxSize(),
+                                        verticalArrangement = Arrangement.Center,
+                                        horizontalAlignment = Alignment.CenterHorizontally
                                     ) {
-                                        RadioButton(
-                                            selected = selectedWhitePlayer == player,
-                                            onClick = { selectedWhitePlayer = player }
+                                        Icon(
+                                            painter = painterResource(id = app.chesspresso.R.drawable.pawn_white),
+                                            contentDescription = "Weiß",
+                                            tint = null,
+                                            modifier = Modifier.size(iconSize)
                                         )
-                                        Text(
-                                            text = "${player}${if (player == lobby.creator) " (Ersteller)" else ""}",
-                                            modifier = Modifier.padding(start = 8.dp),
-                                            style = MaterialTheme.typography.bodySmall
+                                    }
+                                }
+                                // Würfel-Icon (Zufall)
+                                Card(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(8.dp)
+                                        .size(cardSize)
+                                        .clickable {
+                                            colorChoice = "random"
+                                            randomColors = true },
+                                    shape = cardShape,
+                                    border = cardBorder(colorChoice == "random"),
+                                    elevation = CardDefaults.cardElevation(8.dp),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                                ) {
+                                    Column(
+                                        modifier = Modifier.fillMaxSize(),
+                                        verticalArrangement = Arrangement.Center,
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Casino,
+                                            contentDescription = "Zufällig",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(iconSize)
+                                        )
+                                    }
+                                }
+                                // Schwarz-Icon (Bauer)
+                                Card(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(8.dp)
+                                        .size(cardSize)
+                                        .clickable {
+                                            colorChoice = "black"
+                                            randomColors = false },
+                                    shape = cardShape,
+                                    border = cardBorder(colorChoice == "black"),
+                                    elevation = CardDefaults.cardElevation(8.dp),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                                ) {
+                                    Column(
+                                        modifier = Modifier.fillMaxSize(),
+                                        verticalArrangement = Arrangement.Center,
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(id = app.chesspresso.R.drawable.pawn_black),
+                                            contentDescription = "Schwarz",
+                                            tint = null,
+                                            modifier = Modifier.size(iconSize)
                                         )
                                     }
                                 }
@@ -336,11 +346,16 @@ fun LobbyWaitingScreen(
                     }
 
                     // Spiel starten Button
-                    Button(
+                    CoffeeButton(
                         onClick = {
-                            val whitePlayerFinal = if (randomColors) null else selectedWhitePlayer
+                            val whitePlayerFinal = when (colorChoice) {
+                                "random" -> null
+                                "white" -> lobby.creator
+                                "black" -> lobby.players.find { it != lobby.creator }
+                                else -> null
+                            }
                             val blackPlayerFinal =
-                                if (randomColors) null else lobby.players.find { it != selectedWhitePlayer }
+                                if (randomColors) null else lobby.players.find { it != whitePlayerFinal }
 
                             viewModel.configureAndStartGame(
                                 lobbyCode = lobbyCode,
@@ -351,21 +366,22 @@ fun LobbyWaitingScreen(
                             )
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        enabled = !uiState.isLoading
-                    ) {
-                        if (uiState.isLoading) {
-                            CircularProgressIndicator(
-                                modifier = Modifier.size(20.dp),
-                                color = MaterialTheme.colorScheme.onPrimary
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
+                        enabled = !uiState.isLoading,
+                        content = {
+                            if (uiState.isLoading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                            }
+                            Text("Spiel starten")
                         }
-                        Text("Spiel starten")
-                    }
+                    )
                 }
             } else if (lobby.players.size == 2) {
                 // Warte-Status für den zweiten Spieler
-                Card(
+                CoffeeCard(
                     modifier = Modifier.fillMaxWidth()
                 ) {
                     Column(
@@ -376,15 +392,12 @@ fun LobbyWaitingScreen(
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         CircularProgressIndicator()
-                        Text(
-                            text = "Warte auf Spiel-Start...",
-                            style = MaterialTheme.typography.bodyLarge
+                        CoffeeText(
+                            text = "Warte auf Spiel-Start..."
                         )
-                        Text(
+                        CoffeeText(
                             text = "Der Lobby-Ersteller richtet das Spiel ein.",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            textAlign = TextAlign.Center
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -393,16 +406,13 @@ fun LobbyWaitingScreen(
 
         // Fehleranzeige
         error?.let { errorMessage ->
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                )
+            CoffeeCard(
+                modifier = Modifier.fillMaxWidth()
             ) {
-                Text(
+                CoffeeText(
                     text = errorMessage,
                     modifier = Modifier.padding(16.dp),
-                    color = MaterialTheme.colorScheme.onErrorContainer,
-                    style = MaterialTheme.typography.bodyMedium
+                    color = MaterialTheme.colorScheme.onErrorContainer
                 )
             }
         }
@@ -410,16 +420,17 @@ fun LobbyWaitingScreen(
         Spacer(modifier = Modifier.weight(1f))
 
         // Lobby verlassen Button
-        OutlinedButton(
+        CoffeeButton(
             onClick = {
                 viewModel.leaveLobby()
             },
             modifier = Modifier.fillMaxWidth(),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = MaterialTheme.colorScheme.error
-            )
-        ) {
-            Text("Lobby verlassen")
-        }
+            colors = ButtonDefaults.buttonColors(
+                containerColor = MaterialTheme.colorScheme.error
+            ),
+            content = {
+                Text("Lobby verlassen")
+            }
+        )
     }
 }

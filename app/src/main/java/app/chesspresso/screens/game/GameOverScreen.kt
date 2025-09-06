@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -23,6 +22,12 @@ import androidx.navigation.NavHostController
 import app.chesspresso.model.TeamColor
 import app.chesspresso.model.lobby.GameEndResponse
 import app.chesspresso.screens.main.NavRoutes
+import app.chesspresso.ui.theme.CoffeeButton
+import app.chesspresso.ui.theme.CoffeeGreen
+import app.chesspresso.ui.theme.CoffeeGreenLight
+import app.chesspresso.ui.theme.CoffeeHeadlineText
+import app.chesspresso.ui.theme.CoffeeRedCheck
+import app.chesspresso.ui.theme.CoffeeText
 import app.chesspresso.viewmodel.ChessGameViewModel
 import app.chesspresso.viewmodel.RematchDialogState
 
@@ -40,17 +45,17 @@ fun RematchDialog(
     if (show) {
         AlertDialog(
             onDismissRequest = onDismissRequest,
-            title = { Text(title) },
-            text = { Text(text) },
+            title = { CoffeeText(title) },
+            text = { CoffeeText(text) },
             confirmButton = {
                 TextButton(onClick = onConfirm) {
-                    Text(confirmButtonText)
+                    CoffeeText(confirmButtonText)
                 }
             },
             dismissButton = if (dismissButtonText != null && onDismiss != null) {
                 {
                     TextButton(onClick = onDismiss) {
-                        Text(dismissButtonText)
+                        CoffeeText(dismissButtonText)
                     }
                 }
             } else null
@@ -160,23 +165,21 @@ fun GameOverResultInfo(
     }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
     ) {
-        Text(
+        CoffeeHeadlineText(
             text = ergebnisText,
-            style = MaterialTheme.typography.displayMedium,
             color = when (ergebnisText) {
-                "Sieg" -> Color(0xFF4CAF50)
-                "Niederlage" -> Color(0xFFF44336)
-                "Unentschieden" -> Color(0xFF9E9E9E)
+                "Sieg" -> CoffeeGreenLight
+                "Niederlage" -> CoffeeRedCheck
+                "Unentschieden" -> MaterialTheme.colorScheme.primary
                 else -> MaterialTheme.colorScheme.onSurface
             },
-            modifier = Modifier.padding(bottom = 8.dp)
+            modifier = Modifier.padding(bottom = 8.dp),
+            fontSizeSp = 35
         )
-        Text(
+        CoffeeText(
             text = if (playerId == gameEndResponse.winner) "Du hast gewonnen!" else if (playerId == gameEndResponse.loser) "Du hast verloren." else "",
-            style = MaterialTheme.typography.titleLarge,
-            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(bottom = 16.dp)
         )
     }
@@ -189,20 +192,31 @@ fun GameOverActions(
     navController: NavHostController? = null
 ) {
     Row(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 24.dp),
         horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        Button(onClick = { viewModel.requestRematch() }) {
-            Text("Rematch")
-        }
+        CoffeeButton(
+            onClick = { viewModel.requestRematch() },
+            content = {
+                Text("Rematch")
+            },
+            modifier = Modifier.weight(1f)
+        )
         Spacer(modifier = Modifier.width(16.dp))
-        Button(onClick = {
-            viewModel.closeLobby(gameEndResponse.lobbyId)
-            navController?.navigate(NavRoutes.HOME) {
-                popUpTo(0) { inclusive = true }
-            }
-        }) {
-            Text("Zurück")
-        }
+        CoffeeButton(
+            onClick = {
+                viewModel.closeLobby(gameEndResponse.lobbyId)
+                navController?.navigate(NavRoutes.HOME) {
+                    popUpTo(0) { inclusive = true }
+                }
+            },
+            content = {
+                Text("Zurück")
+            },
+            modifier = Modifier.weight(1f)
+        )
     }
 }

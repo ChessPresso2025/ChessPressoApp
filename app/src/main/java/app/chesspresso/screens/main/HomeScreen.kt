@@ -7,12 +7,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import app.chesspresso.ui.theme.CoffeeButton
 
 @Composable
 fun HomeScreen(
@@ -26,12 +26,20 @@ fun HomeScreen(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Button(onClick = onPublicGameClick, modifier = Modifier.fillMaxWidth()) {
-            Text("Quick Match")
-        }
+        CoffeeButton(
+            onClick = onPublicGameClick,
+            modifier = Modifier.fillMaxWidth(),
+            content = {
+                Text("Quick Match")
+            }
+        )
         Spacer(modifier = Modifier.height(16.dp))
-        Button(onClick = onPrivateGameClick, modifier = Modifier.fillMaxWidth()) {
-            Text("Private Lobby")
-        }
+        CoffeeButton(
+            onClick = onPrivateGameClick,
+            modifier = Modifier.fillMaxWidth(),
+            content = {
+                Text("Private Lobby")
+            }
+        )
     }
 }

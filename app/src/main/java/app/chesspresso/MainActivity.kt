@@ -19,6 +19,7 @@ import app.chesspresso.auth.presentation.AuthViewModel
 import app.chesspresso.screens.LoginScreen
 import app.chesspresso.screens.WelcomeScreen
 import app.chesspresso.screens.main.MainScaffoldScreen
+import app.chesspresso.screens.SplashScreen
 import app.chesspresso.ui.theme.ChessPressoAppTheme
 import app.chesspresso.websocket.StompWebSocketService
 import dagger.hilt.android.AndroidEntryPoint
@@ -88,8 +89,15 @@ class MainActivity : ComponentActivity() {
 
         NavHost(
             navController = navController,
-            startDestination = "welcome"
+            startDestination = "splash"
         ) {
+            composable("splash") {
+                SplashScreen(
+                    authViewModel = authViewModel,
+                    onNavigateToMain = { navController.navigate("main") { popUpTo("splash") { inclusive = true } } },
+                    onNavigateToWelcome = { navController.navigate("welcome") { popUpTo("splash") { inclusive = true } } }
+                )
+            }
             //Login-Teil der App
             composable("welcome") {
                 WelcomeScreen(

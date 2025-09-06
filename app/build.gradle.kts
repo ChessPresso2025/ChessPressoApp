@@ -75,6 +75,7 @@ dependencies {
     // Lifecycle Process dependency für ProcessLifecycleOwner
     implementation("androidx.lifecycle:lifecycle-process:2.7.0")
     implementation(libs.androidx.foundation)
+    implementation(libs.androidx.material3.lint)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
@@ -122,4 +123,6 @@ dependencies {
 
     // Json
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
+
+    implementation("androidx.compose.material:material-icons-extended")
 }

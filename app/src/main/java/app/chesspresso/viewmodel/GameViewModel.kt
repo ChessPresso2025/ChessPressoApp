@@ -20,6 +20,10 @@ class GameViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(GameUiState())
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
 
+    init {
+        loadGameHistory()
+    }
+
     fun loadStats() {
         _uiState.value = _uiState.value.copy(isLoading = true)
 

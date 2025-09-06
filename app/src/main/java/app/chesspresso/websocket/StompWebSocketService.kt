@@ -1,7 +1,6 @@
 package app.chesspresso.websocket
 
 import android.util.Log
-import androidx.lifecycle.viewmodel.compose.viewModel
 import app.chesspresso.data.storage.TokenStorage
 import app.chesspresso.model.game.GameMoveMessage
 import app.chesspresso.model.game.GameMoveResponse
@@ -430,8 +429,8 @@ class StompWebSocketService @Inject constructor(
 
                 "LOBBY_REMOVED" -> {
                     Log.i(TAG, "LOBBY_REMOVED empfangen, unsubscribing von Lobby und Game")
-                    unsubscribeFromLobby()
                     unsubscribeFromGame()
+                    unsubscribeFromLobby()
                 }
 
                 else -> {
@@ -815,7 +814,7 @@ class StompWebSocketService @Inject constructor(
 
         currentLobbyId = null
 
-        Log.d(TAG, "Unsubscribed from game updates")
+        Log.d(TAG, "Unsubscribed from game updates for lobby $currentLobbyId")
     }
 
     private fun startServerStatusCheck() {
