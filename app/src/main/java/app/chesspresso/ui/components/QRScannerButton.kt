@@ -110,38 +110,39 @@ fun QRScannerButton(
     )
 
     CoffeeCard(
-        modifier = modifier.fillMaxWidth()
-    ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.padding(16.dp)
-        ) {
+        modifier = modifier.fillMaxWidth(),
+        content = {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(16.dp)
+            ) {
 
 
-            Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(12.dp))
 
-            CoffeeText(
-                text = "Scanne den QR-Code einer privaten Lobby mit der Kamera.",
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+                CoffeeText(
+                    text = "Scanne den QR-Code einer privaten Lobby mit der Kamera.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
 
-            Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-            CoffeeButton(
-                onClick = { startQRScanner() },
-                enabled = enabled,
-                modifier = Modifier.fillMaxWidth(),
-                content = {
-                    Icon(
-                        imageVector = Icons.Filled.CameraAlt,
-                        contentDescription = "QR-Code scannen"
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text("QR-Code scannen")
-                }
-            )
-        }
-    }
+                CoffeeButton(
+                    onClick = { startQRScanner() },
+                    enabled = enabled,
+                    modifier = Modifier.fillMaxWidth(),
+                    content = {
+                        Icon(
+                            imageVector = Icons.Filled.CameraAlt,
+                            contentDescription = "QR-Code scannen"
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("QR-Code scannen")
+                    }
+                )
+            }
+        },
+    )
 
     // Permission Dialog
     if (showPermissionDialog) {
@@ -185,14 +186,15 @@ fun QRScannerButton(
 
         Spacer(modifier = Modifier.height(8.dp))
         CoffeeCard(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            CoffeeText(
-                text = error,
-                modifier = Modifier.padding(12.dp),
-                color = MaterialTheme.colorScheme.onErrorContainer
-            )
-        }
+            modifier = Modifier.padding(16.dp),
+            content = {
+                CoffeeText(
+                    text = error,
+                    modifier = Modifier.padding(12.dp),
+                    color = MaterialTheme.colorScheme.onErrorContainer
+                )
+            },
+        )
     }
 }
 

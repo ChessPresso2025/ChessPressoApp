@@ -191,7 +191,10 @@ class ChessGameViewModel @Inject constructor(
                         webSocketService.subscribeToLobby(result.newlobbyid)
                         _rematchResult.value = result
                     }
-                    else _rematchDialogState.value = RematchDialogState.Declined
+                    else {
+                        _rematchDialogState.value = RematchDialogState.Declined
+                        _rematchResult.value = null
+                    }
                 }
             }
         }
@@ -338,7 +341,7 @@ class ChessGameViewModel @Inject constructor(
         webSocketService.sendGameMoveMessage(message)
     }
 
-    fun resignGame(teamColor: TeamColor, lobbyId: String) {
+    fun resignGame(teamColor: TeamColor, lobbyId : String) {
         val gameEndMessage = GameEndMessage(
             lobbyId = lobbyId,
             player = teamColor.name,

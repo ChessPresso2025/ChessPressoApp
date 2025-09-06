@@ -4,6 +4,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.staticCompositionLocalOf
 
 private val DarkColorScheme = darkColorScheme(
     primary = CoffeeCreme,
@@ -27,6 +28,8 @@ private val LightColorScheme = lightColorScheme(
     tertiary = CoffeeRust
 )
 
+val LocalAppDarkTheme = staticCompositionLocalOf { false }
+
 @Composable
 fun ChessPressoAppTheme(
     darkTheme: Boolean = false, // Default ist jetzt helles Theme
@@ -34,9 +37,11 @@ fun ChessPressoAppTheme(
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = CoffeeTypography,
-        content = content
-    )
+    androidx.compose.runtime.CompositionLocalProvider(LocalAppDarkTheme provides darkTheme) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = CoffeeTypography,
+            content = content
+        )
+    }
 }

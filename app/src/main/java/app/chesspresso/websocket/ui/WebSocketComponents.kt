@@ -79,58 +79,59 @@ fun OnlinePlayersCard(
     val uiState by viewModel.uiState.collectAsState()
 
     CoffeeCard(
-        modifier = modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+        modifier = modifier.fillMaxWidth(),
+        content = {
+            Column(
+                modifier = Modifier.padding(16.dp)
             ) {
-                CoffeeText(
-                    text = "Online Spieler (${uiState.onlinePlayerCount})",
-                    style = MaterialTheme.typography.titleMedium
-                )
-
-                IconButton(
-                    onClick = { viewModel.requestOnlinePlayers() },
-                    enabled = uiState.isConnected
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(
-                        imageVector = Icons.Default.Refresh,
-                        contentDescription = "Aktualisieren"
+                    CoffeeText(
+                        text = "Online Spieler (${uiState.onlinePlayerCount})",
+                        style = MaterialTheme.typography.titleMedium
                     )
+
+                    IconButton(
+                        onClick = { viewModel.requestOnlinePlayers() },
+                        enabled = uiState.isConnected
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Refresh,
+                            contentDescription = "Aktualisieren"
+                        )
+                    }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-            if (!uiState.isConnected) {
-                CoffeeText(
-                    text = "Nicht verbunden",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.error
-                )
-            } else if (uiState.onlinePlayers.isEmpty()) {
-                CoffeeText(
-                    text = "Keine Online-Spieler",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            } else {
-                LazyColumn(
-                    modifier = Modifier.heightIn(max = 200.dp),
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    items(uiState.onlinePlayers.toList()) { player ->
-                        OnlinePlayerItem(playerName = player)
+                if (!uiState.isConnected) {
+                    CoffeeText(
+                        text = "Nicht verbunden",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                } else if (uiState.onlinePlayers.isEmpty()) {
+                    CoffeeText(
+                        text = "Keine Online-Spieler",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.heightIn(max = 200.dp),
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        items(uiState.onlinePlayers.toList()) { player ->
+                            OnlinePlayerItem(playerName = player)
+                        }
                     }
                 }
             }
-        }
-    }
+        },
+    )
 }
 
 @Composable
@@ -182,48 +183,49 @@ fun WebSocketDebugInfo(
     val uiState by viewModel.uiState.collectAsState()
 
     CoffeeCard(
-        modifier = modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(16.dp)
-        ) {
-            CoffeeText(
-                text = "WebSocket Debug Info",
-                style = MaterialTheme.typography.titleSmall
-            )
-
-            Spacer(modifier = Modifier.height(8.dp))
-
-            CoffeeText(
-                text = "Status: ${viewModel.getConnectionStatusText()}",
-                style = MaterialTheme.typography.bodySmall
-            )
-
-            CoffeeText(
-                text = "Online Spieler: ${uiState.onlinePlayerCount}",
-                style = MaterialTheme.typography.bodySmall
-            )
-
-            if (uiState.recentMessages.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(8.dp))
+        modifier = modifier.fillMaxWidth(),
+        content = {
+            Column(
+                modifier = Modifier.padding(16.dp)
+            ) {
                 CoffeeText(
-                    text = "Letzte Nachrichten:",
+                    text = "WebSocket Debug Info",
+                    style = MaterialTheme.typography.titleSmall
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                CoffeeText(
+                    text = "Status: ${viewModel.getConnectionStatusText()}",
                     style = MaterialTheme.typography.bodySmall
                 )
 
-                LazyColumn(
-                    modifier = Modifier.heightIn(max = 100.dp)
-                ) {
-                    items(uiState.recentMessages.takeLast(5)) { message ->
-                        CoffeeText(
-                            text = message.take(100) + if (message.length > 100) "..." else "",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(vertical = 2.dp)
-                        )
+                CoffeeText(
+                    text = "Online Spieler: ${uiState.onlinePlayerCount}",
+                    style = MaterialTheme.typography.bodySmall
+                )
+
+                if (uiState.recentMessages.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    CoffeeText(
+                        text = "Letzte Nachrichten:",
+                        style = MaterialTheme.typography.bodySmall
+                    )
+
+                    LazyColumn(
+                        modifier = Modifier.heightIn(max = 100.dp)
+                    ) {
+                        items(uiState.recentMessages.takeLast(5)) { message ->
+                            CoffeeText(
+                                text = message.take(100) + if (message.length > 100) "..." else "",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(vertical = 2.dp)
+                            )
+                        }
                     }
                 }
             }
-        }
-    }
+        },
+    )
 }

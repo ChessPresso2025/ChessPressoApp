@@ -3,6 +3,7 @@ package app.chesspresso.model.board
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -68,14 +70,7 @@ class Board {
         fieldHighlights: Map<String, app.chesspresso.viewmodel.ChessGameViewModel.FieldHighlight> = emptyMap() // NEU
     ) {
         var selectedField by remember { mutableStateOf<String?>(null) }
-        var validMoves by remember { mutableStateOf<Set<String>>(possibleMoves.toSet()) }
-
-        var currentIndex : String? = boardState.keys.firstOrNull()
-        if(currentIndex.isNullOrEmpty()){
-            Log.d("BoardContent", "boardState is empty")
-        } else {
-            Log.d("BoardContent", "boardState has entries, first key: $currentIndex")
-        }
+        var validMoves by remember { mutableStateOf(possibleMoves.toSet()) }
 
         // Funktion zum Zurücksetzen der Auswahl
         fun resetSelection() {
@@ -159,7 +154,7 @@ class Board {
         val numberFontSize = 14.sp
         val labelFontSize = 20.sp
         val labelFontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-        val labelColor = Color.Black // Alternativ: Color.White, je nach Theme
+        val labelColor = MaterialTheme.colorScheme.primary // Alternativ: Color.White, je nach Theme
         val rowRange = if (isFlipped) 7 downTo 0 else 0..7
         val colRange = if (isFlipped) 7 downTo 0 else 0..7
 
@@ -213,11 +208,14 @@ class Board {
                         val isLightSquare = (row + col) % 2 == 0
                         field.isLightSquare = isLightSquare
                         val highlight = fieldHighlights[field.name] ?: app.chesspresso.viewmodel.ChessGameViewModel.FieldHighlight.NONE
+                        val isDark = isSystemInDarkTheme()
+                        val lightSquareColor = if (isDark) app.chesspresso.ui.theme.CoffeeBrownLight else app.chesspresso.ui.theme.CoffeeCremeMid
+                        val darkSquareColor = if (isDark) app.chesspresso.ui.theme.CoffeeBrownContrast else app.chesspresso.ui.theme.CoffeeBrownSoft
                         val backgroundColor = when (highlight) {
                             app.chesspresso.viewmodel.ChessGameViewModel.FieldHighlight.CHECKMATE_KING -> Color(colorResource(id = app.chesspresso.R.color.checkmate_king).value)
                             app.chesspresso.viewmodel.ChessGameViewModel.FieldHighlight.CHECKMATE_ATTACKER, 
                             app.chesspresso.viewmodel.ChessGameViewModel.FieldHighlight.CHECK_KING -> Color(colorResource(id = app.chesspresso.R.color.checkmate_attacker).value)
-                            else -> if (isLightSquare) app.chesspresso.ui.theme.CoffeeCremeMid else app.chesspresso.ui.theme.CoffeeBrownSoft
+                            else -> if (isLightSquare) lightSquareColor else darkSquareColor
                         }
                         Box(
                             modifier = Modifier.weight(1f)

@@ -22,7 +22,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -46,6 +45,7 @@ import androidx.navigation.NavHostController
 import app.chesspresso.model.TeamColor
 import app.chesspresso.model.board.Board
 import app.chesspresso.model.lobby.GameStartResponse
+import app.chesspresso.ui.theme.CoffeeCard
 import app.chesspresso.ui.theme.CoffeeOrange
 import app.chesspresso.viewmodel.ChessGameViewModel
 
@@ -292,64 +292,61 @@ fun PlayerClock(
     isActive: Boolean,
     isUnlimited: Boolean
 ) {
-    Card(
+    CoffeeCard(
         modifier = Modifier
             .fillMaxWidth()
             .then(
                 if (isActive) Modifier else Modifier
             ),
-        colors = CardDefaults.cardColors(
-            containerColor = app.chesspresso.ui.theme.CoffeeCremeMid
-        ),
         border = if (isActive) androidx.compose.foundation.BorderStroke(
             width = 2.dp,
             color = MaterialTheme.colorScheme.primary
         ) else null,
-        shape = RoundedCornerShape(20.dp)
-    ) {
-        Column(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                text = playerName,
-                style = MaterialTheme.typography.headlineMedium, // statt titleMedium
-                color = if (isActive)
-                    MaterialTheme.colorScheme.primary
-                else
-                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
-            // Anzeige der verbleibenden Zeit oder "Unbegrenzt"
-            if (isUnlimited) {
+        content = {
+            Column(
+                modifier = Modifier
+                    .padding(16.dp)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 Text(
-                    text = "∞",
-                    style = MaterialTheme.typography.headlineLarge,
+                    text = playerName,
+                    style = MaterialTheme.typography.headlineMedium, // statt titleMedium
                     color = if (isActive)
                         MaterialTheme.colorScheme.primary
                     else
                         MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
-            } else {
-                // Zeit blinkt rot, wenn weniger als 10 Sekunden übrig sind und aktiv
-                val blink = rememberInfiniteTransition()
-                val animatedColor by blink.animateColor(
-                    initialValue = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    targetValue = if (isActive && remainingSeconds < 10 && remainingSeconds > 0) CoffeeOrange else if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                    animationSpec = infiniteRepeatable(
-                        animation = tween(durationMillis = 500),
-                        repeatMode = RepeatMode.Reverse
+                // Anzeige der verbleibenden Zeit oder "Unbegrenzt"
+                if (isUnlimited) {
+                    Text(
+                        text = "∞",
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = if (isActive)
+                            MaterialTheme.colorScheme.primary
+                        else
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                     )
-                )
-                Text(
-                    text = remainingTime,
-                    style = MaterialTheme.typography.headlineLarge,
-                    color = if (isActive && remainingSeconds < 10 && remainingSeconds > 0) animatedColor else if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
+                } else {
+                    // Zeit blinkt rot, wenn weniger als 10 Sekunden übrig sind und aktiv
+                    val blink = rememberInfiniteTransition()
+                    val animatedColor by blink.animateColor(
+                        initialValue = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        targetValue = if (isActive && remainingSeconds < 10 && remainingSeconds > 0) CoffeeOrange else if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(durationMillis = 500),
+                            repeatMode = RepeatMode.Reverse
+                        )
+                    )
+                    Text(
+                        text = remainingTime,
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = if (isActive && remainingSeconds < 10 && remainingSeconds > 0) animatedColor else if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                    )
+                }
             }
         }
-    }
+    )
 }
 
 fun pieceToUnicode(piece: app.chesspresso.model.game.PieceInfo): String {
@@ -369,31 +366,28 @@ fun CapturedPieces(captured: List<app.chesspresso.model.game.PieceInfo>, isActiv
     if(captured.isEmpty()){
         Spacer(modifier = Modifier.height(50.dp))
     }else{
-        Card(
+        CoffeeCard(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(50.dp),
-            colors = CardDefaults.cardColors(
-                containerColor = app.chesspresso.ui.theme.CoffeeCremeMid
-            ),
             border = if (isActive) androidx.compose.foundation.BorderStroke(
                 width = 2.dp,
                 color = MaterialTheme.colorScheme.primary
             ) else null,
-            shape = RoundedCornerShape(20.dp)
-        ) {
-            LazyRow(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                items(captured) { piece ->
-                    Text(text = pieceToUnicode(piece), fontSize = 28.sp)
-                    Spacer(modifier = Modifier.width(4.dp))
+            content = {
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    items(captured) { piece ->
+                        Text(text = pieceToUnicode(piece), fontSize = 28.sp)
+                        Spacer(modifier = Modifier.width(4.dp))
+                    }
                 }
             }
-        }
+        )
     }
 }
 

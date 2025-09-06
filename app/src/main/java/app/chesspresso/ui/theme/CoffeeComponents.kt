@@ -1,13 +1,14 @@
 package app.chesspresso.ui.theme
 
 import android.annotation.SuppressLint
-import androidx.compose.foundation.border
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonColors
 import androidx.compose.material3.ButtonDefaults
@@ -21,34 +22,45 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.foundation.text.KeyboardActions
-import androidx.compose.foundation.text.KeyboardOptions
 
 @Composable
 fun CoffeeButton(
     onClick: () -> Unit,
     @SuppressLint("ModifierParameter") modifier: Modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
     enabled: Boolean = true,
-    colors: ButtonColors = ButtonDefaults.buttonColors(
-        containerColor = CoffeeBrownSoft, // Noch etwas kräftigerer, aber weicher Braunton für Buttons
-        contentColor = MaterialTheme.colorScheme.onPrimary
-    ),
+    error: Boolean = false,
+    colors: ButtonColors? = null,
     content: @Composable () -> Unit
 ) {
+    val isDark = MaterialTheme.colorScheme.background == CoffeeBrownDark || isSystemInDarkTheme()
+    val buttonColors = colors ?: when {
+        error -> ButtonDefaults.buttonColors(
+            containerColor = CoffeeRedCheck,
+            contentColor = CoffeeCremeLight
+        )
+        isDark -> ButtonDefaults.buttonColors(
+            containerColor = CoffeeOrange,
+            contentColor = CoffeeCremeLight
+        )
+        else -> ButtonDefaults.buttonColors(
+            containerColor = CoffeeBrownSoft,
+            contentColor = CoffeeCremeLight
+        )
+    }
     Button(
         onClick = onClick,
         modifier = modifier,
         enabled = enabled,
         shape = RoundedCornerShape(16.dp),
-        colors = colors
+        colors = buttonColors
     ) {
-        Row { content() }
+        content()
     }
 }
 
@@ -57,7 +69,8 @@ fun CoffeeCard(
     modifier: Modifier = Modifier,
     containerColor: Color = MaterialTheme.colorScheme.surface,
     contentColor: Color = MaterialTheme.colorScheme.onSurface,
-    content: @Composable ColumnScope.() -> Unit
+    content: @Composable ColumnScope.() -> Unit,
+    border: BorderStroke? = null
 ) {
     Card(
         modifier = modifier,
@@ -66,7 +79,8 @@ fun CoffeeCard(
             containerColor = containerColor,
             contentColor = contentColor
         ),
-        content = content
+        content = content,
+        border = border
     )
 }
 

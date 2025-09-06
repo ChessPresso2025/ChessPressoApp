@@ -39,41 +39,42 @@ fun QRCodeDisplay(
     }
 
     CoffeeCard(
-        modifier = modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            CoffeeText(
-                text = "Scanne diesen QR-Code, um der Lobby beizutreten:",
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            qrBitmap?.let { bitmap ->
-                Image(
-                    bitmap = bitmap.asImageBitmap(),
-                    contentDescription = "QR-Code für Lobby $lobbyId",
-                    modifier = Modifier
-                        .size(250.dp)
-                        .clip(RoundedCornerShape(12.dp))
+        modifier = modifier.fillMaxWidth(),
+        content = {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                CoffeeText(
+                    text = "Scanne diesen QR-Code, um der Lobby beizutreten:",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-            } ?: run {
-                Box(
-                    modifier = Modifier
-                        .size(250.dp)
-                        .clip(RoundedCornerShape(12.dp)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator()
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                qrBitmap?.let { bitmap ->
+                    Image(
+                        bitmap = bitmap.asImageBitmap(),
+                        contentDescription = "QR-Code für Lobby $lobbyId",
+                        modifier = Modifier
+                            .size(250.dp)
+                            .clip(RoundedCornerShape(12.dp))
+                    )
+                } ?: run {
+                    Box(
+                        modifier = Modifier
+                            .size(250.dp)
+                            .clip(RoundedCornerShape(12.dp)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator()
+                    }
                 }
+
+                Spacer(modifier = Modifier.height(24.dp))
+
+                CoffeeText(text = "Lobby-ID: $lobbyId")
             }
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            CoffeeText(text = "Lobby-ID: $lobbyId")
-        }
-    }
+        },
+    )
 }

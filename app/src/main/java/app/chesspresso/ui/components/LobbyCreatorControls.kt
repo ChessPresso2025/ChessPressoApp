@@ -31,35 +31,36 @@ fun LobbyCreatorControls(
     var showQRCode by remember { mutableStateOf(false) }
 
     CoffeeCard(
-        modifier = modifier.fillMaxWidth()
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            CoffeeText(
-                text = "Lobby teilen"
-            )
+        modifier = modifier.fillMaxWidth(),
+        content = {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                CoffeeText(
+                    text = "Lobby teilen"
+                )
 
-            Spacer(modifier = Modifier.height(16.dp))
+                Spacer(modifier = Modifier.height(16.dp))
 
-            CoffeeButton(
-                onClick = { showQRCode = !showQRCode },
-                modifier = Modifier.fillMaxWidth(),
-                content = {
-                    Icon(
-                        imageVector = if (showQRCode) Icons.Default.Close else Icons.Outlined.QrCode,
-                        contentDescription = if (showQRCode) "QR-Code ausblenden" else "QR-Code anzeigen"
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(if (showQRCode) "QR-Code ausblenden" else "QR-Code anzeigen")
+                CoffeeButton(
+                    onClick = { showQRCode = !showQRCode },
+                    modifier = Modifier.fillMaxWidth(),
+                    content = {
+                        Icon(
+                            imageVector = if (showQRCode) Icons.Default.Close else Icons.Outlined.QrCode,
+                            contentDescription = if (showQRCode) "QR-Code ausblenden" else "QR-Code anzeigen"
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(if (showQRCode) "QR-Code ausblenden" else "QR-Code anzeigen")
+                    }
+                )
+
+                if (showQRCode) {
+                    Spacer(modifier = Modifier.height(20.dp))
+                    QRCodeDisplay(lobbyId = lobbyId)
                 }
-            )
-
-            if (showQRCode) {
-                Spacer(modifier = Modifier.height(20.dp))
-                QRCodeDisplay(lobbyId = lobbyId)
             }
-        }
-    }
+        },
+    )
 }

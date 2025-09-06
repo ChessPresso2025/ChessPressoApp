@@ -13,10 +13,16 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.EmojiEvents
+import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -26,28 +32,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
 import app.chesspresso.ui.theme.CoffeeBrownContrast
-import app.chesspresso.ui.theme.CoffeeBrownDark
+import app.chesspresso.ui.theme.CoffeeBrownSoft
+import app.chesspresso.ui.theme.CoffeeCard
 import app.chesspresso.ui.theme.CoffeeCreme
 import app.chesspresso.ui.theme.CoffeeGreen
 import app.chesspresso.ui.theme.CoffeeHeadlineText
 import app.chesspresso.ui.theme.CoffeeOrange
 import app.chesspresso.ui.theme.CoffeeRust
+import app.chesspresso.ui.theme.CoffeeText
 import app.chesspresso.viewmodel.GameViewModel
 import java.text.SimpleDateFormat
 import java.util.Locale
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Remove
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Surface
-import app.chesspresso.ui.theme.CoffeeBrownSoft
-import app.chesspresso.ui.theme.CoffeeCard
-import app.chesspresso.ui.theme.CoffeeText
 
 @Composable
 fun StatsScreen(
@@ -103,51 +101,52 @@ fun StatsScreen(
             CoffeeCard(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 16.dp)
-            ) {
-                Spacer(modifier = Modifier.height(16.dp))
+                    .padding(top = 16.dp),
+                content = {
+                    Spacer(modifier = Modifier.height(16.dp))
 
-                if (uiState.isLoading) {
-                    CircularProgressIndicator()
-                } else {
-                    uiState.stats?.let { stats ->
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceEvenly,
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            StatItem(
-                                icon = Icons.Filled.EmojiEvents,
-                                iconTint = CoffeeOrange,
-                                longLabel = "Siege",
-                                value = stats.wins.toString(),
-                                circleColor = CoffeeBrownSoft,
-                                modifier = Modifier.weight(1f)
-                            )
-                            StatItem(
-                                icon = Icons.Filled.Close,
-                                iconTint = CoffeeRust,
-                                longLabel = "Niederlagen",
-                                value = stats.losses.toString(),
-                                circleColor = CoffeeBrownContrast,
-                                modifier = Modifier.weight(1f)
-                            )
-                            StatItem(
-                                icon = Icons.Filled.Remove,
-                                iconTint = CoffeeGreen, // sanftes Grün für Unentschieden
-                                longLabel = "Unentschieden",
-                                value = stats.draws.toString(),
-                                circleColor = CoffeeCreme, // Theme-Creme für Unentschieden
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                    } ?: CoffeeText(
-                        text = "Keine Statistiken verfügbar",
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-                Spacer(modifier = Modifier.height(16.dp))
-            }
+                    if (uiState.isLoading) {
+                        CircularProgressIndicator()
+                    } else {
+                        uiState.stats?.let { stats ->
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                StatItem(
+                                    icon = Icons.Filled.EmojiEvents,
+                                    iconTint = CoffeeOrange,
+                                    longLabel = "Siege",
+                                    value = stats.wins.toString(),
+                                    circleColor = CoffeeBrownSoft,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                StatItem(
+                                    icon = Icons.Filled.Close,
+                                    iconTint = CoffeeRust,
+                                    longLabel = "Niederlagen",
+                                    value = stats.losses.toString(),
+                                    circleColor = CoffeeBrownContrast,
+                                    modifier = Modifier.weight(1f)
+                                )
+                                StatItem(
+                                    icon = Icons.Filled.Remove,
+                                    iconTint = CoffeeGreen, // sanftes Grün für Unentschieden
+                                    longLabel = "Unentschieden",
+                                    value = stats.draws.toString(),
+                                    circleColor = CoffeeCreme, // Theme-Creme für Unentschieden
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                        } ?: CoffeeText(
+                            text = "Keine Statistiken verfügbar",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(16.dp))
+                },
+            )
 
             Spacer(modifier = Modifier.height(16.dp))
 
@@ -196,21 +195,22 @@ fun StatsScreen(
                             CoffeeCard(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable { navController.navigate("game_detail/${game.id}") }
-                            ) {
-                                Column(modifier = Modifier.padding(12.dp)) {
-                                    CoffeeText(
-                                        text = "Datum: " + (game.startedAt.takeIf { it.isNotBlank() }
-                                            ?.let { formatDate(it) } ?: "Unbekannt")
-                                    )
-                                    CoffeeText(
-                                        text = "Ergebnis: ${game.result ?: "Unbekannt"}"
-                                    )
-                                    CoffeeText(
-                                        text = "Züge: ${game.moves.size}"
-                                    )
-                                }
-                            }
+                                    .clickable { navController.navigate("game_detail/${game.id}") },
+                                content = {
+                                    Column(modifier = Modifier.padding(12.dp)) {
+                                        CoffeeText(
+                                            text = "Datum: " + (game.startedAt.takeIf { it.isNotBlank() }
+                                                ?.let { formatDate(it) } ?: "Unbekannt")
+                                        )
+                                        CoffeeText(
+                                            text = "Ergebnis: ${game.result ?: "Unbekannt"}"
+                                        )
+                                        CoffeeText(
+                                            text = "Züge: ${game.moves.size}"
+                                        )
+                                    }
+                                },
+                            )
                         }
                     }
                 }

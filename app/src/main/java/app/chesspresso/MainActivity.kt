@@ -16,10 +16,11 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import app.chesspresso.auth.presentation.AuthState
 import app.chesspresso.auth.presentation.AuthViewModel
+import app.chesspresso.data.storage.ThemeStorage
 import app.chesspresso.screens.LoginScreen
+import app.chesspresso.screens.SplashScreen
 import app.chesspresso.screens.WelcomeScreen
 import app.chesspresso.screens.main.MainScaffoldScreen
-import app.chesspresso.screens.SplashScreen
 import app.chesspresso.ui.theme.ChessPressoAppTheme
 import app.chesspresso.websocket.StompWebSocketService
 import dagger.hilt.android.AndroidEntryPoint
@@ -41,7 +42,9 @@ class MainActivity : ComponentActivity() {
         Log.d(TAG, "MainActivity created")
 
         setContent {
-            ChessPressoAppTheme {
+            val darkThemeFlow = ThemeStorage.getDarkThemeFlow(this)
+            val darkTheme by darkThemeFlow.collectAsState(initial = false)
+            ChessPressoAppTheme(darkTheme = darkTheme) {
                 val navController = rememberNavController()
                 AppNavigation(navController)
             }
