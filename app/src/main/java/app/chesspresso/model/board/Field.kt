@@ -19,7 +19,6 @@ import app.chesspresso.R
 import app.chesspresso.model.PieceType
 import app.chesspresso.model.TeamColor
 import app.chesspresso.model.game.PieceInfo
-import app.chesspresso.ui.theme.LocalAppDarkTheme
 
 class Field(
     val name: String,
@@ -37,7 +36,6 @@ class Field(
         isValidMove: Boolean = false,
         onFieldClick: () -> Unit = {}
     ) {
-        val isDark = LocalAppDarkTheme.current
         val lightSquareColor = app.chesspresso.ui.theme.CoffeeCremeMid
         val darkSquareColor = app.chesspresso.ui.theme.CoffeeBrownLight
         val backgroundColor = when {
@@ -57,7 +55,7 @@ class Field(
             contentAlignment = Alignment.Center
         ) {
             pieceInfo?.let { piece ->
-                var resourceId: Int? = null
+                var resourceId: Int?
                  // Bestimme die Bildressource basierend auf dem PieceType und TeamColor
                 if (piece.type != PieceType.NULL && piece.color != TeamColor.NULL) {
                      resourceId = when (piece.type) {

@@ -40,20 +40,16 @@ fun CoffeeButton(
 ) {
     val isDark = MaterialTheme.colorScheme.background == CoffeeBrownDark || isSystemInDarkTheme()
     val buttonColors = colors ?: when {
-        error && isDark -> ButtonDefaults.buttonColors(
-            containerColor = CoffeeRedCheck, // Dunkelrot für Error im Dark Mode
-            contentColor = CoffeeCremeLight
-        )
-        error && !isDark -> ButtonDefaults.buttonColors(
-            containerColor = CoffeeRedCheck, // Auch im Light Mode für Konsistenz
+        error -> ButtonDefaults.buttonColors(
+            containerColor = CoffeeRedCheck,
             contentColor = CoffeeCremeLight
         )
         isDark -> ButtonDefaults.buttonColors(
-            containerColor = CoffeeOrange, // Dunkelbraun für alle Standard-Buttons im Dark Mode
+            containerColor = CoffeeOrange,
             contentColor = CoffeeCremeLight
         )
         else -> ButtonDefaults.buttonColors(
-            containerColor = CoffeeBrownSoft, // Orange für alle Standard-Buttons
+            containerColor = CoffeeBrownSoft,
             contentColor = CoffeeCremeLight
         )
     }
