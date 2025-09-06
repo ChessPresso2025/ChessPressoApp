@@ -3,6 +3,7 @@ package app.chesspresso.model.board
 import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -152,6 +153,9 @@ class Board {
         val columnLabels = if (isFlipped) listOf("H", "G", "F", "E", "D", "C", "B", "A") else listOf("A", "B", "C", "D", "E", "F", "G", "H")
         val rowLabels = if (isFlipped) (1..8).toList() else (8 downTo 1).toList()
         val numberFontSize = 14.sp
+        val labelFontSize = 20.sp
+        val labelFontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+        val labelColor = Color.Black // Alternativ: Color.White, je nach Theme
         val rowRange = if (isFlipped) 7 downTo 0 else 0..7
         val colRange = if (isFlipped) 7 downTo 0 else 0..7
 
@@ -159,14 +163,21 @@ class Board {
             modifier = modifier.aspectRatio(1f)
         ) {
             // Obere Buchstaben-Beschriftung
-            Row(modifier = Modifier.fillMaxWidth()) {
+            Row(modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center) {
                 Spacer(modifier = Modifier.weight(0.2f))
                 for (label in columnLabels) {
                     Box(
                         modifier = Modifier.weight(1f),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(text = label, fontSize = 14.sp)
+                        Text(
+                            text = label,
+                            fontSize = labelFontSize,
+                            fontWeight = labelFontWeight,
+                            color = labelColor,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
                     }
                 }
                 Spacer(modifier = Modifier.weight(0.2f))
@@ -179,12 +190,17 @@ class Board {
                         .weight(1f),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Linke Zahlen-Beschriftung mit Abstand zum Brett
+                    // Linke Zahlen-Beschriftung mit noch mehr Abstand zum Brett
                     Box(
-                        modifier = Modifier.weight(0.2f).padding(end = 4.dp),
+                        modifier = Modifier.weight(0.35f).padding(end = 24.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(text = rowLabels[rowIdx].toString(), fontSize = numberFontSize)
+                        Text(
+                            text = rowLabels[rowIdx].toString(),
+                            fontSize = labelFontSize,
+                            fontWeight = labelFontWeight,
+                            color = labelColor
+                        )
                     }
                     // Schachbrettfelder
                     for (col in colRange) {
@@ -213,12 +229,16 @@ class Board {
                             )
                         }
                     }
-                    // Rechte Zahlen-Beschriftung mit Abstand zum Brett
                     Box(
-                        modifier = Modifier.weight(0.2f).padding(start = 4.dp),
+                        modifier = Modifier.weight(0.35f).padding(start = 6.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(text = rowLabels[rowIdx].toString(), fontSize = numberFontSize)
+                        Text(
+                            text = rowLabels[rowIdx].toString(),
+                            fontSize = labelFontSize,
+                            fontWeight = labelFontWeight,
+                            color = labelColor
+                        )
                     }
                 }
             }
@@ -230,7 +250,13 @@ class Board {
                         modifier = Modifier.weight(1f),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(text = label, fontSize = 14.sp)
+                        Text(
+                            text = label,
+                            fontSize = labelFontSize,
+                            fontWeight = labelFontWeight,
+                            color = labelColor,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
                     }
                 }
                 Spacer(modifier = Modifier.weight(0.2f))

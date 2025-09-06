@@ -23,7 +23,10 @@ import app.chesspresso.model.TeamColor
 import app.chesspresso.model.lobby.GameEndResponse
 import app.chesspresso.screens.main.NavRoutes
 import app.chesspresso.ui.theme.CoffeeButton
+import app.chesspresso.ui.theme.CoffeeGreen
+import app.chesspresso.ui.theme.CoffeeGreenLight
 import app.chesspresso.ui.theme.CoffeeHeadlineText
+import app.chesspresso.ui.theme.CoffeeRedCheck
 import app.chesspresso.ui.theme.CoffeeText
 import app.chesspresso.viewmodel.ChessGameViewModel
 import app.chesspresso.viewmodel.RematchDialogState
@@ -162,17 +165,18 @@ fun GameOverResultInfo(
     }
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
     ) {
         CoffeeHeadlineText(
             text = ergebnisText,
             color = when (ergebnisText) {
-                "Sieg" -> Color(0xFF4CAF50)
-                "Niederlage" -> Color(0xFFF44336)
-                "Unentschieden" -> Color(0xFF9E9E9E)
+                "Sieg" -> CoffeeGreenLight
+                "Niederlage" -> CoffeeRedCheck
+                "Unentschieden" -> MaterialTheme.colorScheme.primary
                 else -> MaterialTheme.colorScheme.onSurface
             },
-            modifier = Modifier.padding(bottom = 8.dp)
+            modifier = Modifier.padding(bottom = 8.dp),
+            fontSizeSp = 35
         )
         CoffeeText(
             text = if (playerId == gameEndResponse.winner) "Du hast gewonnen!" else if (playerId == gameEndResponse.loser) "Du hast verloren." else "",
@@ -188,14 +192,18 @@ fun GameOverActions(
     navController: NavHostController? = null
 ) {
     Row(
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 24.dp),
         horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
     ) {
         CoffeeButton(
             onClick = { viewModel.requestRematch() },
             content = {
                 Text("Rematch")
-            }
+            },
+            modifier = Modifier.weight(1f)
         )
         Spacer(modifier = Modifier.width(16.dp))
         CoffeeButton(
@@ -206,8 +214,9 @@ fun GameOverActions(
                 }
             },
             content = {
-                Text("Zurück zur Lobby")
-            }
+                Text("Zurück")
+            },
+            modifier = Modifier.weight(1f)
         )
     }
 }

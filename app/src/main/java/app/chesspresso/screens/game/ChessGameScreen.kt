@@ -370,29 +370,32 @@ fun pieceToUnicode(piece: app.chesspresso.model.game.PieceInfo): String {
 
 @Composable
 fun CapturedPieces(captured: List<app.chesspresso.model.game.PieceInfo>, isActive: Boolean) {
-    if (captured.isEmpty()) return
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(50.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = app.chesspresso.ui.theme.CoffeeCremeMid
-        ),
-        border = if (isActive) androidx.compose.foundation.BorderStroke(
-            width = 2.dp,
-            color = MaterialTheme.colorScheme.primary
-        ) else null,
-        shape = RoundedCornerShape(20.dp)
-    ) {
-        LazyRow(
+    if(captured.isEmpty()){
+        Spacer(modifier = Modifier.height(50.dp))
+    }else{
+        Card(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .fillMaxWidth()
+                .height(50.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = app.chesspresso.ui.theme.CoffeeCremeMid
+            ),
+            border = if (isActive) androidx.compose.foundation.BorderStroke(
+                width = 2.dp,
+                color = MaterialTheme.colorScheme.primary
+            ) else null,
+            shape = RoundedCornerShape(20.dp)
         ) {
-            items(captured) { piece ->
-                Text(text = pieceToUnicode(piece), fontSize = 28.sp)
-                Spacer(modifier = Modifier.width(4.dp))
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                items(captured) { piece ->
+                    Text(text = pieceToUnicode(piece), fontSize = 28.sp)
+                    Spacer(modifier = Modifier.width(4.dp))
+                }
             }
         }
     }
