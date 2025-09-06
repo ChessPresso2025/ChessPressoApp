@@ -194,17 +194,18 @@ fun PrivateLobbyScreen(
                         viewModel.joinPrivateLobby(uiState.joinCode)
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    enabled = !uiState.isLoading && uiState.joinCode.length == 6
-                ) {
-                    if (uiState.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
+                    enabled = !uiState.isLoading && uiState.joinCode.length == 6,
+                    content = {
+                        if (uiState.isLoading) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                color = MaterialTheme.colorScheme.onPrimary
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+                        Text("Lobby beitreten")
                     }
-                    CoffeeText("Lobby beitreten")
-                }
+                )
             }
         }
 

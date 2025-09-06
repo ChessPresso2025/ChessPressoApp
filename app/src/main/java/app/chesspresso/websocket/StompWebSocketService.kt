@@ -429,8 +429,8 @@ class StompWebSocketService @Inject constructor(
 
                 "LOBBY_REMOVED" -> {
                     Log.i(TAG, "LOBBY_REMOVED empfangen, unsubscribing von Lobby und Game")
-                    unsubscribeFromLobby()
                     unsubscribeFromGame()
+                    unsubscribeFromLobby()
                 }
 
                 else -> {
@@ -814,7 +814,7 @@ class StompWebSocketService @Inject constructor(
 
         currentLobbyId = null
 
-        Log.d(TAG, "Unsubscribed from game updates")
+        Log.d(TAG, "Unsubscribed from game updates for lobby $currentLobbyId")
     }
 
     private fun startServerStatusCheck() {

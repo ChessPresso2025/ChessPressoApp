@@ -1,5 +1,10 @@
 package app.chesspresso.screens.game
 
+import androidx.compose.animation.animateColor
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -34,6 +39,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -41,6 +47,7 @@ import androidx.navigation.NavHostController
 import app.chesspresso.model.TeamColor
 import app.chesspresso.model.board.Board
 import app.chesspresso.model.lobby.GameStartResponse
+import app.chesspresso.ui.theme.CoffeeOrange
 import app.chesspresso.viewmodel.ChessGameViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -125,7 +132,9 @@ fun ChessGameScreen(
                         PlayerClock(
                             playerName = gameStartResponse.whitePlayer,
                             remainingTime = formatSecondsToTimeString(whiteTime),
-                            isActive = activePlayer == TeamColor.WHITE
+                            remainingSeconds = whiteTime,
+                            isActive = activePlayer == TeamColor.WHITE,
+                            isUnlimited = gameStartResponse.gameTime.isUnlimited()
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         CapturedPieces(captured = viewModel.capturedBlackPieces.collectAsState().value, isActive = activePlayer == TeamColor.WHITE)
@@ -141,7 +150,9 @@ fun ChessGameScreen(
                         PlayerClock(
                             playerName = gameStartResponse.blackPlayer,
                             remainingTime = formatSecondsToTimeString(blackTime),
-                            isActive = activePlayer == TeamColor.BLACK
+                            remainingSeconds = blackTime,
+                            isActive = activePlayer == TeamColor.BLACK,
+                            isUnlimited = gameStartResponse.gameTime.isUnlimited()
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         CapturedPieces(captured = viewModel.capturedWhitePieces.collectAsState().value, isActive = activePlayer == TeamColor.BLACK)
@@ -157,7 +168,9 @@ fun ChessGameScreen(
                         PlayerClock(
                             playerName = gameStartResponse.blackPlayer,
                             remainingTime = formatSecondsToTimeString(blackTime),
-                            isActive = activePlayer == TeamColor.BLACK
+                            remainingSeconds = blackTime,
+                            isActive = activePlayer == TeamColor.BLACK,
+                            isUnlimited = gameStartResponse.gameTime.isUnlimited()
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         CapturedPieces(captured = viewModel.capturedWhitePieces.collectAsState().value, isActive = activePlayer == TeamColor.BLACK)
@@ -174,7 +187,9 @@ fun ChessGameScreen(
                         PlayerClock(
                             playerName = gameStartResponse.whitePlayer,
                             remainingTime = formatSecondsToTimeString(whiteTime),
-                            isActive = activePlayer == TeamColor.WHITE
+                            remainingSeconds = whiteTime,
+                            isActive = activePlayer == TeamColor.WHITE,
+                            isUnlimited = gameStartResponse.gameTime.isUnlimited()
                         )
                         Spacer(modifier = Modifier.height(8.dp))
                         CapturedPieces(captured = viewModel.capturedBlackPieces.collectAsState().value, isActive = activePlayer == TeamColor.WHITE)
@@ -313,7 +328,9 @@ fun ChessGameScreen(
 fun PlayerClock(
     playerName: String,
     remainingTime: String,
-    isActive: Boolean
+    remainingSeconds: Int,
+    isActive: Boolean,
+    isUnlimited: Boolean
 ) {
     Card(
         modifier = Modifier
@@ -338,20 +355,39 @@ fun PlayerClock(
         ) {
             Text(
                 text = playerName,
-                style = MaterialTheme.typography.titleMedium,
+                style = MaterialTheme.typography.headlineMedium, // statt titleMedium
                 color = if (isActive)
                     MaterialTheme.colorScheme.primary
                 else
                     MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
-            Text(
-                text = remainingTime,
-                style = MaterialTheme.typography.headlineLarge,
-                color = if (isActive)
-                    MaterialTheme.colorScheme.primary
-                else
-                    MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-            )
+            // Anzeige der verbleibenden Zeit oder "Unbegrenzt"
+            if (isUnlimited) {
+                Text(
+                    text = "∞",
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = if (isActive)
+                        MaterialTheme.colorScheme.primary
+                    else
+                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+            } else {
+                // Zeit blinkt rot, wenn weniger als 10 Sekunden übrig sind und aktiv
+                val blink = rememberInfiniteTransition()
+                val animatedColor by blink.animateColor(
+                    initialValue = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    targetValue = if (isActive && remainingSeconds < 10 && remainingSeconds > 0) CoffeeOrange else if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                    animationSpec = infiniteRepeatable(
+                        animation = tween(durationMillis = 500),
+                        repeatMode = RepeatMode.Reverse
+                    )
+                )
+                Text(
+                    text = remainingTime,
+                    style = MaterialTheme.typography.headlineLarge,
+                    color = if (isActive && remainingSeconds < 10 && remainingSeconds > 0) animatedColor else if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                )
+            }
         }
     }
 }

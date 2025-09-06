@@ -98,7 +98,9 @@ class Board {
             when {
                 // Wenn bereits ein Feld ausgewählt ist und wir auf ein anderes klicken
                 selectedField != null && selectedField != fieldName -> {
-                    if (validMoves.contains(fieldName)) {
+                    val piece = boardState[fieldName]
+                    // Nur erlauben, wenn das Zielfeld leer ist oder eine gegnerische Figur enthält
+                    if (validMoves.contains(fieldName) && (piece == null || piece.color != myColor)) {
                         // Zug ausführen
                         Log.d("Board", "Zug von $selectedField nach $fieldName")
                         onGameMove(selectedField!!, fieldName) // NEU: Callback aufrufen
@@ -107,7 +109,8 @@ class Board {
                     } else {
                         // Neue Auswahl oder Abwählen
                         resetSelection()
-                        if (boardState[fieldName] != null) {
+                        val newPiece = boardState[fieldName]
+                        if (newPiece != null && newPiece.color == myColor) {
                             // Neues Feld auswählen
                             selectedField = fieldName
 
@@ -129,7 +132,8 @@ class Board {
                 }
                 // Wenn noch nichts ausgewählt ist
                 selectedField == null -> {
-                    if (boardState[fieldName] != null) {
+                    val piece = boardState[fieldName]
+                    if (piece != null && piece.color == myColor) {
                         selectedField = fieldName
 
                         // PositionRequestMessage erstellen und senden

@@ -266,7 +266,9 @@ fun LobbyWaitingScreen(
                                         .weight(1f)
                                         .padding(8.dp)
                                         .size(cardSize)
-                                        .clickable { colorChoice = "white" },
+                                        .clickable {
+                                            colorChoice = "white"
+                                            randomColors = false},
                                     shape = cardShape,
                                     border = cardBorder(colorChoice == "white"),
                                     elevation = CardDefaults.cardElevation(8.dp),
@@ -291,7 +293,9 @@ fun LobbyWaitingScreen(
                                         .weight(1f)
                                         .padding(8.dp)
                                         .size(cardSize)
-                                        .clickable { colorChoice = "random" },
+                                        .clickable {
+                                            colorChoice = "random"
+                                            randomColors = true },
                                     shape = cardShape,
                                     border = cardBorder(colorChoice == "random"),
                                     elevation = CardDefaults.cardElevation(8.dp),
@@ -316,7 +320,9 @@ fun LobbyWaitingScreen(
                                         .weight(1f)
                                         .padding(8.dp)
                                         .size(cardSize)
-                                        .clickable { colorChoice = "black" },
+                                        .clickable {
+                                            colorChoice = "black"
+                                            randomColors = false },
                                     shape = cardShape,
                                     border = cardBorder(colorChoice == "black"),
                                     elevation = CardDefaults.cardElevation(8.dp),
@@ -345,11 +351,11 @@ fun LobbyWaitingScreen(
                             val whitePlayerFinal = when (colorChoice) {
                                 "random" -> null
                                 "white" -> lobby.creator
-                                "black" -> lobby.players.first { it != lobby.creator }
+                                "black" -> lobby.players.find { it != lobby.creator }
                                 else -> null
                             }
                             val blackPlayerFinal =
-                                if (randomColors) null else lobby.players.find { it != selectedWhitePlayer }
+                                if (randomColors) null else lobby.players.find { it != whitePlayerFinal }
 
                             viewModel.configureAndStartGame(
                                 lobbyCode = lobbyCode,
