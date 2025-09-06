@@ -96,9 +96,7 @@ fun QuickMatchScreen(
 
                     CoffeeButton(
                         onClick = { viewModel.cancelSearch() },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.error
-                        ),
+                        error = true,
                         content = {
                             Text("Suche abbrechen")
                         }

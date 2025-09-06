@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import app.chesspresso.data.storage.ThemeStorage
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -41,7 +42,9 @@ class MainActivity : ComponentActivity() {
         Log.d(TAG, "MainActivity created")
 
         setContent {
-            ChessPressoAppTheme {
+            val darkThemeFlow = ThemeStorage.getDarkThemeFlow(this)
+            val darkTheme by darkThemeFlow.collectAsState(initial = false)
+            ChessPressoAppTheme(darkTheme = darkTheme) {
                 val navController = rememberNavController()
                 AppNavigation(navController)
             }

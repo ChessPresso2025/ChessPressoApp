@@ -2,6 +2,7 @@ package app.chesspresso.ui.theme
 
 import android.annotation.SuppressLint
 import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -35,20 +36,37 @@ fun CoffeeButton(
     onClick: () -> Unit,
     @SuppressLint("ModifierParameter") modifier: Modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
     enabled: Boolean = true,
-    colors: ButtonColors = ButtonDefaults.buttonColors(
-        containerColor = CoffeeBrownSoft, // Noch etwas kräftigerer, aber weicher Braunton für Buttons
-        contentColor = MaterialTheme.colorScheme.onPrimary
-    ),
+    error: Boolean = false,
+    colors: ButtonColors? = null,
     content: @Composable () -> Unit
 ) {
+    val isDark = MaterialTheme.colorScheme.background == CoffeeBrownDark || isSystemInDarkTheme()
+    val buttonColors = colors ?: when {
+        error && isDark -> ButtonDefaults.buttonColors(
+            containerColor = CoffeeRedCheck, // Dunkelrot für Error im Dark Mode
+            contentColor = CoffeeCremeLight
+        )
+        error && !isDark -> ButtonDefaults.buttonColors(
+            containerColor = CoffeeRedCheck, // Auch im Light Mode für Konsistenz
+            contentColor = CoffeeCremeLight
+        )
+        isDark -> ButtonDefaults.buttonColors(
+            containerColor = CoffeeOrange, // Dunkelbraun für alle Standard-Buttons im Dark Mode
+            contentColor = CoffeeCremeLight
+        )
+        else -> ButtonDefaults.buttonColors(
+            containerColor = CoffeeBrownSoft, // Orange für alle Standard-Buttons
+            contentColor = CoffeeCremeLight
+        )
+    }
     Button(
         onClick = onClick,
         modifier = modifier,
         enabled = enabled,
         shape = RoundedCornerShape(16.dp),
-        colors = colors
+        colors = buttonColors
     ) {
-        Row { content() }
+        content()
     }
 }
 

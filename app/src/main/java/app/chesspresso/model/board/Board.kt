@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -68,14 +69,7 @@ class Board {
         fieldHighlights: Map<String, app.chesspresso.viewmodel.ChessGameViewModel.FieldHighlight> = emptyMap() // NEU
     ) {
         var selectedField by remember { mutableStateOf<String?>(null) }
-        var validMoves by remember { mutableStateOf<Set<String>>(possibleMoves.toSet()) }
-
-        var currentIndex : String? = boardState.keys.firstOrNull()
-        if(currentIndex.isNullOrEmpty()){
-            Log.d("BoardContent", "boardState is empty")
-        } else {
-            Log.d("BoardContent", "boardState has entries, first key: $currentIndex")
-        }
+        var validMoves by remember { mutableStateOf(possibleMoves.toSet()) }
 
         // Funktion zum Zurücksetzen der Auswahl
         fun resetSelection() {
@@ -159,7 +153,7 @@ class Board {
         val numberFontSize = 14.sp
         val labelFontSize = 20.sp
         val labelFontWeight = androidx.compose.ui.text.font.FontWeight.Bold
-        val labelColor = Color.Black // Alternativ: Color.White, je nach Theme
+        val labelColor = MaterialTheme.colorScheme.primary // Alternativ: Color.White, je nach Theme
         val rowRange = if (isFlipped) 7 downTo 0 else 0..7
         val colRange = if (isFlipped) 7 downTo 0 else 0..7
 

@@ -271,9 +271,7 @@ fun ProfileScreen(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth(),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = MaterialTheme.colorScheme.error
-            ),
+            error = true,
             content = {
                 Text("Abmelden")
             }
