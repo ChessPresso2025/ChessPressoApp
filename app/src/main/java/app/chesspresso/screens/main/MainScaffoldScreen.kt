@@ -49,7 +49,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
@@ -84,30 +83,23 @@ fun MainScaffoldScreen(
     val currentRoute by innerNavController.currentBackStackEntryAsState()
     val selectedRoute = currentRoute?.destination?.route ?: "home"
 
-    // Drawer-Logik hinzufügen
     val drawerState = rememberDrawerState(initialValue = DrawerValue.Closed)
     val scope = rememberCoroutineScope()
-
-    // GameViewModel zentral erstellen
     val gameViewModel: GameViewModel = hiltViewModel()
-
-    // Prüfe, ob wir uns in einem Lobby-Screen befinden
     val isLobbyScreen =
         selectedRoute == NavRoutes.QUICK_MATCH || selectedRoute == NavRoutes.PRIVATE_LOBBY
-    // Prüfe, ob wir im Spiel-Screen sind
     val isGameScreen = selectedRoute.startsWith("game/")
     val chessGameViewModel: ChessGameViewModel = hiltViewModel()
 
-    if (isGameScreen) {
-        ModalNavigationDrawer(
-            drawerState = drawerState,
-            scrimColor = MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f),
-            drawerContent = {
+    ModalNavigationDrawer(
+        drawerState = drawerState,
+        scrimColor = MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f),
+        drawerContent = {
+            if (isGameScreen) {
                 val currentGameState by chessGameViewModel.currentGameState.collectAsState()
                 val myColor by chessGameViewModel.myColor.collectAsState()
                 val initialGameData by chessGameViewModel.initialGameData.collectAsState()
                 val moveHistory by chessGameViewModel.moveHistory.collectAsState()
-                val lobbyId = initialGameData?.lobbyId
                 ModalDrawerSheet(
                     modifier = Modifier.background(app.chesspresso.ui.theme.CoffeeCremeLight)
                 ) {
@@ -122,64 +114,21 @@ fun MainScaffoldScreen(
                             currentGameState = currentGameState,
                             moves = moveHistory,
                             onResign = {
-                                if (myColor != null && lobbyId != null) {
-                                    chessGameViewModel.resignGame(myColor!!, lobbyId)
+                                if (myColor != null) {
+                                    chessGameViewModel.resignGame(myColor!!, "")
                                 }
                             },
                             onOfferDraw = {
-                                if (myColor != null && lobbyId != null) {
-                                    chessGameViewModel.offerDraw(lobbyId, myColor!!)
+                                if (myColor != null) {
+                                    chessGameViewModel.offerDraw("", myColor!!)
                                 }
                             }
                         )
                     }
                 }
             }
-        ) {
-            Scaffold(
-                topBar = {
-                    MainTopAppBar(
-                        isGameScreen = isGameScreen,
-                        isLobbyScreen = isLobbyScreen,
-                        onMenuClick = { scope.launch { drawerState.open() } },
-                        onBackClick = { innerNavController.navigateUp() }
-                    )
-                },
-                bottomBar = {
-                    MainBottomBar(
-                        isGameScreen = isGameScreen,
-                        selectedRoute = selectedRoute,
-                        onItemClick = { item ->
-                            if (selectedRoute != item.route) {
-                                if (item.route == NavRoutes.STATS) {
-                                    innerNavController.navigate(NavRoutes.STATS) {
-                                        popUpTo("home") { inclusive = false }
-                                        launchSingleTop = true
-                                    }
-                                } else {
-                                    innerNavController.navigate(item.route) {
-                                        popUpTo("home") { inclusive = false }
-                                        launchSingleTop = true
-                                    }
-                                }
-                            }
-                        }
-                    )
-                }
-            ) { padding ->
-                MainNavHost(
-                    innerNavController = innerNavController,
-                    padding = Modifier.padding(padding),
-                    authViewModel = authViewModel,
-                    outerNavController = outerNavController,
-                    gameViewModel = gameViewModel,
-                    chessGameViewModel = chessGameViewModel,
-                    scope = scope,
-                    drawerState = drawerState
-                )
-            }
         }
-    } else {
+    ) {
         Scaffold(
             topBar = {
                 MainTopAppBar(
@@ -213,7 +162,7 @@ fun MainScaffoldScreen(
         ) { padding ->
             MainNavHost(
                 innerNavController = innerNavController,
-                padding = Modifier.padding(padding),
+                modifier = Modifier.padding(padding),
                 authViewModel = authViewModel,
                 outerNavController = outerNavController,
                 gameViewModel = gameViewModel,
@@ -447,7 +396,7 @@ fun MainBottomBar(
 @Composable
 fun MainNavHost(
     innerNavController: NavHostController,
-    padding: androidx.compose.ui.Modifier,
+    modifier: Modifier,
     authViewModel: AuthViewModel,
     outerNavController: NavHostController,
     gameViewModel: GameViewModel,
@@ -455,10 +404,19 @@ fun MainNavHost(
     scope: kotlinx.coroutines.CoroutineScope,
     drawerState: androidx.compose.material3.DrawerState
 ) {
+    val currentRoute by innerNavController.currentBackStackEntryAsState()
+    val selectedRoute = currentRoute?.destination?.route ?: "home"
+    // Wenn sich der Screen ändert, Drawer schließen, falls es ein GameScreen ist
+    LaunchedEffect(selectedRoute) {
+        if (selectedRoute.startsWith("game/")) {
+            drawerState.close()
+        }
+    }
+
     NavHost(
         navController = innerNavController,
         startDestination = NavRoutes.HOME,
-        modifier = padding
+        modifier = modifier
     ) {
         composable(NavRoutes.HOME) {
             HomeScreen(
@@ -514,7 +472,6 @@ fun MainNavHost(
         }
         composable(NavRoutes.SETTINGS) { SettingsScreen() }
         composable("game/{lobbyId}") { backStackEntry ->
-            val lobbyId = backStackEntry.arguments?.getString("lobbyId") ?: ""
             val gameStartResponse by chessGameViewModel.initialGameData.collectAsState()
             val playerId = chessGameViewModel.webSocketService.playerId ?: ""
             if (gameStartResponse != null) {

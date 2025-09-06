@@ -39,7 +39,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -120,81 +119,42 @@ fun ChessGameScreen(
                     .padding(horizontal = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
+                val leftPlayerInfo: PlayerUiInfo
+                val rightPlayerInfo: PlayerUiInfo
                 if (myColor == TeamColor.WHITE) {
-                    // Eigener Spieler (Weiß) links
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                            .alpha(if (activePlayer == TeamColor.WHITE) 1f else 0.4f),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        PlayerClock(
-                            playerName = gameStartResponse.whitePlayer,
-                            remainingTime = formatSecondsToTimeString(whiteTime),
-                            remainingSeconds = whiteTime,
-                            isActive = activePlayer == TeamColor.WHITE,
-                            isUnlimited = gameStartResponse.gameTime.isUnlimited()
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        CapturedPieces(captured = viewModel.capturedBlackPieces.collectAsState().value, isActive = activePlayer == TeamColor.WHITE)
-                    }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    // Gegner (Schwarz) rechts
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .alpha(if (activePlayer == TeamColor.BLACK) 1f else 0.4f),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        PlayerClock(
-                            playerName = gameStartResponse.blackPlayer,
-                            remainingTime = formatSecondsToTimeString(blackTime),
-                            remainingSeconds = blackTime,
-                            isActive = activePlayer == TeamColor.BLACK,
-                            isUnlimited = gameStartResponse.gameTime.isUnlimited()
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        CapturedPieces(captured = viewModel.capturedWhitePieces.collectAsState().value, isActive = activePlayer == TeamColor.BLACK)
-                    }
-                } else if (myColor == TeamColor.BLACK) {
-                    // Eigener Spieler (Schwarz) links
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .alpha(if (activePlayer == TeamColor.BLACK) 1f else 0.4f),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        PlayerClock(
-                            playerName = gameStartResponse.blackPlayer,
-                            remainingTime = formatSecondsToTimeString(blackTime),
-                            remainingSeconds = blackTime,
-                            isActive = activePlayer == TeamColor.BLACK,
-                            isUnlimited = gameStartResponse.gameTime.isUnlimited()
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        CapturedPieces(captured = viewModel.capturedWhitePieces.collectAsState().value, isActive = activePlayer == TeamColor.BLACK)
-                    }
-                    Spacer(modifier = Modifier.width(16.dp))
-                    // Gegner (Weiß) rechts
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                            .alpha(if (activePlayer == TeamColor.WHITE) 1f else 0.4f),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        PlayerClock(
-                            playerName = gameStartResponse.whitePlayer,
-                            remainingTime = formatSecondsToTimeString(whiteTime),
-                            remainingSeconds = whiteTime,
-                            isActive = activePlayer == TeamColor.WHITE,
-                            isUnlimited = gameStartResponse.gameTime.isUnlimited()
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        CapturedPieces(captured = viewModel.capturedBlackPieces.collectAsState().value, isActive = activePlayer == TeamColor.WHITE)
-                    }
+                    leftPlayerInfo = PlayerUiInfo(
+                        playerName = gameStartResponse.whitePlayer,
+                        remainingTime = whiteTime,
+                        capturedPieces = viewModel.capturedBlackPieces.collectAsState().value,
+                        isActive = activePlayer == TeamColor.WHITE,
+                        isUnlimited = gameStartResponse.gameTime.isUnlimited()
+                    )
+                    rightPlayerInfo = PlayerUiInfo(
+                        playerName = gameStartResponse.blackPlayer,
+                        remainingTime = blackTime,
+                        capturedPieces = viewModel.capturedWhitePieces.collectAsState().value,
+                        isActive = activePlayer == TeamColor.BLACK,
+                        isUnlimited = gameStartResponse.gameTime.isUnlimited()
+                    )
+                } else {
+                    leftPlayerInfo = PlayerUiInfo(
+                        playerName = gameStartResponse.blackPlayer,
+                        remainingTime = blackTime,
+                        capturedPieces = viewModel.capturedWhitePieces.collectAsState().value,
+                        isActive = activePlayer == TeamColor.BLACK,
+                        isUnlimited = gameStartResponse.gameTime.isUnlimited()
+                    )
+                    rightPlayerInfo = PlayerUiInfo(
+                        playerName = gameStartResponse.whitePlayer,
+                        remainingTime = whiteTime,
+                        capturedPieces = viewModel.capturedBlackPieces.collectAsState().value,
+                        isActive = activePlayer == TeamColor.WHITE,
+                        isUnlimited = gameStartResponse.gameTime.isUnlimited()
+                    )
                 }
+                PlayerInfoPanel(info = leftPlayerInfo, modifier = Modifier.weight(1f))
+                Spacer(modifier = Modifier.width(16.dp))
+                PlayerInfoPanel(info = rightPlayerInfo, modifier = Modifier.weight(1f))
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -441,4 +401,35 @@ fun formatSecondsToTimeString(seconds: Int): String {
     val min = seconds / 60
     val sec = seconds % 60
     return "%02d:%02d".format(min, sec)
+}
+
+data class PlayerUiInfo(
+    val playerName: String,
+    val remainingTime: Int,
+    val capturedPieces: List<app.chesspresso.model.game.PieceInfo>,
+    val isActive: Boolean,
+    val isUnlimited: Boolean
+)
+
+@Composable
+fun PlayerInfoPanel(
+    info: PlayerUiInfo,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .alpha(if (info.isActive) 1f else 0.4f),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        PlayerClock(
+            playerName = info.playerName,
+            remainingTime = formatSecondsToTimeString(info.remainingTime),
+            remainingSeconds = info.remainingTime,
+            isActive = info.isActive,
+            isUnlimited = info.isUnlimited
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        CapturedPieces(captured = info.capturedPieces, isActive = info.isActive)
+    }
 }
