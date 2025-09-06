@@ -1,5 +1,7 @@
 package app.chesspresso.screens.lobby
 
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -14,9 +16,11 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Casino
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Text
@@ -28,6 +32,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.modifier.modifierLocalConsumer
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -35,8 +42,16 @@ import app.chesspresso.model.lobby.GameTime
 import app.chesspresso.ui.components.LobbyCreatorControls
 import app.chesspresso.ui.theme.CoffeeButton
 import app.chesspresso.ui.theme.CoffeeCard
+import app.chesspresso.ui.theme.CoffeeHeadlineText
 import app.chesspresso.ui.theme.CoffeeText
 import app.chesspresso.viewmodel.PrivateLobbyViewModel
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.height
+import androidx.compose.ui.graphics.Color
 
 @Composable
 fun LobbyWaitingScreen(
@@ -56,6 +71,10 @@ fun LobbyWaitingScreen(
     var selectedGameTime by remember { mutableStateOf(GameTime.MIDDLE) }
     var selectedWhitePlayer by remember { mutableStateOf("") }
     var randomColors by remember { mutableStateOf(true) }
+
+    // Farbauswahl-State auf Composable-Ebene
+    var colorChoice by remember { mutableStateOf("random") } // Werte: "black", "white", "random"
+
 
 
     // Navigation nach Home wenn Lobby verlassen wurde
@@ -101,17 +120,13 @@ fun LobbyWaitingScreen(
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(24.dp),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Header
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            CoffeeText(
-                text = "Deine Lobby: $lobbyCode"
-            )
-        }
+        CoffeeHeadlineText(
+            text = "Deine Lobby: $lobbyCode",
+
+        )
 
         // nur wenn nur ein Spieler in der Lobby ist
         if (currentLobby?.players?.size != 2) {
@@ -186,6 +201,10 @@ fun LobbyWaitingScreen(
                 }
             }
         }
+        CoffeeHeadlineText(
+            text = "Spiel-Einstellungen",
+            fontSizeSp = 24
+        )
 
         // Spieleinstellungen Card (nur für Ersteller)
         currentLobby?.let { lobby ->
@@ -197,34 +216,15 @@ fun LobbyWaitingScreen(
                         modifier = Modifier.padding(16.dp),
                         verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        CoffeeText(
-                            text = "Spiel-Einstellungen"
-                        )
+
                         CoffeeText(
                             text = "Spielzeit:"
                         )
-
-                        GameTime.entries.forEach { gameTime ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .selectable(
-                                        selected = selectedGameTime == gameTime,
-                                        onClick = { selectedGameTime = gameTime }
-                                    )
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                RadioButton(
-                                    selected = selectedGameTime == gameTime,
-                                    onClick = { selectedGameTime = gameTime }
-                                )
-                                CoffeeText(
-                                    text = gameTime.displayName,
-                                    modifier = Modifier.padding(start = 8.dp)
-                                )
-                            }
-                        }
+                        GameTimeSelectionRow(
+                            selectedGameTime = selectedGameTime,
+                            onGameTimeSelected = { selectedGameTime = it },
+                            allowedTimes = GameTime.entries.toList()
+                        )
                     }
                 }
 
@@ -238,72 +238,100 @@ fun LobbyWaitingScreen(
                             verticalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
                             CoffeeText(
-                                text = "Farbauswahl"
+                                text = "Farbauswahl:"
                             )
 
                             Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .selectable(
-                                        selected = randomColors,
-                                        onClick = { randomColors = true }
-                                    )
-                                    .padding(vertical = 4.dp),
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceEvenly,
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
-                                RadioButton(
-                                    selected = randomColors,
-                                    onClick = { randomColors = true }
-                                )
-                                CoffeeText(
-                                    text = "Zufällig",
-                                    modifier = Modifier.padding(start = 8.dp)
-                                )
-                            }
+                                val iconSize: Dp = 56.dp
+                                val cardSize: Dp = 80.dp
+                                val borderWidth = 3.dp
+                                val defaultBorderColor = MaterialTheme.colorScheme.primary
+                                val selectedBorderColor = MaterialTheme.colorScheme.secondary
+                                val cardShape = RoundedCornerShape(16.dp)
 
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .selectable(
-                                        selected = !randomColors,
-                                        onClick = { randomColors = false }
-                                    )
-                                    .padding(vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                RadioButton(
-                                    selected = !randomColors,
-                                    onClick = { randomColors = false }
+                                // Helper für Card
+                                fun cardBorder(selected: Boolean) = BorderStroke(
+                                    borderWidth,
+                                    if (selected) selectedBorderColor else defaultBorderColor
                                 )
-                                CoffeeText(
-                                    text = "Manuell auswählen",
-                                    modifier = Modifier.padding(start = 8.dp)
-                                )
-                            }
 
-                            if (!randomColors) {
-                                CoffeeText(
-                                    text = "Weiß spielt:",
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                                lobby.players.forEachIndexed { index, player ->
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .selectable(
-                                                selected = selectedWhitePlayer == player,
-                                                onClick = { selectedWhitePlayer = player }
-                                            )
-                                            .padding(vertical = 2.dp),
-                                        verticalAlignment = Alignment.CenterVertically
+
+                                // Weiß-Icon (Bauer)
+                                Card(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(8.dp)
+                                        .size(cardSize)
+                                        .clickable { colorChoice = "white" },
+                                    shape = cardShape,
+                                    border = cardBorder(colorChoice == "white"),
+                                    elevation = CardDefaults.cardElevation(8.dp),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                                ) {
+                                    Column(
+                                        modifier = Modifier.fillMaxSize(),
+                                        verticalArrangement = Arrangement.Center,
+                                        horizontalAlignment = Alignment.CenterHorizontally
                                     ) {
-                                        RadioButton(
-                                            selected = selectedWhitePlayer == player,
-                                            onClick = { selectedWhitePlayer = player }
+                                        Icon(
+                                            painter = painterResource(id = app.chesspresso.R.drawable.pawn_white),
+                                            contentDescription = "Weiß",
+                                            tint = null,
+                                            modifier = Modifier.size(iconSize)
                                         )
-                                        CoffeeText(
-                                            text = "${player}${if (player == lobby.creator) " (Ersteller)" else ""}",
-                                            modifier = Modifier.padding(start = 8.dp)
+                                    }
+                                }
+                                // Würfel-Icon (Zufall)
+                                Card(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(8.dp)
+                                        .size(cardSize)
+                                        .clickable { colorChoice = "random" },
+                                    shape = cardShape,
+                                    border = cardBorder(colorChoice == "random"),
+                                    elevation = CardDefaults.cardElevation(8.dp),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                                ) {
+                                    Column(
+                                        modifier = Modifier.fillMaxSize(),
+                                        verticalArrangement = Arrangement.Center,
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Icon(
+                                            imageVector = Icons.Filled.Casino,
+                                            contentDescription = "Zufällig",
+                                            tint = MaterialTheme.colorScheme.primary,
+                                            modifier = Modifier.size(iconSize)
+                                        )
+                                    }
+                                }
+                                // Schwarz-Icon (Bauer)
+                                Card(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(8.dp)
+                                        .size(cardSize)
+                                        .clickable { colorChoice = "black" },
+                                    shape = cardShape,
+                                    border = cardBorder(colorChoice == "black"),
+                                    elevation = CardDefaults.cardElevation(8.dp),
+                                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                                ) {
+                                    Column(
+                                        modifier = Modifier.fillMaxSize(),
+                                        verticalArrangement = Arrangement.Center,
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Icon(
+                                            painter = painterResource(id = app.chesspresso.R.drawable.pawn_black),
+                                            contentDescription = "Schwarz",
+                                            tint = null,
+                                            modifier = Modifier.size(iconSize)
                                         )
                                     }
                                 }
@@ -314,7 +342,12 @@ fun LobbyWaitingScreen(
                     // Spiel starten Button
                     CoffeeButton(
                         onClick = {
-                            val whitePlayerFinal = if (randomColors) null else selectedWhitePlayer
+                            val whitePlayerFinal = when (colorChoice) {
+                                "random" -> null
+                                "white" -> lobby.creator
+                                "black" -> lobby.players.first { it != lobby.creator }
+                                else -> null
+                            }
                             val blackPlayerFinal =
                                 if (randomColors) null else lobby.players.find { it != selectedWhitePlayer }
 
@@ -388,9 +421,10 @@ fun LobbyWaitingScreen(
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.buttonColors(
                 containerColor = MaterialTheme.colorScheme.error
-            )
-        ) {
-            CoffeeText("Lobby verlassen")
-        }
+            ),
+            content = {
+                Text("Lobby verlassen")
+            }
+        )
     }
 }

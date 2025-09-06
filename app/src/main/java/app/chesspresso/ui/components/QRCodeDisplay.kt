@@ -46,13 +46,7 @@ fun QRCodeDisplay(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             CoffeeText(
-                text = "Lobby beitreten"
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            CoffeeText(
-                text = "Scanne diesen QR-Code um der Lobby beizutreten:",
+                text = "Scanne diesen QR-Code, um der Lobby beizutreten:",
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 

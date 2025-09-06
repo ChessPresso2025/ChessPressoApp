@@ -34,7 +34,9 @@ import app.chesspresso.ui.components.LobbyCreatorControls
 import app.chesspresso.ui.components.QRScannerButton
 import app.chesspresso.ui.theme.CoffeeButton
 import app.chesspresso.ui.theme.CoffeeCard
+import app.chesspresso.ui.theme.CoffeeHeadlineText
 import app.chesspresso.ui.theme.CoffeeText
+import app.chesspresso.ui.theme.CoffeeTextField
 import app.chesspresso.viewmodel.PrivateLobbyViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -75,9 +77,13 @@ fun PrivateLobbyScreen(
             .fillMaxSize()
             .padding(24.dp)
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
+        CoffeeHeadlineText(
+            text = "Neue Lobby erstellen",
+            fontSizeSp = 24
+        )
         // Lobby erstellen
         CoffeeCard(
             modifier = Modifier.fillMaxWidth()
@@ -86,9 +92,7 @@ fun PrivateLobbyScreen(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                CoffeeText(
-                    text = "Neue Lobby erstellen"
-                )
+
                 CoffeeText(
                     text = "Erstelle eine private Lobby und teile den Code mit deinem Freund.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -141,6 +145,11 @@ fun PrivateLobbyScreen(
             )
         }
 
+        CoffeeHeadlineText(
+            text = "Lobby beitreten",
+            fontSizeSp = 24
+        )
+
         // Lobby beitreten
         CoffeeCard(
             modifier = Modifier.fillMaxWidth()
@@ -149,19 +158,16 @@ fun PrivateLobbyScreen(
                 modifier = Modifier.padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                CoffeeText(
-                    text = "Lobby beitreten"
-                )
+
                 CoffeeText(
                     text = "Gib den 6-stelligen Lobby-Code ein, den du von deinem Freund erhalten hast.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
-                OutlinedTextField(
+                CoffeeTextField(
                     value = uiState.joinCode,
                     onValueChange = viewModel::updateJoinCode,
-                    label = { CoffeeText("Lobby-Code") },
-                    placeholder = { CoffeeText("ABC123") },
+                    label = "Lobby-Code",
                     modifier = Modifier.fillMaxWidth(),
                     enabled = !uiState.isLoading,
                     singleLine = true,

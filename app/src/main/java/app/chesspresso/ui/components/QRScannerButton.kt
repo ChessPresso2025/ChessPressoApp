@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import app.chesspresso.ui.theme.CoffeeButton
 import app.chesspresso.ui.theme.CoffeeCard
+import app.chesspresso.ui.theme.CoffeeHeadlineText
 import app.chesspresso.ui.theme.CoffeeText
 import app.chesspresso.utils.QRCodeGenerator
 
@@ -103,6 +104,10 @@ fun QRScannerButton(
             }
         }
     }
+    CoffeeHeadlineText(
+        text = "Lobby via QR-Code beitreten",
+        fontSizeSp = 20
+    )
 
     CoffeeCard(
         modifier = modifier.fillMaxWidth()
@@ -111,14 +116,12 @@ fun QRScannerButton(
             horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier.padding(16.dp)
         ) {
-            CoffeeText(
-                text = "Lobby via QR-Code beitreten"
-            )
+
 
             Spacer(modifier = Modifier.height(12.dp))
 
             CoffeeText(
-                text = "Scanne den QR-Code einer privaten Lobby mit der Kamera",
+                text = "Scanne den QR-Code einer privaten Lobby mit der Kamera.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
@@ -127,15 +130,16 @@ fun QRScannerButton(
             CoffeeButton(
                 onClick = { startQRScanner() },
                 enabled = enabled,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Icon(
-                    imageVector = Icons.Default.Settings,
-                    contentDescription = "QR-Code scannen"
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("QR-Code scannen")
-            }
+                modifier = Modifier.fillMaxWidth(),
+                content = {
+                    Icon(
+                        imageVector = Icons.Filled.CameraAlt,
+                        contentDescription = "QR-Code scannen"
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("QR-Code scannen")
+                }
+            )
         }
     }
 
