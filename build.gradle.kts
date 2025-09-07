@@ -5,4 +5,13 @@ plugins {
     alias(libs.plugins.kotlin.compose) apply false
     id("com.google.dagger.hilt.android") version "2.57" apply false
     id("org.jetbrains.kotlin.plugin.serialization") version "2.2.10" apply false
+    id("org.sonarqube") version "4.4.1.3373"
+}
+sonarqube {
+    properties {
+        property("sonar.projectKey", "ChessPresso2025_ChessPressoApp")
+        property("sonar.organization", "chesspresso2025")
+        property("sonar.host.url", "https://sonarcloud.io")
+        property("sonar.token", System.getenv("SONAR_TOKEN") ?: "")
+    }
 }
