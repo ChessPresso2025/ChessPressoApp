@@ -2,6 +2,7 @@ package app.chesspresso.auth.data
 
 import android.content.Context
 import android.util.Log
+import androidx.core.content.edit
 import app.chesspresso.data.storage.TokenStorage
 import app.chesspresso.websocket.StompWebSocketService
 import kotlinx.coroutines.flow.first
@@ -192,23 +193,23 @@ class AuthRepository @Inject constructor(
 
     private fun storePlayerData(response: AuthResponse) {
         val prefs = context.getSharedPreferences("chessapp", Context.MODE_PRIVATE)
-        prefs.edit()
-            .putString("playerId", response.playerId)
-            .putString("playerName", response.name)
-            .putString("playerEmail", response.email)
-            .putInt("playedGames", response.playedGames)
-            .putInt("win", response.win)
-            .putInt("draw", response.draw)
-            .putInt("lose", response.lose)
-            .apply()
+        prefs.edit {
+            putString("playerId", response.playerId)
+                .putString("playerName", response.name)
+                .putString("playerEmail", response.email)
+                .putInt("playedGames", response.playedGames)
+                .putInt("win", response.win)
+                .putInt("draw", response.draw)
+                .putInt("lose", response.lose)
+        }
     }
 
     private fun storeCredentials(username: String) {
         val prefs = context.getSharedPreferences("chessapp", Context.MODE_PRIVATE)
-        prefs.edit()
-            .putString("storedUsername", username)
-            .putBoolean("isLoggedIn", true)
-            .apply()
+        prefs.edit {
+            putString("storedUsername", username)
+                .putBoolean("isLoggedIn", true)
+        }
     }
 
     fun getStoredPlayerInfo(): PlayerInfo? {
@@ -239,7 +240,7 @@ class AuthRepository @Inject constructor(
 
     fun clearStoredPlayerInfo() {
         val prefs = context.getSharedPreferences("chessapp", Context.MODE_PRIVATE)
-        prefs.edit().clear().apply()
+        prefs.edit { clear() }
 
         // Auch JWT Token löschen
         kotlinx.coroutines.runBlocking {

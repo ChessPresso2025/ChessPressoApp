@@ -2,49 +2,81 @@ package app.chesspresso.screens.main
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Lock
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Button
-import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import app.chesspresso.auth.presentation.AuthViewModel
+import app.chesspresso.ui.theme.CoffeeButton
+import app.chesspresso.ui.theme.CoffeeCard
+import app.chesspresso.ui.theme.CoffeeHeadlineText
+import app.chesspresso.ui.theme.CoffeeText
+import app.chesspresso.ui.theme.CoffeeTextField
+
+const val CHANGE_USERNAME_TITLE = "Benutzernamen ändern"
+const val CHANGE_PASSWORD_TITLE = "Passwort ändern"
 
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel(),
     authViewModel: AuthViewModel,
+    onLogout: () -> Unit,
     outerNavController: NavHostController
 ) {
     val usernameChangeState by viewModel.usernameChangeState.collectAsState()
     val passwordChangeState by viewModel.passwordChangeState.collectAsState()
-    val (newUsername, setNewUsername) = remember { mutableStateOf("") }
-    val (oldPassword, setOldPassword) = remember { mutableStateOf("") }
-    val (newPassword, setNewPassword) = remember { mutableStateOf("") }
-    val showDialog = remember { mutableStateOf(false) }
-    val showPasswordDialog = remember { mutableStateOf(false) }
+    var newUsername by remember { mutableStateOf("") }
+    var oldPassword by remember { mutableStateOf("") }
+    var newPassword by remember { mutableStateOf("") }
+    var showUsernameConfirmDialog by remember { mutableStateOf(false) }
+    var showPasswordConfirmDialog by remember { mutableStateOf(false) }
+    var oldPasswordVisible by remember { mutableStateOf(false) }
+    var newPasswordVisible by remember { mutableStateOf(false) }
 
-    // Profildaten beim ersten Anzeigen laden
     LaunchedEffect(Unit) {
         viewModel.loadUserProfile()
     }
 
-    // Nach erfolgreicher Änderung Eingabefeld leeren und Status zurücksetzen
     LaunchedEffect(usernameChangeState) {
         if (usernameChangeState is UsernameChangeState.Success) {
-            setNewUsername("")
+            newUsername = "" // Clear input after success
+            // Navigation is handled by the event below
+        }
+    }
+
+    LaunchedEffect(passwordChangeState) {
+        if (passwordChangeState is PasswordChangeState.Success) {
+            oldPassword = ""
+            newPassword = ""
+            // Navigation is handled by the event below
         }
     }
 
@@ -52,7 +84,6 @@ fun ProfileScreen(
         viewModel.events.collect { event ->
             when (event) {
                 is ProfileEvent.LogoutAndNavigateToLogin -> {
-                    // resetStatsState entfernt, da Stats nicht mehr verwendet werden
                     authViewModel.logout()
                     outerNavController.navigate("login") {
                         popUpTo("login") { inclusive = true }
@@ -64,107 +95,232 @@ fun ProfileScreen(
     }
 
     Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(16.dp)
     ) {
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            // Name und E-Mail aus UserProfileState anzeigen
-            val userProfileState = viewModel.userProfileState.collectAsState().value
-            when (userProfileState) {
-                is UserProfileUiState.Loading -> Text("Lade Profildaten...")
-                is UserProfileUiState.Error -> Text("Fehler: " + userProfileState.message)
-                is UserProfileUiState.Success -> {
-                    val profile = userProfileState.profile
-                    Text("Name: ${profile.username}")
-                    Text("E-Mail: ${profile.email}")
-                }
-            }
-            // StatsUiState und uiState entfernt, da Stats nicht mehr verwendet werden
-            // --- Username ändern UI ---
-            OutlinedTextField(
-                value = newUsername,
-                onValueChange = setNewUsername,
-                label = { Text("Neuer Benutzername") },
-                modifier = Modifier.padding(top = 32.dp)
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(bottom = 16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            CoffeeHeadlineText(
+                text = "Mein Profil"
             )
-            Button(
-                onClick = {
-                    showDialog.value = true
-                },
-                enabled = usernameChangeState !is UsernameChangeState.Loading && newUsername.length in 3..32,
-                modifier = Modifier.padding(top = 8.dp)
-            ) {
-                Text("Benutzernamen ändern")
-            }
-            when (usernameChangeState) {
-                is UsernameChangeState.Loading -> Text("Ändere Benutzernamen...")
-                is UsernameChangeState.Success -> Text("Benutzername erfolgreich geändert!", color = Color.Green)
-                is UsernameChangeState.Error -> Text((usernameChangeState as UsernameChangeState.Error).message, color = Color.Red)
-                else -> {}
-            }
-            // --- Passwort ändern UI ---
-            OutlinedTextField(
-                value = oldPassword,
-                onValueChange = setOldPassword,
-                label = { Text("Altes Passwort") },
-                modifier = Modifier.padding(top = 32.dp),
-                singleLine = true
-            )
-            OutlinedTextField(
-                value = newPassword,
-                onValueChange = setNewPassword,
-                label = { Text("Neues Passwort") },
-                modifier = Modifier.padding(top = 8.dp),
-                singleLine = true
-            )
-            Button(
-                onClick = {
-                    showPasswordDialog.value = true
-                },
-                enabled = passwordChangeState !is PasswordChangeState.Loading && oldPassword.length >= 4 && newPassword.length in 4..64,
-                modifier = Modifier.padding(top = 8.dp)
-            ) {
-                Text("Passwort ändern")
-            }
-            when (passwordChangeState) {
-                is PasswordChangeState.Loading -> Text("Ändere Passwort...")
-                is PasswordChangeState.Success -> Text("Passwort erfolgreich geändert!", color = Color.Green)
-                is PasswordChangeState.Error -> Text((passwordChangeState as PasswordChangeState.Error).message, color = Color.Red)
-                else -> {}
-            }
-        }
-    }
 
-    if (showDialog.value) {
-        AlertDialog(
-            onDismissRequest = { showDialog.value = false },
-            title = { Text("Achtung") },
-            text = { Text("Um den Benutzernamen zu ändern, musst du dich neu anmelden. Fortfahren?") },
-            confirmButton = {
-                Button(onClick = {
-                    showDialog.value = false
-                    viewModel.changeUsername(newUsername)
-                }) { Text("Ja") }
-            },
-            dismissButton = {
-                Button(onClick = { showDialog.value = false }) { Text("Abbrechen") }
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // User Profile Info Card
+            CoffeeCard(
+                modifier = Modifier.fillMaxWidth(),
+                content = {
+                    Column(
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        val userProfileState = viewModel.userProfileState.collectAsState().value
+                        when (userProfileState) {
+                            is UserProfileUiState.Loading -> CircularProgressIndicator()
+                            is UserProfileUiState.Error -> CoffeeText(
+                                "Fehler: " + userProfileState.message,
+                                color = MaterialTheme.colorScheme.error
+                            )
+
+                            is UserProfileUiState.Success -> {
+                                val profile = userProfileState.profile
+                                CoffeeText("Name: ${profile.username}")
+                                Spacer(modifier = Modifier.height(8.dp))
+                                CoffeeText("E-Mail: ${profile.email}")
+                            }
+                        }
+                    }
+                },
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Change Username Card
+            CoffeeCard(
+                modifier = Modifier.fillMaxWidth(),
+                content = {
+                    Column(
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        CoffeeText(
+                            text = CHANGE_USERNAME_TITLE,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+                        CoffeeTextField(
+                            value = newUsername,
+                            onValueChange = { newUsername = it },
+                            label = "Neuer Benutzername",
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            leadingIcon = { Icon(Icons.Default.Person, contentDescription = "Benutzername") }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        CoffeeButton(
+                            onClick = { showUsernameConfirmDialog = true },
+                            enabled = usernameChangeState !is UsernameChangeState.Loading && newUsername.length in 3..32,
+                            modifier = Modifier.fillMaxWidth(),
+                            content = {
+                                Text(CHANGE_USERNAME_TITLE)
+                            }
+                        )
+                        when (val state = usernameChangeState) {
+                            is UsernameChangeState.Loading -> {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                CircularProgressIndicator()
+                            }
+
+                            is UsernameChangeState.Success -> {
+                                // Message handled by logout navigation
+                            }
+
+                            is UsernameChangeState.Error -> {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                CoffeeText(state.message, color = MaterialTheme.colorScheme.error)
+                            }
+
+                            else -> {}
+                        }
+                    }
+                },
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Change Password Card
+            CoffeeCard(
+                modifier = Modifier.fillMaxWidth(),
+                content = {
+                    Column(
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        CoffeeText(
+                            text = CHANGE_PASSWORD_TITLE,
+                            modifier = Modifier.padding(bottom = 16.dp)
+                        )
+                        CoffeeTextField(
+                            value = oldPassword,
+                            onValueChange = { oldPassword = it },
+                            label = "Altes Passwort",
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            visualTransformation = if (oldPasswordVisible) androidx.compose.ui.text.input.VisualTransformation.None else PasswordVisualTransformation(),
+                            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = "Altes Passwort") },
+                            trailingIcon = {
+                                val image = if (oldPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility
+                                val desc = if (oldPasswordVisible) "Passwort verbergen" else "Passwort anzeigen"
+                                IconButton(onClick = { oldPasswordVisible = !oldPasswordVisible }) {
+                                    Icon(image, contentDescription = desc)
+                                }
+                            }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        CoffeeTextField(
+                            value = newPassword,
+                            onValueChange = { newPassword = it },
+                            label = "Neues Passwort",
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            visualTransformation = if (newPasswordVisible) androidx.compose.ui.text.input.VisualTransformation.None else PasswordVisualTransformation(),
+                            leadingIcon = { Icon(Icons.Default.Lock, contentDescription = "Neues Passwort") },
+                            trailingIcon = {
+                                val image = if (newPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility
+                                val desc = if (newPasswordVisible) "Passwort verbergen" else "Passwort anzeigen"
+                                IconButton(onClick = { newPasswordVisible = !newPasswordVisible }) {
+                                    Icon(image, contentDescription = desc)
+                                }
+                            }
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        CoffeeButton(
+                            onClick = { showPasswordConfirmDialog = true },
+                            enabled = passwordChangeState !is PasswordChangeState.Loading && oldPassword.length >= 4 && newPassword.length in 4..64,
+                            modifier = Modifier.fillMaxWidth(),
+                            content = {
+                                Text(CHANGE_PASSWORD_TITLE)
+                            }
+                        )
+                        when (val state = passwordChangeState) {
+                            is PasswordChangeState.Loading -> {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                CircularProgressIndicator()
+                            }
+
+                            is PasswordChangeState.Success -> {
+                                // Message handled by logout navigation
+                            }
+
+                            is PasswordChangeState.Error -> {
+                                Spacer(modifier = Modifier.height(8.dp))
+                                CoffeeText(state.message, color = MaterialTheme.colorScheme.error)
+                            }
+
+                            else -> {}
+                        }
+                    }
+                },
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+        }
+
+        CoffeeButton(
+            onClick = onLogout,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .fillMaxWidth(),
+            error = true,
+            content = {
+                Text("Abmelden")
             }
         )
     }
 
-    if (showPasswordDialog.value) {
+
+    if (showUsernameConfirmDialog) {
         AlertDialog(
-            onDismissRequest = { showPasswordDialog.value = false },
-            title = { Text("Achtung") },
-            text = { Text("Um das Passwort zu ändern, musst du dich neu anmelden. Fortfahren?") },
+            onDismissRequest = { showUsernameConfirmDialog = false },
+            title = { CoffeeText(CHANGE_USERNAME_TITLE) },
+            text = { CoffeeText("Um den Benutzernamen zu ändern, musst du dich neu anmelden. Bist du sicher, dass du fortfahren möchtest?") },
             confirmButton = {
-                Button(onClick = {
-                    showPasswordDialog.value = false
-                    viewModel.changePassword(oldPassword, newPassword)
-                }) { Text("Ja") }
+                TextButton(onClick = {
+                    showUsernameConfirmDialog = false
+                    viewModel.changeUsername(newUsername)
+                }) { CoffeeText("Ja, ändern") }
             },
             dismissButton = {
-                Button(onClick = { showPasswordDialog.value = false }) { Text("Abbrechen") }
+                TextButton(onClick = { showUsernameConfirmDialog = false }) { CoffeeText("Abbrechen") }
+            }
+        )
+    }
+
+    if (showPasswordConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showPasswordConfirmDialog = false },
+            title = { CoffeeText(CHANGE_PASSWORD_TITLE) },
+            text = { CoffeeText("Um das Passwort zu ändern, musst du dich neu anmelden. Bist du sicher, dass du fortfahren möchtest?") },
+            confirmButton = {
+                TextButton(onClick = {
+                    showPasswordConfirmDialog = false
+                    viewModel.changePassword(oldPassword, newPassword)
+                }) { CoffeeText("Ja, ändern") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showPasswordConfirmDialog = false }) { CoffeeText("Abbrechen") }
             }
         )
     }

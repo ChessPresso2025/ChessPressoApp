@@ -16,7 +16,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import app.chesspresso.auth.presentation.AuthState
 import app.chesspresso.auth.presentation.AuthViewModel
+import app.chesspresso.data.storage.ThemeStorage
 import app.chesspresso.screens.LoginScreen
+import app.chesspresso.screens.SplashScreen
 import app.chesspresso.screens.WelcomeScreen
 import app.chesspresso.screens.main.MainScaffoldScreen
 import app.chesspresso.ui.theme.ChessPressoAppTheme
@@ -40,9 +42,10 @@ class MainActivity : ComponentActivity() {
         Log.d(TAG, "MainActivity created")
 
         setContent {
-            ChessPressoAppTheme {
-                val navController = rememberNavController()
-                AppNavigation(navController)
+            val darkThemeFlow = ThemeStorage.getDarkThemeFlow(this)
+            val darkTheme by darkThemeFlow.collectAsState(initial = false)
+            ChessPressoAppTheme(darkTheme = darkTheme) {
+                AppNavigation(navController = rememberNavController())
             }
         }
     }
@@ -88,8 +91,15 @@ class MainActivity : ComponentActivity() {
 
         NavHost(
             navController = navController,
-            startDestination = "welcome"
+            startDestination = "splash"
         ) {
+            composable("splash") {
+                SplashScreen(
+                    authViewModel = authViewModel,
+                    onNavigateToMain = { navController.navigate("main") { popUpTo("splash") { inclusive = true } } },
+                    onNavigateToWelcome = { navController.navigate("welcome") { popUpTo("splash") { inclusive = true } } }
+                )
+            }
             //Login-Teil der App
             composable("welcome") {
                 WelcomeScreen(

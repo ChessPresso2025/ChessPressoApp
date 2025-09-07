@@ -13,14 +13,10 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -28,7 +24,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.unit.dp
@@ -36,6 +31,11 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import app.chesspresso.ui.components.LobbyCreatorControls
 import app.chesspresso.ui.components.QRScannerButton
+import app.chesspresso.ui.theme.CoffeeButton
+import app.chesspresso.ui.theme.CoffeeCard
+import app.chesspresso.ui.theme.CoffeeHeadlineText
+import app.chesspresso.ui.theme.CoffeeText
+import app.chesspresso.ui.theme.CoffeeTextField
 import app.chesspresso.viewmodel.PrivateLobbyViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -65,7 +65,7 @@ fun PrivateLobbyScreen(
 
     // Automatische Navigation bei Spielstart
     LaunchedEffect(gameStarted) {
-        gameStarted?.let { gameStart ->
+        gameStarted?.let { _ ->
             // Navigation zum Spiel
             viewModel.clearGameStart()
         }
@@ -76,44 +76,45 @@ fun PrivateLobbyScreen(
             .fillMaxSize()
             .padding(24.dp)
             .verticalScroll(rememberScrollState()),
-        verticalArrangement = Arrangement.spacedBy(16.dp)
+        verticalArrangement = Arrangement.spacedBy(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
+        CoffeeHeadlineText(
+            text = "Neue Lobby erstellen",
+            fontSizeSp = 24
+        )
         // Lobby erstellen
-        Card(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(
-                    text = "Neue Lobby erstellen",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "Erstelle eine private Lobby und teile den Code mit deinem Freund.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                Button(
-                    onClick = { viewModel.createPrivateLobby() },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !uiState.isLoading
+        CoffeeCard(
+            modifier = Modifier.fillMaxWidth(),
+            content = {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    if (uiState.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                    }
-                    Text("Lobby erstellen")
+
+                    CoffeeText(
+                        text = "Erstelle eine private Lobby und teile den Code mit deinem Freund.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    CoffeeButton(
+                        onClick = { viewModel.createPrivateLobby() },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !uiState.isLoading,
+                        content = {
+                            if (uiState.isLoading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                            }
+                            Text("Lobby erstellen")
+                        }
+                    )
                 }
-            }
-        }
+            },
+        )
 
         // QR-Code für erstellte Lobby anzeigen
         uiState.createdLobbyCode?.let { lobbyCode ->
@@ -132,11 +133,10 @@ fun PrivateLobbyScreen(
                     .weight(1f)
                     .align(Alignment.CenterVertically)
             )
-            Text(
+            CoffeeText(
                 text = "ODER",
-                style = MaterialTheme.typography.labelMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(horizontal = 8.dp)
+                modifier = Modifier.padding(horizontal = 8.dp),
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             HorizontalDivider(
                 modifier = Modifier
@@ -145,69 +145,70 @@ fun PrivateLobbyScreen(
             )
         }
 
+        CoffeeHeadlineText(
+            text = "Lobby beitreten",
+            fontSizeSp = 24
+        )
+
         // Lobby beitreten
-        Card(
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(
-                modifier = Modifier.padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                Text(
-                    text = "Lobby beitreten",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    text = "Gib den 6-stelligen Lobby-Code ein, den du von deinem Freund erhalten hast.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-
-                OutlinedTextField(
-                    value = uiState.joinCode,
-                    onValueChange = viewModel::updateJoinCode,
-                    label = { Text("Lobby-Code") },
-                    placeholder = { Text("ABC123") },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !uiState.isLoading,
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(
-                        capitalization = KeyboardCapitalization.Characters,
-                        imeAction = ImeAction.Go
-                    ),
-                    keyboardActions = KeyboardActions(
-                        onGo = {
-                            if (uiState.joinCode.length == 6) {
-                                keyboardController?.hide()
-                                viewModel.joinPrivateLobby(uiState.joinCode)
-                            }
-                        }
-                    ),
-                    supportingText = {
-                        Text("${uiState.joinCode.length}/6 Zeichen")
-                    }
-                )
-
-                Button(
-                    onClick = {
-                        keyboardController?.hide()
-                        viewModel.joinPrivateLobby(uiState.joinCode)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    enabled = !uiState.isLoading && uiState.joinCode.length == 6
+        CoffeeCard(
+            modifier = Modifier.fillMaxWidth(),
+            content = {
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    if (uiState.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(20.dp),
-                            color = MaterialTheme.colorScheme.onPrimary
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                    }
-                    Text("Lobby beitreten")
+
+                    CoffeeText(
+                        text = "Gib den 6-stelligen Lobby-Code ein, den du von deinem Freund erhalten hast.",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    CoffeeTextField(
+                        value = uiState.joinCode,
+                        onValueChange = viewModel::updateJoinCode,
+                        label = "Lobby-Code",
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !uiState.isLoading,
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(
+                            capitalization = KeyboardCapitalization.Characters,
+                            imeAction = ImeAction.Go
+                        ),
+                        keyboardActions = KeyboardActions(
+                            onGo = {
+                                if (uiState.joinCode.length == 6) {
+                                    keyboardController?.hide()
+                                    viewModel.joinPrivateLobby(uiState.joinCode)
+                                }
+                            }
+                        ),
+                        supportingText = {
+                            CoffeeText("${uiState.joinCode.length}/6 Zeichen")
+                        }
+                    )
+
+                    CoffeeButton(
+                        onClick = {
+                            keyboardController?.hide()
+                            viewModel.joinPrivateLobby(uiState.joinCode)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        enabled = !uiState.isLoading && uiState.joinCode.length == 6,
+                        content = {
+                            if (uiState.isLoading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    color = MaterialTheme.colorScheme.onPrimary
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                            }
+                            Text("Lobby beitreten")
+                        }
+                    )
                 }
-            }
-        }
+            },
+        )
 
         // QR-Code Scanner für Lobby beitreten
         QRScannerButton(
@@ -221,35 +222,31 @@ fun PrivateLobbyScreen(
 
         // Fehleranzeige
         error?.let { errorMessage ->
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                ),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = errorMessage,
-                    modifier = Modifier.padding(16.dp),
-                    color = MaterialTheme.colorScheme.onErrorContainer,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
+            CoffeeCard(
+                modifier = Modifier.fillMaxWidth(),
+                containerColor = MaterialTheme.colorScheme.errorContainer,
+                contentColor = MaterialTheme.colorScheme.onErrorContainer,
+                {
+                    CoffeeText(
+                        text = errorMessage,
+                        modifier = Modifier.padding(16.dp),
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                },
+            )
         }
 
         uiState.error?.let { errorMessage ->
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.errorContainer
-                ),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = errorMessage,
-                    modifier = Modifier.padding(16.dp),
-                    color = MaterialTheme.colorScheme.onErrorContainer,
-                    style = MaterialTheme.typography.bodyMedium
-                )
-            }
+            CoffeeCard(
+                modifier = Modifier.fillMaxWidth(),
+                content = {
+                    CoffeeText(
+                        text = errorMessage,
+                        modifier = Modifier.padding(16.dp),
+                        color = MaterialTheme.colorScheme.onErrorContainer
+                    )
+                },
+            )
         }
     }
 }

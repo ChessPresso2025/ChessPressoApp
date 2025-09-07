@@ -103,11 +103,6 @@ class PrivateLobbyViewModel @Inject constructor(
         }
     }
 
-    fun clearError() {
-        lobbyService.clearError()
-        _uiState.value = _uiState.value.copy(error = null)
-    }
-
     fun clearGameStart() {
         lobbyService.clearGameStart()
     }
@@ -156,7 +151,7 @@ class PrivateLobbyViewModel @Inject constructor(
                 lobbyCode ?: _uiState.value.createdLobbyCode ?: _uiState.value.joinedLobbyCode
             codeToUse?.let { code ->
                 lobbyService.getLobbyInfo(code)
-                    .onSuccess { lobby ->
+                    .onSuccess { _ ->
                         // Stelle sicher, dass der Lobby-Code im uiState gespeichert ist
                         if (_uiState.value.createdLobbyCode == null && _uiState.value.joinedLobbyCode == null) {
                             _uiState.value = _uiState.value.copy(
@@ -178,12 +173,6 @@ class PrivateLobbyViewModel @Inject constructor(
                         )
                     }
             }
-        }
-    }
-
-    fun setReady(lobbyId: String, ready: Boolean) {
-        viewModelScope.launch {
-            lobbyService.setPlayerReady(lobbyId, ready)
         }
     }
 

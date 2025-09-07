@@ -3,6 +3,7 @@ package app.chesspresso.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.chesspresso.model.lobby.GameTime
+import app.chesspresso.model.lobby.RematchOffer
 import app.chesspresso.service.LobbyService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -61,6 +62,21 @@ class QuickMatchViewModel @Inject constructor(
     fun clearGameStart() {
         lobbyService.clearGameStart()
     }
+
+    fun reset() {
+        cancelSearch()
+        lobbyService.forceResetWaitingState()
+        _uiState.value = QuickMatchUiState()
+    }
+}
+
+sealed class RematchDialogState {
+    object None : RematchDialogState()
+    object WaitingForResponse : RematchDialogState()
+    data class OfferReceived(val offer: RematchOffer) : RematchDialogState()
+    object WaitingForResult : RematchDialogState()
+    object Accepted : RematchDialogState()
+    object Declined : RematchDialogState()
 }
 
 data class QuickMatchUiState(

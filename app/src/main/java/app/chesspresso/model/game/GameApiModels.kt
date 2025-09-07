@@ -32,12 +32,6 @@ data class PositionRequestMessage(
     val position: String
 )
 
-data class PawnPromotionMessage(
-    val lobbyId: String,
-    val position: String,
-    val newPiece: PieceType
-)
-
 
 
 //Responses
@@ -49,7 +43,8 @@ data class GameMoveResponse(
     val nextPlayer: TeamColor,
     val board: Map<String, PieceInfo>,
     val isCheck: String,
-    val move: MoveInfo
+    val move: MoveInfo,
+    val checkMatePositions: List<String>? = null // NEU: Liste der Angreiferfelder bei Schachmatt
 )
 @Serializable
 data class MoveInfo(
@@ -78,9 +73,4 @@ data class PieceInfo(
     val type: PieceType,
     @SerializedName("colour")
     val color: TeamColor
-)
-
-data class PossibleMovesResponse(
-    @SerializedName("possible_moves")
-    val possibleMoves: List<String> // Liste der möglichen Zielfelder
 )

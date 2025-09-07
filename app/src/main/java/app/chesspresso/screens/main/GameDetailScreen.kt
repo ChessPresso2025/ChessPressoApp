@@ -1,35 +1,46 @@
 package app.chesspresso.screens.main
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.hilt.navigation.compose.hiltViewModel
-import androidx.navigation.NavController
+import app.chesspresso.ui.theme.CoffeeCard
+import app.chesspresso.ui.theme.CoffeeHeadlineText
+import app.chesspresso.ui.theme.CoffeeText
 import app.chesspresso.viewmodel.GameViewModel
 import java.text.SimpleDateFormat
 import java.util.Locale
+import java.util.UUID
 
 @Composable
 fun GameDetailScreen(
-    navController: NavController, // bleibt für Navigationserweiterung
     gameId: String,
-    gameViewModel: GameViewModel // kein Default mehr!
+    gameViewModel: GameViewModel
 ) {
     val uiState by gameViewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    // Hole das Spiel aus der Historie (direkter Vergleich, kein .toString())
-    val game = uiState.gameHistory?.find { it.id.toString() == gameId }
+    // Hole das Spiel aus der Historie (Vergleich als UUID)
+    val game = uiState.gameHistory?.find { it.id == runCatching { UUID.fromString(gameId) }.getOrNull() }
 
     Box(modifier = Modifier.fillMaxSize()) {
         if (game == null) {
@@ -37,23 +48,20 @@ fun GameDetailScreen(
                 modifier = Modifier.align(Alignment.Center),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
+                CoffeeText(
                     text = "Spiel nicht gefunden.",
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Übergebene gameId: $gameId",
-                    style = MaterialTheme.typography.bodySmall
+                CoffeeText(
+                    text = "Übergebene gameId: $gameId"
                 )
-                Text(
-                    text = "Vorhandene IDs:",
-                    style = MaterialTheme.typography.bodySmall
+                CoffeeText(
+                    text = "Vorhandene IDs:"
                 )
                 uiState.gameHistory?.forEach {
-                    Text(
-                        text = it.id.toString(),
-                        style = MaterialTheme.typography.bodySmall
+                    CoffeeText(
+                        text = it.id.toString()
                     )
                 }
             }
@@ -62,54 +70,49 @@ fun GameDetailScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Text(
+                CoffeeHeadlineText(
                     text = "Partiedetails",
-                    style = MaterialTheme.typography.titleLarge
+                    textAlign = TextAlign.Center
                 )
-                Text(
-                    text = "Datum: " + (game.startedAt.takeIf { it.isNotBlank() }?.let { formatDate(it) } ?: "Unbekannt"),
-                    style = MaterialTheme.typography.bodyMedium
+                CoffeeText(
+                    text = "Datum: " + (game.startedAt.takeIf { it.isNotBlank() }?.let { formatDate(it) } ?: "Unbekannt")
                 )
-                Text(
-                    text = "Ergebnis: ${game.result ?: "Unbekannt"}",
-                    style = MaterialTheme.typography.bodyMedium
+                CoffeeText(
+                    text = "Ergebnis: ${game.result ?: "Unbekannt"}"
                 )
                 Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "Züge:",
-                    style = MaterialTheme.typography.titleMedium
+                CoffeeText(
+                    text = "Züge:"
                 )
                 LazyColumn(
                     modifier = Modifier.weight(1f),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     items(game.moves) { move ->
-                        Card(
+                        CoffeeCard(
                             modifier = Modifier.fillMaxWidth(),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(8.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Text(
-                                    text = "${move.moveNumber}.",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    modifier = Modifier.width(32.dp)
-                                )
-                                Text(
-                                    text = move.moveNotation,
-                                    style = MaterialTheme.typography.bodyMedium
-                                )
-                                Spacer(modifier = Modifier.weight(1f))
-                                Text(
-                                    text = move.createdAt.takeIf { it.isNotBlank() }?.let { formatDate(it) } ?: "",
-                                    style = MaterialTheme.typography.bodySmall
-                                )
-                            }
-                        }
+                            content = {
+                                Row(
+                                    modifier = Modifier.padding(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    CoffeeText(
+                                        text = "${move.moveNumber}.",
+                                        modifier = Modifier.width(32.dp)
+                                    )
+                                    CoffeeText(
+                                        text = move.moveNotation
+                                    )
+                                    Spacer(modifier = Modifier.weight(1f))
+                                    CoffeeText(
+                                        text = move.createdAt.takeIf { it.isNotBlank() }?.let { formatDate(it) } ?: ""
+                                    )
+                                }
+                            },
+                        )
                     }
                 }
             }

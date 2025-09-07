@@ -11,47 +11,6 @@ data class LobbyMessage(
 )
 
 
-
-data class PlayerReadyMessage(
-    val lobbyId: String,
-    val ready: Boolean
-)
-
-data class ConfigureLobbyMessage(
-    val lobbyCode: String,
-    val gameTime: GameTime,
-    val whitePlayer: String? = null,
-    val blackPlayer: String? = null,
-    val randomColors: Boolean = false
-)
-
-// WebSocket Response Messages
-data class LobbyWaitingMessage(
-    val lobbyId: String,
-    val message: String
-)
-
-data class LobbyCreatedMessage(
-    val lobbyCode: String,
-    val message: String
-)
-
-data class LobbyErrorMessage(
-    val error: String
-)
-
-data class LobbyUpdateMessage(
-    val lobbyId: String,
-    val players: List<String>,
-    val status: String,
-    val message: String
-)
-
-data class RemisAcceptRequest(
-    val lobbyId: String,
-    val player: String //der den Remis vorgeschlagen bekommt
-)
-
 data class GameEndResponse(
     val winner: String,
     val loser: String,
@@ -69,4 +28,10 @@ data class GameStartResponse(
     val lobbyChannel: String,
     val board: Map<String, PieceInfo>,
     val error: String? = null
+)
+
+data class LobbyCloseMessage(
+    val lobbyId: String,
+    val playerId: String,
+    val type: String = "lobby-close"
 )

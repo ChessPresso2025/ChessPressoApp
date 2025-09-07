@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
+const val UNKNOWN_ERROR_MESSAGE = "Unbekannter Fehler"
+
 sealed class UsernameChangeState {
     object Idle : UsernameChangeState()
     object Loading : UsernameChangeState()
@@ -53,11 +55,11 @@ class ProfileViewModel @Inject constructor(
                     _usernameChangeState.value = UsernameChangeState.Success
                     _eventChannel.send(ProfileEvent.LogoutAndNavigateToLogin)
                 } else {
-                    val errorMsg = response.errorBody()?.string() ?: "Unbekannter Fehler"
+                    val errorMsg = response.errorBody()?.string() ?: UNKNOWN_ERROR_MESSAGE
                     _usernameChangeState.value = UsernameChangeState.Error(errorMsg)
                 }
             } catch (e: Exception) {
-                _usernameChangeState.value = UsernameChangeState.Error(e.localizedMessage ?: "Unbekannter Fehler")
+                _usernameChangeState.value = UsernameChangeState.Error(e.localizedMessage ?: UNKNOWN_ERROR_MESSAGE)
             }
         }
     }
@@ -73,11 +75,11 @@ class ProfileViewModel @Inject constructor(
                     _passwordChangeState.value = PasswordChangeState.Success
                     _eventChannel.send(ProfileEvent.LogoutAndNavigateToLogin)
                 } else {
-                    val errorMsg = response.errorBody()?.string() ?: "Unbekannter Fehler"
+                    val errorMsg = response.errorBody()?.string() ?: UNKNOWN_ERROR_MESSAGE
                     _passwordChangeState.value = PasswordChangeState.Error(errorMsg)
                 }
             } catch (e: Exception) {
-                _passwordChangeState.value = PasswordChangeState.Error(e.localizedMessage ?: "Unbekannter Fehler")
+                _passwordChangeState.value = PasswordChangeState.Error(e.localizedMessage ?: UNKNOWN_ERROR_MESSAGE)
             }
         }
     }
@@ -89,7 +91,7 @@ class ProfileViewModel @Inject constructor(
                 val profile = userApi.getProfile()
                 _userProfileState.value = UserProfileUiState.Success(profile)
             } catch (e: Exception) {
-                _userProfileState.value = UserProfileUiState.Error(e.localizedMessage ?: "Unbekannter Fehler")
+                _userProfileState.value = UserProfileUiState.Error(e.localizedMessage ?: UNKNOWN_ERROR_MESSAGE)
             }
         }
     }
