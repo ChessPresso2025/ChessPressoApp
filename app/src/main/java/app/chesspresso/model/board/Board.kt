@@ -50,10 +50,6 @@ class Board {
         return list
     }
 
-    fun getField(name: String): Field? {
-        return board.firstOrNull { it.name.equals(name, ignoreCase = true) }
-    }
-
     @Composable
     fun BoardContent(
         modifier: Modifier = Modifier,
@@ -87,8 +83,6 @@ class Board {
                 Log.d("BoardContent", "Nicht am Zug: myColor=$myColor, nextPlayer=$nextPlayer")
                 return
             }
-
-            val field = getField(fieldName) ?: return
 
             when {
                 // Wenn bereits ein Feld ausgewählt ist und wir auf ein anderes klicken
@@ -126,7 +120,7 @@ class Board {
                     validMoves = emptySet() // possibleMoves zurücksetzen
                 }
                 // Wenn noch nichts ausgewählt ist
-                selectedField == null -> {
+                else -> {
                     val piece = boardState[fieldName]
                     if (piece != null && piece.color == myColor) {
                         selectedField = fieldName
@@ -151,7 +145,6 @@ class Board {
         // Labels und Reihenfolge je nach Drehung
         val columnLabels = if (isFlipped) listOf("H", "G", "F", "E", "D", "C", "B", "A") else listOf("A", "B", "C", "D", "E", "F", "G", "H")
         val rowLabels = if (isFlipped) (1..8).toList() else (8 downTo 1).toList()
-        val numberFontSize = 14.sp
         val labelFontSize = 20.sp
         val labelFontWeight = androidx.compose.ui.text.font.FontWeight.Bold
         val labelColor = MaterialTheme.colorScheme.primary // Alternativ: Color.White, je nach Theme
@@ -263,13 +256,6 @@ class Board {
                 }
                 Spacer(modifier = Modifier.weight(0.2f))
             }
-        }
-    }
-
-    // Funktion zum Setzen der gültigen Züge (wird später vom Server Response aufgerufen)
-    fun setValidMoves(moves: Set<String>) {
-        board.forEach { field ->
-            field.isValidMove = moves.contains(field.name)
         }
     }
 }

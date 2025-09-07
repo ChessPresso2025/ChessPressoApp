@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import app.chesspresso.model.lobby.GameTime
 import app.chesspresso.model.lobby.RematchOffer
 import app.chesspresso.service.LobbyService
-import app.chesspresso.websocket.StompWebSocketService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,7 +14,7 @@ import javax.inject.Inject
 
 @HiltViewModel
 class QuickMatchViewModel @Inject constructor(
-    private val lobbyService: LobbyService, private val webSocketService: StompWebSocketService
+    private val lobbyService: LobbyService
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(QuickMatchUiState())

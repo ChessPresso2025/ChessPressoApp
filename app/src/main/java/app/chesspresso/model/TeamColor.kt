@@ -1,7 +1,7 @@
 package app.chesspresso.model
 
-enum class TeamColor(val description: String) {
-    BLACK("Schwarz"),
-    WHITE("Weiß"),
-    NULL("keine")
+enum class TeamColor() {
+    BLACK(),
+    WHITE(),
+    NULL()
 }

@@ -5,7 +5,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.chesspresso.auth.data.AuthRepository
 import app.chesspresso.auth.data.AuthResponse
-import app.chesspresso.auth.data.PlayerInfo
 import app.chesspresso.websocket.StompWebSocketService
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -123,9 +122,6 @@ class AuthViewModel @Inject constructor(
         }
     }
 
-    fun getStoredPlayerInfo(): PlayerInfo? {
-        return repository.getStoredPlayerInfo()
-    }
 
     fun getStoredUsername(): String? {
         return repository.getStoredUsername()

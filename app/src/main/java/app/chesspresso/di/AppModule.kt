@@ -103,7 +103,7 @@ object AppModule {
         webSocketService: StompWebSocketService,
         gson: Gson
     ): LobbyService {
-        return LobbyService(lobbyApiService, webSocketService, gson)
+        return LobbyService(lobbyApiService, webSocketService)
     }
 
     @Provides

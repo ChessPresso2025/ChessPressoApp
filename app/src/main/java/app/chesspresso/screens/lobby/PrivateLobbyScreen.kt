@@ -65,7 +65,7 @@ fun PrivateLobbyScreen(
 
     // Automatische Navigation bei Spielstart
     LaunchedEffect(gameStarted) {
-        gameStarted?.let { gameStart ->
+        gameStarted?.let { _ ->
             // Navigation zum Spiel
             viewModel.clearGameStart()
         }

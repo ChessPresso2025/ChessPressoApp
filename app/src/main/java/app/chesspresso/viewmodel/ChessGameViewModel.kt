@@ -124,7 +124,7 @@ class ChessGameViewModel @Inject constructor(
                             TeamColor.BLACK -> _capturedBlackPieces.value =
                                 _capturedBlackPieces.value + capturedPiece
 
-                            else -> {}
+                            else -> null
                         }
                     }
                     val newBoard = response.board
@@ -144,7 +144,7 @@ class ChessGameViewModel @Inject constructor(
                     val highlights = mutableMapOf<String, FieldHighlight>()
                     val checkmateFields = response.checkMatePositions
                     val kingField = response.isCheck
-                    if (checkmateFields != null && checkmateFields.isNotEmpty() && kingField.isNotEmpty()) {
+                    if (!checkmateFields.isNullOrEmpty() && kingField.isNotEmpty()) {
                         // Schachmatt: König dunkelrot, Angreifer hellrot
                         highlights[kingField] = FieldHighlight.CHECKMATE_KING
                         checkmateFields.forEach { field: String ->
@@ -174,9 +174,9 @@ class ChessGameViewModel @Inject constructor(
                 val lobbyId = _initialGameData.value?.lobbyId ?: return@collectLatest
                 val myId = webSocketService.playerId?.trim()?.lowercase()
                 val toId = offer?.toPlayerId?.trim()?.lowercase()
-                android.util.Log.d("RematchDebug", "Vergleich: myId=$myId, toId=$toId, offer=$offer")
+                Log.d("RematchDebug", "Vergleich: myId=$myId, toId=$toId, offer=$offer")
                 if (offer != null && offer.lobbyId == lobbyId && myId == toId) {
-                    android.util.Log.d("RematchDebug", "Rematch-Dialog wird angezeigt für playerId=$myId")
+                    Log.d("RematchDebug", "Rematch-Dialog wird angezeigt für playerId=$myId")
                     _rematchDialogState.value = RematchDialogState.OfferReceived(offer)
                 }
             }
@@ -356,10 +356,6 @@ class ChessGameViewModel @Inject constructor(
         webSocketService.unsubscribeFromLobby()
         webSocketService.unsubscribeFromGame()
         resetViewModel()
-    }
-
-    fun clearGameEndEvent() {
-        _gameEndEvent.value = null
     }
 
     fun requestRematch() {
