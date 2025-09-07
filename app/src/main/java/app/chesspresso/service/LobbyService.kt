@@ -8,14 +8,12 @@ import app.chesspresso.model.lobby.GameTime
 import app.chesspresso.model.lobby.JoinPrivateLobbyRequest
 import app.chesspresso.model.lobby.LeaveLobbyRequest
 import app.chesspresso.model.lobby.Lobby
-import app.chesspresso.model.lobby.LobbyErrorMessage
 import app.chesspresso.model.lobby.LobbyMessage
 import app.chesspresso.model.lobby.LobbyStatus
 import app.chesspresso.model.lobby.LobbyType
-import app.chesspresso.model.lobby.LobbyWaitingMessage
 import app.chesspresso.model.lobby.QuickJoinRequest
 import app.chesspresso.websocket.StompWebSocketService
-import com.google.gson.Gson
+import kotlinx.coroutines.DelicateCoroutinesApi
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,17 +24,16 @@ import kotlinx.coroutines.launch
 import javax.inject.Inject
 import javax.inject.Singleton
 
+@OptIn(DelicateCoroutinesApi::class)
 @Singleton
 class LobbyService @Inject constructor(
     private val lobbyApiService: LobbyApiService,
     private val webSocketService: StompWebSocketService,
-    private val gson: Gson
 ) : LobbyListener {
     private val _currentLobby = MutableStateFlow<Lobby?>(null)
     override val currentLobby: StateFlow<Lobby?> = _currentLobby.asStateFlow()
 
     private val _lobbyMessages = MutableStateFlow<List<LobbyMessage>>(emptyList())
-    val lobbyMessages: StateFlow<List<LobbyMessage>> = _lobbyMessages.asStateFlow()
 
     private val _lobbyError = MutableStateFlow<String?>(null)
     val lobbyError: StateFlow<String?> = _lobbyError.asStateFlow()
@@ -181,7 +178,7 @@ class LobbyService @Inject constructor(
                     lobbyInfo.gameTime.isBlank() -> null
                     else -> try {
                         GameTime.valueOf(lobbyInfo.gameTime)
-                    } catch (e: IllegalArgumentException) {
+                    } catch (_: IllegalArgumentException) {
                         Log.w("LobbyService", "Unbekannte GameTime: ${lobbyInfo.gameTime}")
                         null
                     }
@@ -205,12 +202,6 @@ class LobbyService @Inject constructor(
             Log.e("LobbyService", "Fehler beim Abrufen der Lobby-Info", e)
             Result.failure(e)
         }
-    }
-
-    // Neue Methode für Player-Ready-Status
-    fun setPlayerReady(lobbyId: String, ready: Boolean) {
-        webSocketService.sendPlayerReady(ready)
-        Log.d("LobbyService", "Setze Spieler-Status: ${if (ready) "bereit" else "nicht bereit"}")
     }
 
     // Fehler zurücksetzen

@@ -2,12 +2,12 @@ package app.chesspresso.utils
 
 import android.graphics.Bitmap
 import android.graphics.Color
+import androidx.core.graphics.createBitmap
+import androidx.core.graphics.set
 import com.google.zxing.BarcodeFormat
 import com.google.zxing.EncodeHintType
 import com.google.zxing.qrcode.QRCodeWriter
 import com.google.zxing.qrcode.decoder.ErrorCorrectionLevel
-import androidx.core.graphics.createBitmap
-import androidx.core.graphics.set
 
 object QRCodeGenerator {
 

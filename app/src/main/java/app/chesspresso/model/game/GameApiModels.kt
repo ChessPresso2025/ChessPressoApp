@@ -32,12 +32,6 @@ data class PositionRequestMessage(
     val position: String
 )
 
-data class PawnPromotionMessage(
-    val lobbyId: String,
-    val position: String,
-    val newPiece: PieceType
-)
-
 
 
 //Responses
@@ -79,9 +73,4 @@ data class PieceInfo(
     val type: PieceType,
     @SerializedName("colour")
     val color: TeamColor
-)
-
-data class PossibleMovesResponse(
-    @SerializedName("possible_moves")
-    val possibleMoves: List<String> // Liste der möglichen Zielfelder
 )

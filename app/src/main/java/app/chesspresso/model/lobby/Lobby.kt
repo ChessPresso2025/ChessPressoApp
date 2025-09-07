@@ -23,8 +23,4 @@ data class Lobby(
     val whitePlayer: String? = null,
     val blackPlayer: String? = null,
     val randomColors: Boolean = false
-) {
-    fun isFull(): Boolean = players.size >= 2
-    fun isPublic(): Boolean = lobbyType == LobbyType.PUBLIC
-    fun isPrivate(): Boolean = lobbyType == LobbyType.PRIVATE
-}
+)

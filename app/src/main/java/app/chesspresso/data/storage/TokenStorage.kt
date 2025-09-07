@@ -17,23 +17,23 @@ val Context.dataStore: DataStore<Preferences> by preferencesDataStore(name = "au
 class TokenStorage @Inject constructor(
     private val context: Context
 ) {
-    private val ACCESS_TOKEN_KEY = stringPreferencesKey("access_token")
+    private val preferencesKey = stringPreferencesKey("access_token")
 
     suspend fun saveToken(token: String) {
         context.dataStore.edit { preferences ->
-            preferences[ACCESS_TOKEN_KEY] = token
+            preferences[preferencesKey] = token
         }
     }
 
     fun getToken(): Flow<String?> {
         return context.dataStore.data.map { preferences ->
-            preferences[ACCESS_TOKEN_KEY]
+            preferences[preferencesKey]
         }
     }
 
     suspend fun clearToken() {
         context.dataStore.edit { preferences ->
-            preferences.remove(ACCESS_TOKEN_KEY)
+            preferences.remove(preferencesKey)
         }
     }
 }

@@ -15,7 +15,7 @@ class QRScannerHelper(
     }
 ) {
 
-    private lateinit var permissionManager: PermissionManager
+    private var permissionManager: PermissionManager
 
     private val qrScannerLauncher: ActivityResultLauncher<Intent> =
         activity.registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->

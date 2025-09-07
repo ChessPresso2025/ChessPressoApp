@@ -2,6 +2,7 @@ package app.chesspresso.auth.data
 
 import android.content.Context
 import android.util.Log
+import androidx.core.content.edit
 import app.chesspresso.data.storage.TokenStorage
 import app.chesspresso.websocket.StompWebSocketService
 import kotlinx.coroutines.flow.first
@@ -10,7 +11,6 @@ import javax.inject.Singleton
 import app.chesspresso.data.api.AuthApi as JwtAuthApi
 import app.chesspresso.data.models.LoginRequest as JwtLoginRequest
 import app.chesspresso.data.models.RegisterRequest as JwtRegisterRequest
-import androidx.core.content.edit
 
 @Singleton
 class AuthRepository @Inject constructor(
