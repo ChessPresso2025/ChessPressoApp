@@ -450,14 +450,13 @@ fun MainNavHost(
                         launchSingleTop = true
                     }
                 },
-                onGameStart = { lobbyId -> innerNavController.navigate("game/$lobbyId") },
-                chessGameViewModel = chessGameViewModel
+                onGameStart = { lobbyId -> innerNavController.navigate("game/$lobbyId") }
             )
         }
         composable(NavRoutes.STATS) { StatsScreen(navController = innerNavController) }
         composable("game_detail/{gameId}") { backStackEntry ->
             val gameId = backStackEntry.arguments?.getString("gameId") ?: ""
-            GameDetailScreen(navController = innerNavController, gameId = gameId, gameViewModel = gameViewModel)
+            GameDetailScreen(gameId = gameId, gameViewModel = gameViewModel)
         }
         composable(NavRoutes.PROFILE) {
             ProfileScreen(
@@ -470,7 +469,7 @@ fun MainNavHost(
             )
         }
         composable(NavRoutes.SETTINGS) { SettingsScreen() }
-        composable("game/{lobbyId}") { backStackEntry ->
+        composable("game/{lobbyId}") { _ ->
             val gameStartResponse by chessGameViewModel.initialGameData.collectAsState()
             val playerId = chessGameViewModel.webSocketService.playerId ?: ""
             if (gameStartResponse != null) {

@@ -294,10 +294,7 @@ fun PlayerClock(
 ) {
     CoffeeCard(
         modifier = Modifier
-            .fillMaxWidth()
-            .then(
-                if (isActive) Modifier else Modifier
-            ),
+            .fillMaxWidth(),
         border = if (isActive) androidx.compose.foundation.BorderStroke(
             width = 2.dp,
             color = MaterialTheme.colorScheme.primary

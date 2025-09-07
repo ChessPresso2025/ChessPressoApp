@@ -120,7 +120,6 @@ fun QRScannerScreen(
     onQRCodeScanned: (String) -> Unit,
     onCancel: () -> Unit
 ) {
-    val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     var isScanning by remember { mutableStateOf(true) }
 

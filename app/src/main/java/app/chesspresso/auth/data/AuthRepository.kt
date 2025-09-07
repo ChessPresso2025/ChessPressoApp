@@ -10,6 +10,7 @@ import javax.inject.Singleton
 import app.chesspresso.data.api.AuthApi as JwtAuthApi
 import app.chesspresso.data.models.LoginRequest as JwtLoginRequest
 import app.chesspresso.data.models.RegisterRequest as JwtRegisterRequest
+import androidx.core.content.edit
 
 @Singleton
 class AuthRepository @Inject constructor(
@@ -192,23 +193,23 @@ class AuthRepository @Inject constructor(
 
     private fun storePlayerData(response: AuthResponse) {
         val prefs = context.getSharedPreferences("chessapp", Context.MODE_PRIVATE)
-        prefs.edit()
-            .putString("playerId", response.playerId)
-            .putString("playerName", response.name)
-            .putString("playerEmail", response.email)
-            .putInt("playedGames", response.playedGames)
-            .putInt("win", response.win)
-            .putInt("draw", response.draw)
-            .putInt("lose", response.lose)
-            .apply()
+        prefs.edit {
+            putString("playerId", response.playerId)
+                .putString("playerName", response.name)
+                .putString("playerEmail", response.email)
+                .putInt("playedGames", response.playedGames)
+                .putInt("win", response.win)
+                .putInt("draw", response.draw)
+                .putInt("lose", response.lose)
+        }
     }
 
     private fun storeCredentials(username: String) {
         val prefs = context.getSharedPreferences("chessapp", Context.MODE_PRIVATE)
-        prefs.edit()
-            .putString("storedUsername", username)
-            .putBoolean("isLoggedIn", true)
-            .apply()
+        prefs.edit {
+            putString("storedUsername", username)
+                .putBoolean("isLoggedIn", true)
+        }
     }
 
     fun getStoredPlayerInfo(): PlayerInfo? {
@@ -239,7 +240,7 @@ class AuthRepository @Inject constructor(
 
     fun clearStoredPlayerInfo() {
         val prefs = context.getSharedPreferences("chessapp", Context.MODE_PRIVATE)
-        prefs.edit().clear().apply()
+        prefs.edit { clear() }
 
         // Auch JWT Token löschen
         kotlinx.coroutines.runBlocking {

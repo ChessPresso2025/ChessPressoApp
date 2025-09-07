@@ -41,6 +41,9 @@ import app.chesspresso.ui.theme.CoffeeHeadlineText
 import app.chesspresso.ui.theme.CoffeeText
 import app.chesspresso.ui.theme.CoffeeTextField
 
+const val CHANGE_USERNAME_TITLE = "Benutzernamen ändern"
+const val CHANGE_PASSWORD_TITLE = "Passwort ändern"
+
 @Composable
 fun ProfileScreen(
     viewModel: ProfileViewModel = hiltViewModel(),
@@ -151,7 +154,7 @@ fun ProfileScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         CoffeeText(
-                            text = "Benutzernamen ändern",
+                            text = CHANGE_USERNAME_TITLE,
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
                         CoffeeTextField(
@@ -168,7 +171,7 @@ fun ProfileScreen(
                             enabled = usernameChangeState !is UsernameChangeState.Loading && newUsername.length in 3..32,
                             modifier = Modifier.fillMaxWidth(),
                             content = {
-                                Text("Benutzernamen ändern")
+                                Text(CHANGE_USERNAME_TITLE)
                             }
                         )
                         when (val state = usernameChangeState) {
@@ -205,7 +208,7 @@ fun ProfileScreen(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         CoffeeText(
-                            text = "Passwort ändern",
+                            text = CHANGE_PASSWORD_TITLE,
                             modifier = Modifier.padding(bottom = 16.dp)
                         )
                         CoffeeTextField(
@@ -247,7 +250,7 @@ fun ProfileScreen(
                             enabled = passwordChangeState !is PasswordChangeState.Loading && oldPassword.length >= 4 && newPassword.length in 4..64,
                             modifier = Modifier.fillMaxWidth(),
                             content = {
-                                Text("Passwort ändern")
+                                Text(CHANGE_PASSWORD_TITLE)
                             }
                         )
                         when (val state = passwordChangeState) {
@@ -291,7 +294,7 @@ fun ProfileScreen(
     if (showUsernameConfirmDialog) {
         AlertDialog(
             onDismissRequest = { showUsernameConfirmDialog = false },
-            title = { CoffeeText("Benutzernamen ändern") },
+            title = { CoffeeText(CHANGE_USERNAME_TITLE) },
             text = { CoffeeText("Um den Benutzernamen zu ändern, musst du dich neu anmelden. Bist du sicher, dass du fortfahren möchtest?") },
             confirmButton = {
                 TextButton(onClick = {
@@ -308,7 +311,7 @@ fun ProfileScreen(
     if (showPasswordConfirmDialog) {
         AlertDialog(
             onDismissRequest = { showPasswordConfirmDialog = false },
-            title = { CoffeeText("Passwort ändern") },
+            title = { CoffeeText(CHANGE_PASSWORD_TITLE) },
             text = { CoffeeText("Um das Passwort zu ändern, musst du dich neu anmelden. Bist du sicher, dass du fortfahren möchtest?") },
             confirmButton = {
                 TextButton(onClick = {

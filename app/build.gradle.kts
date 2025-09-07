@@ -26,7 +26,7 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true // Obfuskation für Release-Build aktivieren
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -60,69 +60,72 @@ android {
 
 dependencies {
 
+// AndroidX Core & Compose
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
-    implementation(libs.androidx.navigation.compose)
-    implementation(libs.androidx.lifecycle.viewmodel.compose)
-    implementation(libs.material3)
-
-    // Lifecycle Process dependency für ProcessLifecycleOwner
-    implementation("androidx.lifecycle:lifecycle-process:2.7.0")
     implementation(libs.androidx.foundation)
     implementation(libs.androidx.material3.lint)
 
+// Lifecycle & ViewModel
+    implementation(libs.androidx.lifecycle.runtime.ktx)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
+    implementation(libs.androidx.lifecycle.process)
+
+// Navigation
+    implementation(libs.androidx.navigation.compose)
+
+// Material Design
+    implementation(libs.material3)
+
+// Hilt & Dependency Injection
+    implementation(libs.hilt.android)
+    kapt(libs.dagger.hilt.compiler)
+    implementation(libs.androidx.hilt.navigation.compose)
+    implementation(libs.javax.inject)
+
+// Netzwerk (Retrofit, OkHttp, STOMP)
+    implementation(libs.retrofit)
+    implementation(libs.converter.gson)
+    implementation(libs.logging.interceptor)
+    implementation(libs.java.websocket)
+    implementation(libs.okhttp)
+    implementation(libs.kotlinx.coroutines.core)
+    implementation(libs.kotlinx.coroutines.android)
+
+// DataStore & Persistenz
+    implementation(libs.androidx.datastore.preferences)
+
+// QR-Code & Kamera
+    implementation(libs.zxing.android.embedded)
+    implementation(libs.core)
+    implementation(libs.androidx.camera.camera2)
+    implementation(libs.camera.lifecycle)
+    implementation(libs.camera.view)
+    implementation(libs.androidx.appcompat)
+
+// ML Kit
+    implementation(libs.barcode.scanning)
+
+// JSON/Serialization
+    implementation(libs.kotlinx.serialization.json)
+
+// Compose Icons
+    implementation(libs.androidx.material.icons.extended)
+
+// Testing
+// Unit Tests
     testImplementation(libs.junit)
+// Instrumentation Tests
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.ui.test.junit4)
+// Debug
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
-
-    //Hilt dependencies
-    implementation(libs.hilt.android)
-    kapt(libs.dagger.hilt.compiler)
-    implementation("androidx.hilt:hilt-navigation-compose:1.1.0")
-
-    //javax.inject
-    implementation(libs.javax.inject)
-
-
-    // Retrofit dependencies
-    implementation("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.9.0")
-    implementation("com.squareup.okhttp3:logging-interceptor:4.11.0")
-
-    // DataStore für Token-Speicherung
-    implementation("androidx.datastore:datastore-preferences:1.0.0")
-
-    // STOMP WebSocket dependencies
-    implementation("org.java-websocket:Java-WebSocket:1.5.3")
-    implementation("com.squareup.okhttp3:okhttp:4.11.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-
-    // QR Code Scanner dependencies
-    implementation("com.journeyapps:zxing-android-embedded:4.3.0")
-    implementation("com.google.zxing:core:3.5.2")
-    implementation("androidx.camera:camera-camera2:1.3.1")
-    implementation("androidx.camera:camera-lifecycle:1.3.1")
-    implementation("androidx.camera:camera-view:1.3.1")
-
-    // AppCompat für QRScannerActivity
-    implementation("androidx.appcompat:appcompat:1.6.1")
-
-    // ML Kit für QR-Code Erkennung
-    implementation("com.google.mlkit:barcode-scanning:17.2.0")
-
-    // Json
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3")
-
-    implementation("androidx.compose.material:material-icons-extended")
 }

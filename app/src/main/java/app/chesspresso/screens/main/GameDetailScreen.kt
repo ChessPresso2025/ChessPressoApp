@@ -23,7 +23,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavController
 import app.chesspresso.ui.theme.CoffeeCard
 import app.chesspresso.ui.theme.CoffeeHeadlineText
 import app.chesspresso.ui.theme.CoffeeText
@@ -34,7 +33,6 @@ import java.util.UUID
 
 @Composable
 fun GameDetailScreen(
-    navController: NavController,
     gameId: String,
     gameViewModel: GameViewModel
 ) {

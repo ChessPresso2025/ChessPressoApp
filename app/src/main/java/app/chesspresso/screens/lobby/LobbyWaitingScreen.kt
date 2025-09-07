@@ -50,7 +50,6 @@ fun LobbyWaitingScreen(
     lobbyCode: String,
     onBackClick: () -> Unit,
     onGameStart: (String) -> Unit,
-    chessGameViewModel: app.chesspresso.viewmodel.ChessGameViewModel,
     viewModel: PrivateLobbyViewModel = hiltViewModel()
 ) {
     val currentLobby by viewModel.currentLobby.collectAsStateWithLifecycle()
@@ -60,7 +59,6 @@ fun LobbyWaitingScreen(
     val navigationEvent by viewModel.navigationEvent.collectAsStateWithLifecycle()
 
     var selectedGameTime by remember { mutableStateOf(GameTime.MIDDLE) }
-    var selectedWhitePlayer by remember { mutableStateOf("") }
     var randomColors by remember { mutableStateOf(true) }
 
     // Farbauswahl-State auf Composable-Ebene
@@ -94,15 +92,6 @@ fun LobbyWaitingScreen(
         while (true) {
             kotlinx.coroutines.delay(3000) // 3 Sekunden warten
             viewModel.refreshLobbyInfo(lobbyCode)
-        }
-    }
-
-    // Spieler-Namen aktualisieren wenn Lobby geladen wird
-    LaunchedEffect(currentLobby) {
-        currentLobby?.let { lobby ->
-            if (lobby.players.isNotEmpty()) {
-                selectedWhitePlayer = lobby.players.first()
-            }
         }
     }
 
@@ -157,7 +146,7 @@ fun LobbyWaitingScreen(
                     )
 
                     currentLobby?.let { lobby ->
-                        lobby.players.forEachIndexed { index, player ->
+                        lobby.players.forEachIndexed { _, player ->
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically

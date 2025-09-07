@@ -49,7 +49,7 @@ fun QRScannerButton(
     ) { isGranted ->
         if (isGranted) {
             // Permission erteilt - starte Scanner
-            launchQRScanner(context, onLobbyScanned) { error ->
+            launchQRScanner(context) { error ->
                 showError = error
             }
         } else {
@@ -200,7 +200,6 @@ fun QRScannerButton(
 
 private fun launchQRScanner(
     context: android.content.Context,
-    onLobbyScanned: (String) -> Unit,
     onError: (String) -> Unit
 ) {
     try {

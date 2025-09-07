@@ -45,8 +45,7 @@ class MainActivity : ComponentActivity() {
             val darkThemeFlow = ThemeStorage.getDarkThemeFlow(this)
             val darkTheme by darkThemeFlow.collectAsState(initial = false)
             ChessPressoAppTheme(darkTheme = darkTheme) {
-                val navController = rememberNavController()
-                AppNavigation(navController)
+                AppNavigation(navController = rememberNavController())
             }
         }
     }

@@ -19,6 +19,7 @@ import com.google.gson.Gson
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -45,15 +46,11 @@ class LobbyService @Inject constructor(
 
     private val _gameStarted = MutableStateFlow<GameStartResponse?>(null)
     val gameStarted: StateFlow<GameStartResponse?> = _gameStarted.asStateFlow()
-    val lobbyLeft = MutableSharedFlow<Unit>()
+    private val _lobbyLeft = MutableSharedFlow<Unit>()
+    val lobbyLeft = _lobbyLeft.asSharedFlow()
 
     init {
-        webSocketService.setLobbyMessageHandler { message ->
-            handleWebSocketMessage(message)
-        }
         webSocketService.setLobbyListener(this)
-        // Subscription auf /user/queue/lobby-update für QuickMatch und PrivateLobby
-        subscribeToLobbyUpdate()
         // GameStarted-Event aus WebSocketService übernehmen
         kotlinx.coroutines.GlobalScope.launch {
             webSocketService.gameStartedEvent.collectLatest { response ->
@@ -62,26 +59,6 @@ class LobbyService @Inject constructor(
                     Log.d("LobbyService", "Game started Event empfangen: $response")
                 }
             }
-        }
-    }
-
-    private fun subscribeToLobbyUpdate() {
-        webSocketService.subscribeToTopic("/user/queue/lobby-update", "lobby-update")
-        webSocketService.setLobbyMessageHandler { message ->
-            // Prüfe, ob es sich um eine LOBBY_UPDATE-Nachricht handelt
-            try {
-                val json = gson.fromJson(message, Map::class.java)
-                if (json["type"] == "LOBBY_UPDATE" && json["lobbyId"] is String) {
-                    val lobbyId = json["lobbyId"] as String
-                    // Jetzt auf das Lobby-Topic subscriben
-                    webSocketService.subscribeToLobby(lobbyId)
-                    Log.d("LobbyService", "Auf Lobby-Topic subscribed: $lobbyId nach LOBBY_UPDATE")
-                }
-            } catch (e: Exception) {
-                Log.e("LobbyService", "Fehler beim Parsen der LOBBY_UPDATE-Nachricht", e)
-            }
-            // Weiterleitung an bestehendes Handling
-            handleWebSocketMessage(message)
         }
     }
 
@@ -165,7 +142,7 @@ class LobbyService @Inject constructor(
                 _currentLobby.value = null
                 _isWaitingForMatch.value = false
                 _lobbyMessages.value = emptyList()
-                lobbyLeft.emit(Unit)
+                _lobbyLeft.emit(Unit)
 
                 Log.d("LobbyService", "Lobby verlassen: $lobbyId")
                 Result.success(Unit)
@@ -228,141 +205,6 @@ class LobbyService @Inject constructor(
             Log.e("LobbyService", "Fehler beim Abrufen der Lobby-Info", e)
             Result.failure(e)
         }
-    }
-
-    // WebSocket-Nachrichten verarbeiten
-    fun handleWebSocketMessage(message: String) {
-        try {
-            Log.d("LobbyService", "WebSocket-Nachricht erhalten: $message")
-
-            // Parse JSON-Nachricht
-            val jsonObject = gson.fromJson(message, Map::class.java)
-            val messageType = jsonObject["type"] as? String
-
-            when (messageType) {
-                "lobby-waiting" -> {
-                    val lobbyId = jsonObject["lobbyId"] as? String
-                    val waitingMessage = jsonObject["message"] as? String
-                    _isWaitingForMatch.value = true
-                    Log.d("LobbyService", "Warte auf Gegner in Lobby: $lobbyId")
-                }
-
-                "lobby-error" -> {
-                    val error = jsonObject["error"] as? String ?: "Unbekannter Lobby-Fehler"
-                    _lobbyError.value = error
-                    _isWaitingForMatch.value = false
-                    Log.e("LobbyService", "Lobby-Fehler: $error")
-                }
-
-                "player-joined" -> {
-                    val lobbyId = jsonObject["lobbyId"] as? String
-                    val newPlayerId = jsonObject["newPlayerId"] as? String
-                    val players = jsonObject["players"] as? List<String> ?: emptyList()
-                    val status = jsonObject["status"] as? String
-                    val message = jsonObject["message"] as? String
-                    val isLobbyFull = jsonObject["isLobbyFull"] as? Boolean ?: false
-
-                    // Aktualisiere die aktuelle Lobby
-                    _currentLobby.value?.let { currentLobby ->
-                        if (currentLobby.lobbyId == lobbyId) {
-                            val updatedLobby = currentLobby.copy(
-                                players = players,
-                                status = status?.let { LobbyStatus.valueOf(it) }
-                                    ?: currentLobby.status
-                            )
-                            _currentLobby.value = updatedLobby
-                        }
-                    }
-
-                    Log.d("LobbyService", "Spieler beigetreten: $newPlayerId - $message")
-                }
-
-                "lobby-joined" -> {
-                    val lobbyId = jsonObject["lobbyId"] as? String
-                    val creatorId = jsonObject["creatorId"] as? String
-                    val players = jsonObject["players"] as? List<String> ?: emptyList()
-                    val status = jsonObject["status"] as? String
-                    val message = jsonObject["message"] as? String
-                    val isLobbyFull = jsonObject["isLobbyFull"] as? Boolean ?: false
-
-                    // Aktualisiere die aktuelle Lobby
-                    _currentLobby.value?.let { currentLobby ->
-                        if (currentLobby.lobbyId == lobbyId) {
-                            val updatedLobby = currentLobby.copy(
-                                players = players,
-                                status = status?.let { LobbyStatus.valueOf(it) }
-                                    ?: currentLobby.status,
-                                creator = creatorId ?: currentLobby.creator
-                            )
-                            _currentLobby.value = updatedLobby
-                        }
-                    }
-
-                    Log.d("LobbyService", "Lobby erfolgreich beigetreten: $message")
-                }
-
-                "lobby-update" -> {
-                    val lobbyId = jsonObject["lobbyId"] as? String
-                    val players = jsonObject["players"] as? List<String> ?: emptyList()
-                    val status = jsonObject["status"] as? String
-                    val updateMessage = jsonObject["message"] as? String
-
-                    // Aktualisiere die aktuelle Lobby
-                    _currentLobby.value?.let { currentLobby ->
-                        if (currentLobby.lobbyId == lobbyId) {
-                            val updatedLobby = currentLobby.copy(
-                                players = players,
-                                status = status?.let { LobbyStatus.valueOf(it) }
-                                    ?: currentLobby.status
-                            )
-                            _currentLobby.value = updatedLobby
-                        }
-                    }
-
-                    Log.d("LobbyService", "Lobby-Update: $updateMessage")
-                }
-
-                "lobby-created" -> {
-                    val lobbyCode = jsonObject["lobbyCode"] as? String
-                    val message = jsonObject["message"] as? String
-                    Log.d("LobbyService", "Private Lobby erstellt: $lobbyCode - $message")
-                }
-
-                "PLAYER_READY" -> {
-                    val playerId = jsonObject["playerId"] as? String
-                    Log.d("LobbyService", "Spieler bereit: $playerId")
-                    // Hier könntest du den Ready-Status in der UI anzeigen
-                }
-
-                else -> {
-                    // Versuche Legacy-Format zu parsen
-                    when {
-                        message.contains("\"error\"") -> {
-                            val errorMsg = gson.fromJson(message, LobbyErrorMessage::class.java)
-                            _lobbyError.value = errorMsg.error
-                            _isWaitingForMatch.value = false
-                        }
-
-                        message.contains("\"lobbyId\"") && message.contains("\"message\"") -> {
-                            val waitingMsg = gson.fromJson(message, LobbyWaitingMessage::class.java)
-                            _isWaitingForMatch.value = true
-                        }
-
-                        else -> {
-                            Log.w("LobbyService", "Unbekannter Nachrichtentyp: $message")
-                        }
-                    }
-                }
-            }
-        } catch (e: Exception) {
-            Log.e("LobbyService", "Fehler beim Verarbeiten der WebSocket-Nachricht: $message", e)
-        }
-    }
-
-    // Neue Methode für Lobby-Chat-Nachrichten
-    fun sendLobbyMessage(lobbyId: String, content: String) {
-        webSocketService.sendLobbyChat(content)
-        Log.d("LobbyService", "Sende Chat-Nachricht in Lobby $lobbyId: $content")
     }
 
     // Neue Methode für Player-Ready-Status

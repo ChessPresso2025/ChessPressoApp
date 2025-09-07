@@ -22,7 +22,7 @@ private val LightColorScheme = lightColorScheme(
     onPrimary = CoffeeCremeLight,
     background = CoffeeCremeLight,
     onBackground = CoffeeBrownContrast,
-    surface = CoffeeCremeMid, // jetzt mittleres Creme für Cards
+    surface = CoffeeCremeMid,
     onSurface = CoffeeBrownContrast,
     secondary = CoffeeOrange,
     tertiary = CoffeeRust
@@ -32,8 +32,7 @@ val LocalAppDarkTheme = staticCompositionLocalOf { false }
 
 @Composable
 fun ChessPressoAppTheme(
-    darkTheme: Boolean = false, // Default ist jetzt helles Theme
-    dynamicColor: Boolean = false, // Dynamic Color deaktiviert
+    darkTheme: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
